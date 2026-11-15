@@ -1,12 +1,10 @@
-import type { ComposeInput, Composition, Feed, GlobalFilters, Video } from "./types";
+import { hash } from "./hash";
+import { HOURS_PER_YEAR } from "./time";
+import type { ComposeInput, Composition, CompositionFilters, Feed, Video } from "./types";
 
-const YEAR_HOURS = 8760;
+export { hash };
 const SMALL_CREATOR_LIMIT = 100_000;
 const SHORTS_MAX_MINUTES = 2;
-
-/** Stable string hash (same as the prototype) so a seed always gives the same order. */
-export const hash = (text: string): number =>
-  [...text].reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 7);
 
 /** murmur3 finalizer: spreads small input changes (like seed 0 → 1) across all bits. */
 const mix = (n: number): number => {
@@ -48,7 +46,7 @@ function matchesKind(video: Video, input: ComposeInput): boolean {
       return video.topic === "News" && (feed.newsCategory === "All" || video.newsCategory === feed.newsCategory);
     case "claude":
     case "topics":
-      return feed.topics.includes(video.topic) && video.ageHours < YEAR_HOURS;
+      return feed.topics.includes(video.topic) && video.ageHours < HOURS_PER_YEAR;
   }
 }
 
@@ -86,7 +84,7 @@ function order(pool: readonly Video[], input: ComposeInput): Video[] {
   }
 }
 
-function failsFilters(video: Video, feed: Feed, filters: GlobalFilters): boolean {
+function failsFilters(video: Video, feed: Feed, filters: CompositionFilters): boolean {
   const [minLen, maxLen] = feed.length;
   if (video.minutes < minLen || video.minutes > maxLen) return true;
   if (feed.kind === "news") return false;

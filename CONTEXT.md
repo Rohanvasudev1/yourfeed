@@ -18,6 +18,7 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Finished**: the user said they're done with the video. Returning to the page never marks a video Finished by itself.
 - **Pinned**: videos the user added to this session by hand, which always count toward the session.
 - **Composition**: the pure function that turns a catalog, a feed and global filters into Up next plus a hidden count. It's the heart of the app (`composeFeed`).
+- **Time range**: Most viewed's window: last 24 hours, last year or all time (`topRange`).
 - **Global filters**: Hide clickbait, Honest titles, Hide view counts, Hide subscriber counts, Boost small creators, Include Shorts.
 - **Honest title**: a plain, non-clickbait version of a title. With Honest titles on, it replaces the title and the thumbnail caption.
 - **Settings line**: the sentence under the Claude bar ("Showing 4 topics · 10–60 min videos …"). Each phrase opens a popup that edits that setting. It replaces a settings sidebar.

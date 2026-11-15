@@ -1,10 +1,15 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import App from "./App.tsx";
+import { fetchCatalog } from "./api/catalog";
+import { browserStorage } from "./state/browserStorage";
 
-createRoot(document.getElementById('root')!).render(
+const loadCatalog = () => fetchCatalog("demo");
+const storage = browserStorage();
+
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <App loadCatalog={loadCatalog} storage={storage} />
   </StrictMode>,
-)
+);
