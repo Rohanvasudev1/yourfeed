@@ -3,6 +3,7 @@ import { CatalogError } from "./components/CatalogError";
 import { FeedView } from "./components/FeedView";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
+import { ViewToggle } from "./components/ViewToggle";
 import type { Video } from "./domain/types";
 import type { CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
@@ -47,13 +48,24 @@ export default function App({ loadCatalog, storage }: Props) {
     <div className="app">
       <Header />
       <main>
-        <h2 className="feed-title">{feed.name}</h2>
+        <div className="feed-toolbar">
+          <h2 className="feed-title">{feed.name}</h2>
+          <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
+        </div>
         {catalog.status === "loading" && <p className="muted">Loading…</p>}
         {catalog.status === "error" && (
           <CatalogError message={catalog.message} onRetry={() => setAttempt((n) => n + 1)} />
         )}
         {catalog.status === "ready" && (
-          <FeedView catalog={catalog.catalog} feed={feed} filters={state.filters} watched={state.watched} />
+          <FeedView
+            // Switching layouts starts with every description closed, as in the mockup.
+            key={state.view}
+            catalog={catalog.catalog}
+            feed={feed}
+            filters={state.filters}
+            watched={state.watched}
+            view={state.view}
+          />
         )}
       </main>
       <Footer onReset={() => dispatch({ type: "reset" })} />

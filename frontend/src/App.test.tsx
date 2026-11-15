@@ -1,22 +1,9 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import App from "./App";
-import type { CatalogLoader, StateStorage } from "./ports";
+import type { CatalogLoader } from "./ports";
 import { blockedStorage, CATALOG, EVERYTHING_ORDER, memoryStorage, rawLocalStorage } from "./test/fixtures";
-
-type Setup = { loadCatalog?: CatalogLoader; storage?: StateStorage };
-
-function renderApp({ loadCatalog = async () => CATALOG, storage = memoryStorage() }: Setup = {}) {
-  return render(<App loadCatalog={loadCatalog} storage={storage} />);
-}
-
-async function feedTitles(): Promise<string[]> {
-  const feed = await screen.findByRole("list", { name: "Up next" });
-  return within(feed)
-    .getAllByRole("heading", { level: 3 })
-    .map((h) => h.textContent ?? "");
-}
+import { feedTitles, renderApp, savedWithFilters } from "./test/renderApp";
 
 describe("opening the app", () => {
   it("opens on Everything, ranked by what you watch, without watched or clickbait videos", async () => {
@@ -45,24 +32,8 @@ describe("when the catalog can't load", () => {
 
 const BAIT_TITLE = "YOU WON'T BELIEVE this AI trick";
 
-type Saved = { state: { filters: Record<string, boolean> } };
-
-/**
- * What the app saves on a first visit, edited to show clickbait with honest titles off.
- * This reads the saved shape only because no filter controls exist yet; switch it to
- * clicking the filters popup once that lands.
- */
-async function savedWithClickbaitShown(): Promise<Saved> {
-  const storage = memoryStorage();
-  const { unmount } = renderApp({ storage });
-  await feedTitles();
-  unmount();
-  const saved = storage.saved() as Saved;
-  return {
-    ...saved,
-    state: { ...saved.state, filters: { ...saved.state.filters, hideClickbait: false, honestTitles: false } },
-  };
-}
+/** Clickbait shown with honest titles off, so the bait title is visible. */
+const savedWithClickbaitShown = () => savedWithFilters({ hideClickbait: false, honestTitles: false });
 
 describe("saving state in the browser", () => {
   it("keeps state across a reload", async () => {
