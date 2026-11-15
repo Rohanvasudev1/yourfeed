@@ -1,0 +1,1368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yourfeed</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+/* ---------- Design tokens (light) ---------- */
+:root{--ink-voice:color-mix(in srgb,var(--fill-brand) 30%,var(--text-primary));
+--surface-0:#ffffff;--surface-1:#f2f2f2;--surface-2:#ffffff;
+--text-primary:#0f0f0f;--text-secondary:#606060;--text-muted:#757575;
+--border:rgba(0,0,0,.1);--border-strong:rgba(0,0,0,.16);--border-stronger:rgba(0,0,0,.35);
+--bg-accent:#def1ff;--text-accent:#065fd4;--border-accent:#065fd4;--fill-accent:#065fd4;--fill-accent-hover:#0556bf;--on-accent:#ffffff;--bg-accent-muted:rgba(6,95,212,.06);
+--bg-danger:#fdecea;--text-danger:#b3261e;--border-danger:#f2a7a1;
+--bg-success:#e6f4ea;--text-success:#1e7e34;--border-success:#8fd19e;
+--bg-warning:#fef4e5;--text-warning:#8a5300;--border-warning:#f0b357;
+--fill-brand:#C96442;--on-brand:#ffffff;
+--fill-primary:#0f0f0f;--on-primary:#ffffff;
+--fill-control:rgba(0,0,0,.1);
+--radius:8px;
+--font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+--font-voice:Georgia,"Times New Roman",serif;
+}
+/* ---------- Design tokens (dark) ---------- */
+@media (prefers-color-scheme: dark){
+:root:not([data-theme="light"]){
+--surface-0:#0f0f0f;--surface-1:#272727;--surface-2:#212121;
+--text-primary:#f1f1f1;--text-secondary:#aaaaaa;--text-muted:#8c8c8c;
+--border:rgba(255,255,255,.1);--border-strong:rgba(255,255,255,.18);--border-stronger:rgba(255,255,255,.4);
+--bg-accent:#263850;--text-accent:#3ea6ff;--border-accent:#3ea6ff;--fill-accent:#3ea6ff;--fill-accent-hover:#65b8ff;--on-accent:#0f0f0f;--bg-accent-muted:rgba(62,166,255,.1);
+--bg-danger:#4a1714;--text-danger:#ff8a80;--border-danger:#b3261e;
+--bg-success:#16301d;--text-success:#81c995;--border-success:#1e7e34;
+--bg-warning:#3d2a0a;--text-warning:#fdd663;--border-warning:#8a5300;
+--fill-primary:#f1f1f1;--on-primary:#0f0f0f;
+--fill-control:rgba(255,255,255,.16);
+}}
+:root[data-theme="dark"]{
+--surface-0:#0f0f0f;--surface-1:#272727;--surface-2:#212121;
+--text-primary:#f1f1f1;--text-secondary:#aaaaaa;--text-muted:#8c8c8c;
+--border:rgba(255,255,255,.1);--border-strong:rgba(255,255,255,.18);--border-stronger:rgba(255,255,255,.4);
+--bg-accent:#263850;--text-accent:#3ea6ff;--border-accent:#3ea6ff;--fill-accent:#3ea6ff;--fill-accent-hover:#65b8ff;--on-accent:#0f0f0f;--bg-accent-muted:rgba(62,166,255,.1);
+--bg-danger:#4a1714;--text-danger:#ff8a80;--border-danger:#b3261e;
+--bg-success:#16301d;--text-success:#81c995;--border-success:#1e7e34;
+--bg-warning:#3d2a0a;--text-warning:#fdd663;--border-warning:#8a5300;
+--fill-primary:#f1f1f1;--on-primary:#0f0f0f;
+--fill-control:rgba(255,255,255,.16);
+}
+/* ---------- Base element styles ---------- */
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:var(--font-sans);font-size:14px;line-height:1.5}
+#app{max-width:1120px;margin:0 auto;padding:24px 16px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+button{font:inherit;color:var(--text-primary);background:transparent;border:0.5px solid var(--border-strong);border-radius:var(--radius);height:36px;padding:0 14px;cursor:pointer;transition:background .12s}
+button:hover{background:var(--surface-1)}
+button:active{transform:scale(.98)}
+button:focus-visible{outline:none;box-shadow:0 0 0 3px var(--bg-accent)}
+input[type=text],input[type=number],textarea,select{font:inherit;color:var(--text-primary);background:var(--surface-2);border:0.5px solid var(--border-strong);border-radius:var(--radius);height:36px;padding:0 10px}
+input[type=text]:focus,input[type=number]:focus,textarea:focus,select:focus{outline:none;border-color:var(--border-accent);box-shadow:0 0 0 3px var(--bg-accent)}
+input::placeholder{color:var(--text-muted)}
+p{margin:0}
+
+/* ---------- App styles ---------- */
+.pn{background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:12px}
+.lb{font-size:12px;color:var(--text-muted);margin:0 0 6px;display:flex;justify-content:space-between;align-items:center}
+.tp{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:4px 6px 4px 10px;border-radius:999px;background:var(--bg-accent);color:var(--text-accent)}
+.tp.mu{background:var(--surface-1);color:var(--text-muted);text-decoration:line-through}
+.tp button{border:none;background:transparent;padding:0;width:16px;height:16px;min-height:0;display:flex;align-items:center;justify-content:center;color:inherit;cursor:pointer}
+.tg{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0;cursor:pointer}
+.sw{width:28px;height:16px;border-radius:999px;background:var(--fill-control);position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--surface-2);transition:left .15s}
+.sw.on{background:var(--fill-accent)}.sw.on::after{left:14px}
+.dr{position:relative;height:22px}
+.dr .trk{position:absolute;top:9px;left:0;right:0;height:4px;border-radius:2px;background:var(--fill-control)}
+.dr .fl{position:absolute;height:100%;background:var(--fill-accent);border-radius:2px}
+.dr input{position:absolute;left:0;top:0;width:100%;height:22px;margin:0;background:transparent;pointer-events:none;-webkit-appearance:none;appearance:none}
+.dr input::-webkit-slider-runnable-track{background:transparent;height:4px;border:none}
+.dr input::-moz-range-track{background:transparent;border:none}
+.dr input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--surface-2);border:1.5px solid var(--fill-accent);margin-top:-6px;cursor:pointer}
+.dr input::-moz-range-thumb{pointer-events:auto;width:14px;height:14px;border-radius:50%;background:var(--surface-2);border:1.5px solid var(--fill-accent);cursor:pointer}
+.rin{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);margin-top:6px}
+.rin input{width:46px;height:24px;font-size:11px;padding:0 4px;text-align:center}
+.tab{font-size:13px;padding:6px 12px;border-radius:var(--radius);cursor:pointer;color:var(--text-secondary);display:inline-flex;gap:5px;align-items:center;border:0.5px solid transparent}
+.tab.on{background:var(--surface-2);color:var(--text-primary);border-color:var(--border)}
+button.tab{background:transparent;height:auto;min-height:0;font:inherit;font-size:13px}
+.tab.texp[aria-expanded=true]{background:var(--surface-2)}
+.wact.xitem{height:auto;min-height:44px;padding:6px 8px;align-items:center;gap:10px;line-height:1.3}
+.wact.xitem.on{background:var(--surface-1)}
+.tab.sel{background:var(--bg-accent);color:var(--text-accent);border-color:var(--border-accent)}
+.tab.tmp{border:0.5px dashed var(--border-strong)}
+.tab[draggable=true]{cursor:grab}
+.tab.over{box-shadow:-2px 0 0 var(--fill-accent)}
+.vc{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;padding:10px;border-radius:12px;background:var(--surface-2);border:0.5px solid var(--border);align-items:start}
+.gc{display:flex;flex-direction:column;gap:8px;padding:8px;border-radius:12px;background:var(--surface-2);border:0.5px solid var(--border);min-width:0;height:100%}
+.gc.sel{border:1.5px solid var(--border-accent);padding:7px}
+.gc>.watch{height:auto!important;aspect-ratio:16/9;flex:none}
+.yt{position:relative;overflow:hidden;border-radius:8px;container-type:inline-size;isolation:isolate;background:#111;color:#fff}
+.ytbg{position:absolute;inset:0;z-index:-1}
+.ytbg::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 78% 45%,rgba(255,255,255,.28),transparent 45%),linear-gradient(0deg,rgba(0,0,0,.28),transparent 45%)}
+.ytart{position:absolute;inset:0;display:flex;align-items:center;gap:2cqw;padding:0 4cqw 0 5cqw;transition:transform .25s ease}
+.watch.yt:hover .ytart,.watch.yt:hover .ytvs{transform:scale(1.04)}
+.yttx{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2cqw}
+.yt1{font:900 11.5cqw/.95 Impact,"Arial Black","Helvetica Neue",Arial,sans-serif;letter-spacing:.01em;color:#fff;-webkit-text-stroke:.5cqw #000;paint-order:stroke fill;text-shadow:0 .8cqw 0 rgba(0,0,0,.55),0 0 3cqw rgba(0,0,0,.35);overflow-wrap:anywhere}
+.yt2{font:900 6cqw/1 Impact,"Arial Black",Arial,sans-serif;text-transform:uppercase;color:#111;background:var(--acc,#ffd400);padding:.8cqw 2cqw;border-radius:1cqw;transform:rotate(-3deg);box-shadow:0 .8cqw 0 rgba(0,0,0,.35);white-space:nowrap}
+.ytic{font-size:34cqw;line-height:1;color:#fff;flex:none;transform:rotate(-8deg);filter:drop-shadow(0 1.5cqw 2cqw rgba(0,0,0,.5))}
+.ytring{position:absolute;right:1cqw;top:50%;width:40cqw;height:40cqw;transform:translateY(-50%);border:1.6cqw solid #ff1a1a;border-radius:50%;box-shadow:0 0 0 .5cqw rgba(255,255,255,.7)}
+.ytarrow{position:absolute;right:38cqw;bottom:6cqw;font-size:15cqw;color:#ff1a1a;transform:rotate(-25deg);filter:drop-shadow(0 0 .5cqw #fff) drop-shadow(0 1cqw 1cqw rgba(0,0,0,.5))}
+.ytvs{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;transition:transform .25s ease}
+.ytvs>div{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1cqw;background-image:linear-gradient(0deg,rgba(0,0,0,.3),transparent 50%)}
+.ytvs i{font-size:22cqw;line-height:1;filter:drop-shadow(0 1cqw 1.5cqw rgba(0,0,0,.5))}
+.ytvs b{font:900 10cqw/1 Impact,"Arial Black",Arial,sans-serif;-webkit-text-stroke:.4cqw #000;paint-order:stroke fill}
+.ytvsx{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-8deg);font:900 9cqw/1 Impact,"Arial Black",Arial,sans-serif;color:#111;background:#ffd400;padding:1.5cqw 2.5cqw;border-radius:2cqw;box-shadow:0 1cqw 0 rgba(0,0,0,.4)}
+.ytdur,.ytrank,.ytw{position:absolute;z-index:2;background:rgba(0,0,0,.8);color:#fff;font:500 clamp(9px,4.4cqw,12px)/1 Roboto,Arial,sans-serif;padding:3px 4px;border-radius:4px;letter-spacing:.02em}
+.ytdur{right:4px;bottom:4px}
+.ytlive{background:#cc0000;font-weight:700;display:inline-flex;align-items:center;gap:3px}
+.yt:has(.ytprog) .ytdur,.yt:has(.ytprog) .ytw{bottom:8px}
+.ytrank{left:4px;top:4px;font-weight:700}
+.ytw{left:4px;bottom:4px;text-transform:uppercase;font-size:clamp(8px,3.8cqw,11px)}
+@container (max-width:180px){.ytw{display:none}.yt2{display:none}}
+.ytprog{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.35);z-index:2}
+.ytprog i{display:block;height:100%;width:100%;background:#f00}
+.ytgrip{position:absolute;left:4px;top:4px;z-index:2;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:13px}
+.gc .gbody{flex:1;min-width:0;display:flex;flex-direction:column}
+.gc .gbody>.watch{min-height:calc(2 * 1.35em);font-size:14px}
+.gc .gmeta>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc .acts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding-top:8px;border-top:0.5px solid var(--border);margin-top:auto}
+.gc .acts .ib{width:100%;min-width:0}
+.dbox{margin-top:8px;padding:6px 10px;border-radius:8px;background:var(--surface-1);font-size:12px;line-height:1.45;color:var(--text-secondary);cursor:pointer}
+.dbox:hover{background:color-mix(in srgb,var(--surface-1) 85%,var(--text-primary))}
+.dbox .dtext{margin:0}
+.dmore{display:inline-block;margin-top:2px;font-weight:500;color:var(--text-primary);font-size:12px}
+.dfull{white-space:pre-line;font-size:13px;line-height:1.5;color:var(--text-secondary)}
+.dbox.open{cursor:default}.dbox.open .dmore{cursor:pointer}
+.gdesc{display:flex;align-items:center;gap:6px;margin-top:6px;padding:4px 8px;border-radius:6px;background:var(--surface-1);font-size:12px;color:var(--text-secondary);cursor:pointer}
+.gdesc span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gdesc i{font-size:14px;color:var(--text-muted);flex:none}
+.gdesc:hover,.gdesc[aria-expanded=true]{color:var(--text-primary)}
+.dpanel{padding:8px 2px 4px}
+.shlist{display:flex;flex-direction:column;gap:2px;max-height:232px;overflow-y:auto;padding:4px;border-radius:10px;background:var(--surface-1);border:0.5px solid var(--border);margin-bottom:12px}
+.shrow{display:flex;gap:8px;align-items:center;min-width:0;padding:4px 6px;border-radius:6px;cursor:pointer}
+.shrow:hover{background:var(--surface-2)}
+.shrow input{flex:none;margin:0;width:16px;height:16px;accent-color:var(--fill-accent)}
+.shrow .shtitle{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shrow.off .shtitle,.shrow.off span{opacity:.45}
+.shrow.off .shtitle{text-decoration:line-through}
+.shcard{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:12px;background:var(--surface-2);border:0.5px solid var(--border);cursor:pointer}
+.shcard:hover{border-color:var(--border-strong)}
+.shcard.new{border-color:var(--border-accent)}
+.newdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--fill-accent);margin-left:6px;vertical-align:middle}
+.shnote{font-family:var(--font-voice);font-size:14px;color:var(--text-primary);margin-top:6px;line-height:1.45}
+.shstrip{display:grid;grid-template-columns:repeat(4,72px);gap:6px;margin-top:8px}
+.shtheirs{margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--surface-1);display:flex;flex-direction:column;gap:4px}
+.tclose{width:18px;height:18px;min-height:0;padding:0;margin:0 -4px 0 2px;border:none;border-radius:50%;background:transparent;color:var(--text-muted);display:inline-flex;align-items:center;justify-content:center;font-size:12px;opacity:0;transition:opacity .12s,background .12s;flex:none}
+.tab:hover .tclose,.tab:focus-within .tclose,.xitem:hover .tclose,.xitem:focus-visible .tclose,.tclose:focus-visible{opacity:1}
+.tclose:hover{background:var(--fill-control);color:var(--text-primary)}
+.xclose{margin-left:6px}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--fill-accent);margin-left:2px;flex:none}
+.tcount{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:var(--fill-accent);color:var(--on-accent);font-size:11px;font-weight:500;margin-left:4px}
+.gpanel{grid-column:1/-1;padding:4px 10px 8px;border-radius:12px;background:var(--surface-2);border:1.5px solid var(--border-accent)}
+.gpanel .row{border-top:none}
+.vc[draggable=true]{cursor:grab}
+.ib{width:32px;height:32px;padding:0;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;flex:none}
+.ib.on{background:var(--fill-accent);color:var(--on-accent);border-color:var(--fill-accent)}
+.ib.soft{background:var(--bg-accent);color:var(--text-accent);border-color:var(--border-accent)}
+.fc{font-size:12px;padding:4px 10px;border-radius:999px;border:0.5px solid var(--border-strong);background:var(--surface-2);cursor:pointer;color:var(--text-primary);display:inline-flex;gap:4px;align-items:center}
+.fc.pk{background:var(--bg-accent);color:var(--text-accent);border-color:var(--border-accent)}
+.fr{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:14px;cursor:pointer;border-radius:var(--radius)}
+.fr:hover{background:var(--surface-2)}
+.chev{transition:transform .15s;color:var(--text-muted);font-size:14px}
+.chev.open{transform:rotate(90deg)}
+.row{display:flex;gap:10px;overflow-x:auto;padding:8px 2px 6px;border-top:0.5px solid var(--border);scroll-snap-type:x mandatory}
+.mini{flex:none;width:150px;scroll-snap-align:start}
+.seg{display:inline-flex;background:var(--surface-2);border:0.5px solid var(--border);border-radius:999px;padding:3px;gap:2px;flex:none}
+.seg button{border:none;background:transparent;border-radius:999px;font-size:13px;padding:5px 12px;height:auto;min-height:0;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center}
+.seg button.on{background:var(--fill-primary);color:var(--on-primary)}
+.recipe{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;font-size:13px;color:var(--text-secondary);margin:-2px 2px 12px}
+.recipe:empty{display:none}
+.tok{border:none;background:transparent;padding:2px 5px;margin:0 -3px;height:auto;min-height:0;font:inherit;font-weight:500;color:var(--text-primary);border-radius:6px;text-decoration:underline dotted;text-decoration-color:var(--text-muted);text-underline-offset:4px;cursor:pointer;display:inline-flex;align-items:center;gap:3px}
+.tok:hover,.tok[aria-expanded=true]{background:var(--surface-2);text-decoration-color:var(--text-accent);color:var(--text-accent)}
+.pop{position:absolute;z-index:40;width:290px;max-width:calc(100vw - 16px);background:var(--surface-2);border:0.5px solid var(--border-strong);border-radius:12px;padding:12px;box-shadow:0 12px 28px rgba(0,0,0,.3);animation:popin .12s ease-out}
+.pop[hidden]{display:none}
+@keyframes popin{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.pophint{font-size:11px;color:var(--text-muted);margin:8px 0 0;line-height:1.4}
+.wtok{cursor:pointer;border-radius:4px;text-decoration:underline dotted transparent;text-underline-offset:3px}
+.wtok:hover,.wtok:focus-visible,.wtok[aria-expanded=true]{color:var(--text-primary);text-decoration-color:var(--text-muted)}
+.wpop-h{font-size:14px;font-weight:500;margin:0}
+.wpop-s{font-size:12px;color:var(--text-muted);margin:2px 0 10px}
+.wact{display:flex;width:100%;align-items:center;gap:8px;border:none;background:transparent;height:32px;padding:0 8px;border-radius:8px;font-size:13px;color:var(--text-primary);text-align:left}
+.wact:hover{background:var(--surface-1)}
+.wact i{font-size:16px;color:var(--text-secondary)}
+.acct{width:32px;height:32px;border-radius:50%;border:none;padding:0;background:#9FE1CB;color:#04342C;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer}
+.acct:hover,.acct[aria-expanded=true]{box-shadow:0 0 0 3px var(--bg-accent)}
+.acchead{display:flex;align-items:center;gap:10px;padding:2px 4px 10px;border-bottom:0.5px solid var(--border);margin-bottom:6px}
+.acchead .acct{width:40px;height:40px;font-size:17px;cursor:default;box-shadow:none}
+.wact .n{margin-left:auto;font-size:12px;color:var(--text-muted)}
+.swrap{position:relative;flex:0 1 280px;display:flex;min-width:160px;transition:flex-basis .2s ease}
+.swrap:focus-within{flex-basis:420px}
+.sbar.open{border-radius:20px 20px 0 0;border-color:var(--border-strong);border-bottom-color:transparent;background:var(--surface-2)}
+#sugg{position:absolute;top:35px;left:0;right:0;z-index:30;background:var(--surface-2);border:1px solid var(--border-strong);border-top:none;border-radius:0 0 20px 20px;padding:0 0 10px;box-shadow:0 10px 24px rgba(0,0,0,.28)}
+#sugg::before{content:"";display:block;height:1px;margin:0 16px 8px;background:var(--border)}
+.sug{display:flex;align-items:center;gap:12px;padding:0 6px 0 18px;height:34px;cursor:pointer;font-size:15px;color:var(--text-primary)}
+.sug.act,.sug:hover{background:var(--surface-1)}
+.sug .ic{font-size:17px;color:var(--text-muted);flex:none}
+.sug .tx{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sug .tx b{font-weight:600}
+.sug.rec .tx{color:var(--text-accent)}
+.sug .sb{border:none;background:transparent;width:28px;height:28px;min-height:0;padding:0;display:flex;align-items:center;justify-content:center;color:var(--text-muted);border-radius:50%;flex:none}
+.sug .sb:hover{background:var(--surface-2);color:var(--text-primary)}
+.sbar{display:flex;flex:1;min-width:0;height:36px;border:1px solid var(--border-strong);border-radius:999px;overflow:hidden;background:var(--surface-2)}
+.sbar input{flex:1;border:none;background:transparent;padding:0 14px;font-size:14px;height:100%;box-shadow:none;outline:none;border-radius:0;color:var(--text-primary)}
+.sbar input:focus{box-shadow:none}
+.sbar:focus-within{border-color:var(--border-accent)}
+.sgo{width:46px;border:none;border-left:1px solid var(--border-strong);border-radius:0;background:var(--surface-1);display:flex;align-items:center;justify-content:center;height:100%;cursor:pointer;color:var(--text-primary)}
+.mic{width:36px;height:36px;border-radius:50%;border:none;background:var(--surface-1);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;color:var(--text-primary)}
+.mic.on{background:var(--bg-danger);color:var(--text-danger)}
+.logo,.logo:hover,.logo:active{border:none;background:transparent;box-shadow:none;padding:0;height:auto;min-height:0;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-primary);transform:none}
+.undo{width:30px;height:30px;padding:0;border-radius:50%;border:1px solid var(--fill-accent);display:inline-flex;align-items:center;justify-content:center;animation:undofade 5s linear forwards;flex:none}
+@keyframes undofade{from{background:var(--fill-accent);color:var(--on-accent)}to{background:var(--surface-2);color:var(--text-accent)}}
+.cbar{flex:1;display:flex;align-items:center;gap:8px;height:46px;padding:0 7px 0 14px;border-radius:14px;background:var(--surface-2);border:0.5px solid var(--border-strong);min-width:0}
+.cbar:focus-within{border-color:var(--border-accent);box-shadow:0 0 0 3px var(--bg-accent)}
+.cbar input{flex:1;border:none;background:transparent;box-shadow:none;outline:none;height:100%;font-size:14px;padding:0;min-width:0;color:var(--text-primary)}
+.cbar input:focus{box-shadow:none}
+.sendb{width:32px;height:32px;border-radius:8px;border:none;background:var(--fill-accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.sendb:hover{background:var(--fill-accent-hover)}
+#cundo{display:flex;gap:4px}
+#cmode{display:flex}
+.cbar{position:relative;z-index:20}
+.cmode{position:relative;height:32px;min-height:0;padding:0 4px;border-radius:999px;border:none;background:transparent;display:flex;align-items:center;flex:none}
+.cmode:hover{background:transparent}
+.mtrack{position:relative;width:48px;height:24px;border-radius:999px;background:var(--surface-1);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:space-between;padding:0 6px;transition:background .15s,border-color .15s}
+.mend{font-size:11px;color:var(--text-muted)}
+.mknob{position:absolute;top:1px;left:1px;width:20px;height:20px;border-radius:50%;background:var(--surface-2);box-shadow:0 1px 3px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;color:var(--text-primary);transition:transform .18s ease}
+.mknob i{font-size:12px}
+.cmode.new .mtrack{background:var(--fill-accent);border-color:var(--fill-accent)}
+.cmode.new .mend{color:var(--on-accent);opacity:.75}
+.cmode.new .mknob{transform:translateX(24px);color:var(--fill-accent)}
+.cmode:hover .mtrack{border-color:var(--border-stronger)}
+.cmode[aria-disabled=true]{cursor:default}
+.cmode[aria-disabled=true] .mtrack{opacity:.55}
+.cmode:focus-visible{box-shadow:none}.cmode:focus-visible .mtrack{box-shadow:0 0 0 3px var(--bg-accent)}
+.ctip{position:absolute;right:-6px;top:calc(100% + 8px);z-index:45;width:230px;padding:9px 11px;border-radius:10px;background:var(--fill-primary);color:var(--on-primary);font-size:12px;line-height:1.45;text-align:left;font-weight:400;box-shadow:0 8px 20px rgba(0,0,0,.25);opacity:0;visibility:hidden;transform:translateY(-3px);transition:opacity .12s,transform .12s,visibility .12s;pointer-events:none}
+.ctip b{display:block;font-weight:600;font-size:13px;margin-bottom:2px}
+.cmode:hover .ctip,.cmode:focus-visible .ctip{opacity:1;visibility:visible;transform:none;transition-delay:.25s}
+.cundo{width:32px;height:32px;border-radius:8px;border:0.5px solid var(--border-strong);background:transparent;display:flex;align-items:center;justify-content:center;padding:0;flex:none;position:relative;color:var(--text-secondary)}
+.cundo span{position:absolute;top:-5px;right:-5px;min-width:15px;height:15px;border-radius:999px;background:var(--fill-accent);color:var(--on-accent);font-size:10px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.toast{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:12px;background:var(--surface-2);border:0.5px solid var(--border);margin-bottom:10px;font-size:13px;animation:tin .2s ease-out;position:relative;overflow:hidden}
+@keyframes tin{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.toast .bar{position:absolute;left:0;bottom:0;height:2px;background:var(--fill-brand);animation:shrink 5s linear forwards}
+@keyframes shrink{from{width:100%}to{width:0}}
+.addb{border:0.5px solid var(--border-accent);background:var(--bg-accent);color:var(--text-accent);font-size:12px;height:28px;padding:0 10px;border-radius:999px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.addb.done{background:transparent;border-color:var(--border);color:var(--text-success);cursor:default}
+.pickv{border:0.5px solid var(--border);border-radius:10px;padding:6px;cursor:pointer;background:var(--surface-2);position:relative}
+.pickv.pk{border:2px solid var(--border-accent);padding:5px}
+.watch{cursor:pointer}
+.danger{color:var(--text-danger)}
+.sechead{display:flex;align-items:center;gap:8px;padding:10px 4px;cursor:pointer;border-radius:var(--radius)}
+.sechead:hover{background:var(--surface-2)}
+#feedwrap{border-radius:12px;transition:background .15s}
+#feedwrap.drop{outline:2px dashed var(--border-accent);outline-offset:4px;background:var(--bg-accent-muted)}
+#drophint{display:none;text-align:center;font-size:13px;color:var(--text-accent);padding:10px}
+#feedwrap.drop #drophint{display:block}
+.atc{background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;position:relative}
+.atc.sel{border:2px solid var(--border-accent)}
+.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.seclab{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;margin:0 2px 8px;color:var(--text-primary)}
+.seclab .ct{font-weight:400;color:var(--text-muted);font-size:12px}
+.sec{margin-bottom:16px}
+.live{width:8px;height:8px;border-radius:50%;background:#E24B4A;flex:none}
+.nb{display:flex;gap:6px;align-items:flex-start;margin-top:8px}
+.nb textarea{flex:1;min-width:0;height:auto;min-height:56px;padding:8px 10px;resize:vertical;font-size:13px;line-height:1.45}
+.ib.rec{background:var(--bg-danger);color:var(--text-danger);border-color:var(--border-danger)}
+.nb .tools{display:flex;flex-direction:column;gap:6px;flex:none}
+.sheet{flex:1;min-width:0;background:var(--surface-2);border:0.5px solid var(--border-strong);border-radius:var(--radius);padding:8px 10px;cursor:text}
+.sheet:focus-within{border-color:var(--border-accent);box-shadow:0 0 0 3px var(--bg-accent)}
+.inkwrap{position:relative}
+.mirror,.sheet textarea{font:inherit;font-size:13px;line-height:1.45;padding:0;margin:0;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal}
+.mirror{position:absolute;inset:0;color:transparent;pointer-events:none}
+.sheet textarea{position:relative;display:block;width:100%;min-height:38px;border:none;background:transparent;resize:none;overflow:hidden;height:auto;border-radius:0}
+.sheet textarea:focus{box-shadow:none;border:none}
+.qmark{text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--fill-brand) 70%,transparent);text-decoration-thickness:1.5px;text-underline-offset:4px}
+.qdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--fill-brand);margin-left:6px;vertical-align:middle;animation:ink-wait 1.1s ease-in-out infinite}
+.sheet textarea{color:transparent;caret-color:var(--text-primary)}
+.sheet textarea::selection{background:var(--bg-accent);color:transparent}
+.mirror{color:var(--text-primary)}
+.aline{color:var(--ink-voice)}
+.amark{color:var(--fill-brand)}
+.aline .w{animation:ink-word .5s ease-out both}
+.amark.new{display:inline-block;animation:blot-splat .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes ink-wait{0%,100%{opacity:.45;transform:scale(.82)}50%{opacity:.95;transform:scale(1)}}
+@keyframes ink-word{0%{opacity:0;color:color-mix(in srgb,var(--ink-voice) 55%,#b08a5a)}35%{opacity:.55}100%{opacity:1;color:var(--ink-voice)}}
+@keyframes blot-splat{0%{transform:scale(.12)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.qdot,.aline .w,.amark.new{animation:none}}
+.nbhint{font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.4}
+.nbhint .amark{margin-right:2px}
+.nbhint.err{color:var(--text-danger)}
+.brow{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 10px;border-radius:10px;background:var(--surface-2);border:0.5px solid var(--border);cursor:pointer}
+.brow:hover{border-color:var(--border-strong)}
+.brow.on{border:1.5px solid var(--border-accent)}
+.bav{width:28px;height:28px;border-radius:50%;background:#F5C4B3;color:#712B13;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;flex:none}
+.pri{background:var(--fill-accent);color:var(--on-accent);border-color:var(--fill-accent)}
+.pri:hover{background:var(--fill-accent-hover)}
+.lnk{border:none;background:transparent;padding:4px 0;font-size:13px;height:auto;min-height:0;display:inline-flex;align-items:center;gap:4px}
+.lnk:hover{background:transparent;text-decoration:underline}
+.cbtn{font-size:12px;height:28px;padding:0 10px;margin-top:10px;display:inline-flex;align-items:center;gap:4px}
+.tab.thome{padding-left:10px;padding-right:10px}
+.tpin{border:none;background:transparent;padding:0;width:18px;height:18px;min-height:0;display:inline-flex;align-items:center;justify-content:center;color:var(--text-accent);margin-left:2px}
+.nbe{display:grid;grid-template-columns:88px minmax(0,1fr);gap:10px;padding:10px;border-radius:12px;background:var(--surface-2);border:0.5px solid var(--border)}
+.badge{font-size:11px;padding:1px 8px;border-radius:999px;background:var(--surface-1);color:var(--text-secondary);margin-left:6px;font-weight:400}
+.badge.now{background:var(--bg-danger);color:var(--text-danger)}
+</style>
+</head>
+<body>
+<div id="app">
+<h1 class="sr-only">Yourfeed: a fully customizable video feed prototype</h1>
+<div style="background:var(--surface-0);border-radius:12px;padding:12px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+<div style="flex:none"><button id="logo" class="logo" title="Load a new set of videos for this feed" aria-label="Yourfeed: load a new set of videos for this feed"><i class="ti ti-adjustments-horizontal" style="font-size:20px" aria-hidden="true"></i><span style="font-weight:500;font-size:15px">Yourfeed</span></button></div>
+<div style="flex:1;display:flex;justify-content:flex-end;gap:8px;align-items:center;min-width:0">
+<div id="undo"></div>
+<div class="swrap"><div class="sbar" id="sbar"><input id="q" type="text" placeholder="Search" aria-label="Search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugg" autocomplete="off" spellcheck="false"><button id="qgo" class="sgo" aria-label="Search"><i class="ti ti-search" style="font-size:18px" aria-hidden="true"></i></button></div><div id="sugg" role="listbox" aria-label="Search suggestions" hidden></div></div>
+<button id="mic" class="mic" aria-label="Search with your voice"><i class="ti ti-microphone" style="font-size:18px" aria-hidden="true"></i></button>
+<button class="acct" data-pop="account" aria-haspopup="dialog" aria-expanded="false" aria-controls="pop-account" aria-label="Your account" title="Your account">Y</button>
+</div>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px">
+<div id="tabs" style="display:flex;gap:4px;flex-wrap:wrap;min-width:0"></div>
+<div style="display:flex;gap:6px;flex:none"><button id="newfeed" class="ib" aria-label="New feed" title="New feed"><i class="ti ti-plus" style="font-size:17px" aria-hidden="true"></i></button><button id="alltabs" style="font-size:13px;height:32px;padding:0 10px;display:flex;align-items:center;gap:4px" aria-label="All tabs" title="All tabs"></button><button id="edit" style="font-size:13px;height:32px;padding:0 12px"></button></div>
+</div>
+<div id="editbar"></div>
+<div id="allpage"></div>
+<div id="searchpage"></div>
+<div id="main" style="display:grid;grid-template-columns:minmax(0,1fr);gap:12px">
+<div id="content" style="min-width:0">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+<div class="cbar"><i class="ti ti-asterisk" style="font-size:17px;color:var(--fill-brand)" aria-hidden="true"></i><input id="cin" type="text" aria-label="Tell Claude what to change"><span id="cmode"></span><span id="cundo"></span><button id="send" class="sendb" aria-label="Send to Claude"><i class="ti ti-arrow-up" style="font-size:17px" aria-hidden="true"></i></button></div>
+<div class="seg" role="group" aria-label="Layout"><button data-view="list" aria-label="One per row" title="One per row"><i class="ti ti-list" style="font-size:16px" aria-hidden="true"></i></button><button data-view="grid" aria-label="Three per row" title="Three per row"><i class="ti ti-layout-grid" style="font-size:16px" aria-hidden="true"></i></button></div>
+</div>
+<div id="cerr" style="font-size:12px;color:var(--text-danger);margin:-4px 0 8px 52px"></div>
+<div id="recipe" class="recipe"></div>
+<div id="toast"></div>
+<div id="ask"></div>
+<div id="extra"></div>
+<div id="finished"></div>
+<div id="current"></div>
+<div id="summary" style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--text-secondary);margin:2px 2px 10px;flex-wrap:wrap;gap:6px"></div>
+<div id="share"></div>
+<div id="feedwrap"><div id="drophint"><i class="ti ti-download" aria-hidden="true"></i> Drop to add to this session</div><div id="feed"></div></div>
+<div style="margin-top:16px;border-top:0.5px solid var(--border);padding-top:4px">
+<div id="nbhead"></div>
+<div id="nbbody"></div>
+</div>
+<div style="border-top:0.5px solid var(--border);padding-top:4px;margin-top:4px">
+<div id="savedhead"></div>
+<div id="savedbody"></div>
+</div>
+<div style="border-top:0.5px solid var(--border);padding-top:4px;margin-top:4px">
+<div id="histhead"></div>
+<div id="histbody"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="pop" id="pop-topics" role="dialog" aria-labelledby="tlabel" hidden>
+<p class="lb"><span id="tlabel"></span></p>
+<div id="topics" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+<div style="display:flex;gap:6px;margin-top:10px">
+<input id="tin" type="text" style="flex:1;min-width:0;font-size:13px">
+<button id="tadd" class="ib" aria-label="Add" style="width:36px;height:36px"><i class="ti ti-plus" style="font-size:16px" aria-hidden="true"></i></button>
+</div>
+<div id="terr" style="font-size:12px;margin-top:6px;color:var(--text-danger)"></div>
+</div>
+<div class="pop" id="pop-len" role="dialog" aria-label="Video length" hidden>
+<p class="lb"><span>Video length</span></p>
+<div class="dr"><div class="trk"><div class="fl" id="len-f"></div></div><input type="range" id="len-a" min="1" max="120" step="1" aria-label="Shortest video"><input type="range" id="len-b" min="1" max="120" step="1" aria-label="Longest video"></div>
+<div class="rin"><input type="number" id="len-min" min="1" max="120" aria-label="Shortest video in minutes"><span>to</span><input type="number" id="len-max" min="1" max="120" aria-label="Longest video in minutes"><span>min</span></div>
+<p class="pophint">Only videos inside this range show up.</p><div data-rerr style="font-size:12px;margin-top:6px;color:var(--text-danger)"></div>
+</div>
+<div class="pop" id="pop-ses" role="dialog" aria-label="Session time" hidden>
+<p class="lb"><span>Session time</span></p>
+<div class="dr"><div class="trk"><div class="fl" id="ses-f"></div></div><input type="range" id="ses-a" min="10" max="240" step="10" aria-label="Minimum session time"><input type="range" id="ses-b" min="10" max="240" step="10" aria-label="Maximum session time"></div>
+<div class="rin"><input type="number" id="ses-min" min="10" max="240" aria-label="Minimum session time in minutes"><span>to</span><input type="number" id="ses-max" min="10" max="240" aria-label="Maximum session time in minutes"><span>min</span></div>
+<p class="pophint">How long this sitting should be. Up next fills to fit.</p><div data-rerr style="font-size:12px;margin-top:6px;color:var(--text-danger)"></div>
+</div>
+<div class="pop" id="pop-filters" role="dialog" aria-label="Filters and display" hidden>
+<p class="lb"><span>Filters and display</span></p>
+<div id="toggles"></div>
+</div>
+<div class="pop" id="pop-more" role="dialog" aria-label="Tab options" hidden>
+<p class="lb"><span>This tab</span></p>
+<div id="deltab"></div>
+</div>
+<div class="pop" id="pop-word" role="dialog" aria-label="Quick actions" hidden></div>
+<div class="pop" id="pop-account" role="dialog" aria-label="Your account" hidden></div>
+<div class="pop" id="pop-tabs" role="dialog" aria-label="Explore feeds" hidden></div>
+<script>
+const V=[
+{tp:"AI",t:"Build an AI agent with tool use, step by step",ch:"Agent Workshop",subs:"34K",m:34,v:"88K",age:3},
+{tp:"Programming",t:"Graphs vs trees: when to use which",ch:"Data Structures Daily",subs:"61K",m:18,v:"140K",age:30},
+{tp:"Programming",t:"Building a tiny database from scratch",ch:"Byte Garden",subs:"27K",m:41,v:"60K",age:9},
+{tp:"Careers",t:"The ONE career mistake everyone makes",h:"A framework for planning the next five years of your career",ch:"Big Ideas Studio",subs:"2.1M",m:22,v:"1.9M",age:50,thin:1},
+{tp:"Economics",t:"This SCAM fooled EVERYONE",h:"Following the money behind a collapsed crypto fund",ch:"Ledger Files",subs:"76K",m:41,v:"620K",age:20},
+{tp:"Economics",t:"How central banks actually set interest rates",ch:"Macro Explained",subs:"48K",m:19,v:"210K",age:70},
+{tp:"Premier League",t:"Late winner in the title-race derby",ch:"Matchday Highlights",subs:"4.8M",m:9,v:"3.2M",age:1},
+{tp:"Premier League",t:"Every goal from matchweek 12",ch:"Matchday Highlights",subs:"4.8M",m:14,v:"1.6M",age:26},
+{tp:"Tennis",t:"Five-set final: best points",ch:"Court Replay",subs:"3.6M",m:12,v:"1.1M",age:5},
+{tp:"Cricket",t:"Final-over finish in the T20 decider",ch:"Boundary Line",subs:"980K",m:8,v:"700K",age:14},
+{tp:"Wrestling",t:"Championship main event highlights",ch:"Ring Night",subs:"5.1M",m:7,v:"2.4M",age:40},
+{tp:"Podcasts",t:"A founder on burnout, ambition and starting over",ch:"Long Table Podcast",subs:"8M",m:95,v:"2.7M",age:22},
+{tp:"Podcasts",t:"Former world No. 1 looks back on their career",ch:"Court Replay",subs:"3.6M",m:48,v:"600K",age:96},
+{tp:"Live music",t:"Live session: four songs, one take",ch:"Front Room Sessions",subs:"410K",m:16,v:"1.3M",age:12},
+{tp:"Live music",t:"Amapiano set at sunset",ch:"Groove Radio",subs:"95K",m:52,v:"400K",age:60},
+{tp:"Vlogs",t:"We spent £10,000 in 24 HOURS",h:"Ten friends compete to spend £10,000 in a day",ch:"The Group Chat",subs:"12M",m:38,v:"8M",age:7},
+{tp:"Vlogs",t:"Road trip goes completely sideways",h:"Friends' road trip vlog with a broken-down van",ch:"Weekend Crew",subs:"3.4M",m:14,v:"2M",age:80},
+{tp:"Premier League",t:"Greatest goals of the decade",ch:"Matchday Highlights",subs:"4.8M",m:21,v:"48M",age:19000},
+{tp:"Live music",t:"Live at the Roundhouse: full concert",ch:"Front Room Sessions",subs:"410K",m:74,v:"22M",age:30000},
+{tp:"Economics",t:"Money, explained from scratch",ch:"Macro Explained",subs:"48K",m:31,v:"15M",age:26000},
+{tp:"Vlogs",t:"Our biggest challenge of the year",ch:"The Group Chat",subs:"12M",m:44,v:"31M",age:4000},
+{tp:"AI",t:"Neural networks, visually explained",ch:"Agent Workshop",subs:"34K",m:27,v:"9M",age:6000},
+{tp:"MCP",t:"Build an MCP server in 20 minutes",ch:"Agent Workshop",subs:"34K",m:20,v:"45K",age:16},
+{tp:"Product design",t:"How recommendation feeds are designed",ch:"Interface Lab",subs:"58K",m:24,v:"130K",age:44},
+{tp:"Product design",t:"User research on a budget",ch:"Interface Lab",subs:"58K",m:17,v:"72K",age:110},
+{tp:"Cooking",t:"Weeknight pasta in 15 minutes",ch:"Pan and Pocket",subs:"88K",m:15,v:"310K",age:18},
+{tp:"Cooking",t:"Knife skills for beginners",ch:"Pan and Pocket",subs:"88K",m:12,v:"540K",age:200},
+{tp:"Tennis",t:"How the serve has changed in 20 years",ch:"Court Replay",subs:"3.6M",m:16,v:"900K",age:300},
+{tp:"Travel",t:"Two weeks in Japan on a budget",ch:"Slow Miles",subs:"64K",m:22,v:"410K",age:150},
+{tp:"MCP",t:"Connecting your app to Claude with MCP",ch:"Byte Garden",subs:"27K",m:26,v:"38K",age:60},
+{tp:"Travel",t:"Night trains across Europe",ch:"Slow Miles",subs:"64K",m:19,v:"280K",age:400},
+{tp:"News",cat:"World",t:"Morning briefing: five stories to know today",ch:"Daily Brief",subs:"1.2M",m:8,v:"320K",age:2},
+{tp:"News",cat:"Business",t:"Why food prices are rising again",ch:"World Desk",subs:"2.4M",m:12,v:"540K",age:6},
+{tp:"News",cat:"Tech",t:"This week in AI: the updates that matter",ch:"Tech Wire",subs:"880K",m:15,v:"210K",age:10},
+{tp:"News",cat:"Business",t:"Markets wrap: what moved today",ch:"Market Minute",subs:"410K",m:6,v:"95K",age:4},
+{tp:"News",cat:"Science",t:"A new way to spot earthquakes early",ch:"Science Now",subs:"650K",m:11,v:"180K",age:20},
+{tp:"News",cat:"World",t:"Live: storm update and travel disruption",ch:"World Desk",subs:"2.4M",m:45,v:"76K",age:1,live:1},
+{tp:"News",cat:"Tech",t:"The battery breakthrough, explained",ch:"Tech Wire",subs:"880K",m:9,v:"400K",age:30}].map((v,i)=>({...v,id:i,h:v.h||v.t,vn:parseFloat(v.v)*(v.v.endsWith("M")?1e6:1e3)}));
+const ALL_TOPICS=[...new Set(V.map(v=>v.tp))];
+const TOPIC_RX={"News":/\bnews\b|headline|current events|briefing/,"AI":/\bai\b|agent|machine learning|llm/,"Programming":/code|coding|program|software|dev|typescript/,"Economics":/econom|money|finance|crypto|invest/,"Careers":/career|job/,"Premier League":/football|soccer|premier/,"Tennis":/tennis/,"Cricket":/cricket/,"Wrestling":/wrestl|wwe/,"Podcasts":/podcast|interview|conversation/,"Live music":/music|song|live set|concert/,"Vlogs":/vlog|friends|challenge/,"MCP":/\bmcp\b/,"Product design":/product|design|ux/,"Cooking":/cook|food|recipe/,"Travel":/travel|trip|holiday/};
+const BROAD=[{rx:/sport|game|match|athlet/,q:"Which sports?",opts:["Premier League","Tennis","Cricket","Wrestling"]},{rx:/learn|study|smart|tech|nerd|brain/,q:"What do you want to learn about?",opts:["AI","Programming","MCP","Product design","Economics"]},{rx:/chill|relax|wind|calm|sleep|cosy|cozy/,q:"What helps you wind down?",opts:["Podcasts","Live music","Cooking","Travel"]},{rx:/fun|laugh|funny|entertain|brain off/,q:"What kind of fun?",opts:["Vlogs","Wrestling","Live music","Travel"]}];
+const COLORS=["#CECBF6","#F5C4B3","#B5D4F4","#9FE1CB","#FAC775","#F4C0D1"];
+const RANGES=[["day","Last 24 hours",24],["year","Last year",8760],["all","All time",Infinity]];
+const KIND={home:["ti-home","Based on what you watch"],subs:["ti-user-check","Newest from your channels"],top:["ti-flame","Ranked by views"],claude:["ti-asterisk","From your Claude work"],news:["ti-news","Latest from news channels"],blend:["ti-users","Mixed with a friend"],shared:["ti-inbox","Feeds people sent you"]};
+const LOCKED=["home","subs","top","news","claude","blend","shared"];
+const NEWS_CATS=["All","World","Business","Tech","Science"];
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const ytURL=v=>"https://www.youtube.com/results?search_query="+encodeURIComponent(v.h+" "+v.ch);
+const MAXBAR=8;
+// The limit counts what is visible in the bar: Home, the one Explore button, and your own feeds.
+const barCount=()=>{const b=barTabs();return b.filter(n=>!isGroupedTab(n)).length+(b.some(isGroupedTab)?1:0)};
+// Layout preference is a per-viewer convenience, so browser storage is fine; it falls back to grid if storage is blocked.
+const VIEW_KEY="yourfeed.view",VIEWS=["grid","list"],DEFAULT_VIEW="grid";
+function loadView(){try{const v=localStorage.getItem(VIEW_KEY);return VIEWS.includes(v)?v:DEFAULT_VIEW}catch(err){return DEFAULT_VIEW}}
+function saveView(v){try{localStorage.setItem(VIEW_KEY,v)}catch(err){console.warn("Couldn't remember the layout choice",err)}}
+const SUGG_MAX=8,RECENT_MAX=8;
+const USER_RX=/^[a-z0-9_.]{3,20}$/i;
+const SHARE_BASE="https://yourfeed.example/s/";
+const DEMO_BLENDS=["maya.k","devon_r"];
+// Demo inbox: feeds other people "sent". A real version stores these server-side per recipient.
+const DEMO_INBOX=[
+{id:"sh1",from:"maya.k",title:"Trip planning",ids:[28,30,25,26],note:"For your Japan trip, the night trains one is great",ago:"2 hours ago",unread:true,notes:{}},
+{id:"sh2",from:"devon_r",title:"Learn",ids:[22,29,0,21],note:"The MCP ones are worth it",ago:"Yesterday",unread:true,notes:{22:"Skip to 6:00 for the actual server code",29:"Good explanation of tools vs resources"}},
+{id:"sh3",from:"sam_k",title:"Sport",ids:[6,8,9],note:"",ago:"3 days ago",unread:false,notes:{}}];
+const CLAUDE_WORK=[{l:"Designing a custom YouTube feed app",t:["Product design"]},{l:"Building MCP tools and agents",t:["MCP","AI"]},{l:"Debugging a TypeScript project",t:["Programming"]}];
+const F=(o)=>({len:[1,120],ses:[10,240],pinned:[],removed:[],skip:[],muted:[],seed:0,shelved:false,topics:[],finished:[],current:null,fnote:"",...o});
+let s={notes:{},answers:{},claudeNew:false,inbox:[],recent:["mcp server","premier league highlights"],share:null,blends:[],blendsOpen:true,rec:null,back:false,finOpen:true,nbOpen:false,allErr:"",tab:"Everything",page:"feed",q:"",range:"year",view:loadView(),descOpen:null,listening:false,editing:false,sel:[],confirm:null,editErr:"",savedOpen:false,histOpen:false,likeOpen:null,saving:null,newFolder:false,ask:null,watched:[6,13,0,8],chatUndo:[],chatRedo:[],
+feeds:{"Everything":F({kind:"home",c:2}),
+"Subscriptions":F({kind:"subs",channels:["Agent Workshop","Byte Garden","Ledger Files","Matchday Highlights","Court Replay","Front Room Sessions","Long Table Podcast"],c:3}),
+"Most viewed":F({kind:"top",c:4}),
+"News":F({kind:"news",cat:"All",c:0}),
+"From Claude":F({kind:"claude",connected:false,len:[5,60],ses:[20,90],c:5}),
+"Blend":F({kind:"blend",partner:null,len:[5,60],ses:[20,120],c:3}),
+"Shared with you":F({kind:"shared",open:null,c:2}),
+"Learn":F({topics:["AI","Programming","Economics","Careers"],len:[10,60],ses:[30,90],c:0}),
+"Sport":F({topics:["Premier League","Tennis","Cricket","Wrestling"],len:[3,20],ses:[20,60],c:1}),
+"Wind down":F({topics:["Podcasts","Live music","Vlogs"],len:[10,120],ses:[30,150],c:2,shelved:true}),
+"Cooking":F({topics:["Cooking"],len:[5,30],ses:[10,60],c:4,shelved:true})},
+hideCb:true,honest:true,hideCounts:true,hideSubs:false,small:true,shorts:false,
+folders:[{name:"Watch later",items:[13,0,22],open:true},{name:"Weekend",items:[11,15],open:false},{name:"Learning",items:[2],open:false}]};
+let undoTok=0,toastTok=0,dragTab=null;
+const TG=[["hideCb","Hide clickbait"],["honest","Honest titles"],["hideCounts","Hide view counts"],["hideSubs","Hide subscriber counts"],["small","Boost small creators"],["shorts","Include Shorts"]];
+const $=id=>document.getElementById(id);
+const on=(sel,fn)=>document.querySelectorAll(sel).forEach(fn);
+const isSmall=v=>v.subs.endsWith("K")&&parseInt(v.subs)<100;
+const fmt=m=>m>=60?(m%60?`${Math.floor(m/60)}h ${m%60}m`:`${m/60}h`):`${m}m`;
+const ago=h=>h<24?`${h} hour${h===1?"":"s"} ago`:h<720?`${Math.floor(h/24)} day${Math.floor(h/24)===1?"":"s"} ago`:h<8760?`${Math.floor(h/720)} month${Math.floor(h/720)===1?"":"s"} ago`:`${Math.floor(h/8760)} year${Math.floor(h/8760)===1?"":"s"} ago`;
+const cur=()=>s.feeds[s.tab];
+const kind=()=>cur().kind||"topics";
+const listKey=()=>kind()==="subs"?"channels":"topics";
+const topicFeed=()=>["topics","claude","home"].includes(kind());
+const up=p=>{s={...s,...p};render()};
+const setFeed=p=>{s={...s,feeds:{...s.feeds,[s.tab]:{...cur(),...p}}}};
+const upFeed=p=>{setFeed(p);render()};
+const isSaved=id=>s.folders.some(f=>f.items.includes(id));
+const isWatched=id=>s.watched.includes(id);
+const barTabs=()=>Object.keys(s.feeds).filter(n=>!s.feeds[n].shelved);
+const myTopics=()=>[...new Set(Object.values(s.feeds).filter(f=>!f.kind).flatMap(f=>f.topics))];
+const colorOf=v=>{const f=Object.values(s.feeds).find(f=>!f.kind&&f.topics.includes(v.tp));return COLORS[f?f.c%COLORS.length:5]};
+const hash=t=>[...String(t)].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
+function esc(t){const d=document.createElement("div");d.textContent=String(t);return d.innerHTML}
+function similar(v){return V.filter(x=>x.id!==v.id).map(x=>({x,sc:(x.tp===v.tp?3:0)+(x.ch===v.ch?2:0)+(myTopics().includes(x.tp)?1:0)})).sort((a,b)=>b.sc-a.sc||b.x.vn-a.x.vn).slice(0,10).map(o=>o.x)}
+function sessionIds(f){return f.current===null?f.finished:[...f.finished,f.current]}
+const blendOn=f=>!!f.partner&&f.partner.status==="accepted";
+function pending(){const f=cur(),k=kind();return (k==="shared"&&!openShare())||(k==="claude"&&!f.connected)||(k==="blend"&&!blendOn(f))||(f.draft&&!f.topics.length)}
+function homeScore(v,f){const h=s.watched.map(i=>V[i]);const tc=h.filter(x=>x.tp===v.tp).length,cc=h.filter(x=>x.ch===v.ch).length;return 3*tc+2*cc+(f.topics.includes(v.tp)?4:0)+Math.log10(v.vn)/2+(hash(v.id+":"+f.seed)%100)/60}
+function pick(){
+const f=cur(),k=kind();
+const done=sessionIds(f);
+let used=[...f.pinned,...done].reduce((a,id)=>a+V[id].m,0);
+if(pending())return{out:[],hidden:0,used};
+if(k==="shared"){const out=openShare().ids.filter(id=>!f.pinned.includes(id)&&!done.includes(id)&&!f.removed.includes(id)).map(id=>V[id]);return{out,hidden:0,used:used+out.reduce((a,v)=>a+v.m,0)}}
+const maxAge=RANGES.find(r=>r[0]===s.range)[2];
+if(k==="news"){const pool=V.filter(v=>v.tp==="News"&&(f.cat==="All"||v.cat===f.cat)&&!(f.skip||[]).includes(v.id)&&!f.pinned.includes(v.id)&&!done.includes(v.id)&&!f.removed.includes(v.id)).sort((a,b)=>(b.live||0)-(a.live||0)||a.age-b.age);let hidden=0;const out=[];for(const v of pool){if(v.m<f.len[0]||v.m>f.len[1]||used+v.m>f.ses[1]){hidden++;continue}used+=v.m;out.push(v)}return{out,hidden,used}}
+const skip=f.skip||[];const base=v=>!f.pinned.includes(v.id)&&!done.includes(v.id)&&!f.removed.includes(v.id)&&!skip.includes(v.id)&&!f.muted.includes(v.tp);
+const pool=V.filter(v=>base(v)&&(k==="home"?!isWatched(v.id):k==="subs"?f.channels.includes(v.ch):k==="top"?(v.age<=maxAge&&(!f.topics.length||f.topics.includes(v.tp))):f.topics.includes(v.tp)&&v.age<8760));
+const mixed=[...pool].sort((a,b)=>hash(a.id+":"+f.seed)-hash(b.id+":"+f.seed));
+let sorted;
+if(k==="home")sorted=[...pool].sort((a,b)=>homeScore(b,f)-homeScore(a,f));
+else if(k==="blend"){const mine=myTopics(),theirs=f.partner.topics;const both=v=>mine.includes(v.tp)&&theirs.includes(v.tp);const a=mixed.filter(both),y=mixed.filter(v=>!both(v)&&mine.includes(v.tp)),t=mixed.filter(v=>!both(v)&&!mine.includes(v.tp));sorted=[...a];for(let i=0;i<Math.max(y.length,t.length);i++){if(y[i])sorted.push(y[i]);if(t[i])sorted.push(t[i])}}
+else if(k==="top")sorted=[...pool].sort((a,b)=>b.vn-a.vn);
+else if(k==="subs")sorted=f.seed?mixed:[...pool].sort((a,b)=>a.age-b.age);
+else sorted=[...mixed].sort((a,b)=>(s.small&&isSmall(b))-(s.small&&isSmall(a)));
+let hidden=0;const out=[];
+for(const v of sorted){
+const bad=(s.hideCb&&v.thin)||v.m<f.len[0]||v.m>f.len[1]||(!s.shorts&&v.m<2);
+if(bad||used+v.m>f.ses[1]){hidden++;continue}
+used+=v.m;out.push(v)}
+return{out,hidden,used};
+}
+function syncRange(id,val,lo,hi){$(id+"-a").value=val[0];$(id+"-b").value=val[1];if(document.activeElement!==$(id+"-min"))$(id+"-min").value=val[0];if(document.activeElement!==$(id+"-max"))$(id+"-max").value=val[1];const fl=$(id+"-f");fl.style.left=((val[0]-lo)/(hi-lo)*100)+"%";fl.style.width=((val[1]-val[0])/(hi-lo)*100)+"%"}
+function blendTag(v){const f=cur();if(kind()!=="blend"||!blendOn(f))return"";const m=myTopics().includes(v.tp),t=f.partner.topics.includes(v.tp);return ` · ${m&&t?"For you both":m?"Your taste":"@"+esc(f.partner.name)+"'s taste"}`}
+// ---- YouTube-style thumbnails ----
+// The mock videos have no real artwork, so each gets a designed thumbnail in YouTube's visual language:
+// saturated gradient, big outlined caption, a hero icon, and red arrows/rings on clickbait (dropped in Honest titles mode).
+// Sizes use container query units, so one design scales from the 52px notes thumbnail to full grid cards.
+const THUMBS=[
+{t:"AI AGENT",s:"step by step",i:"ti-robot",g:["#1b1f3b","#5b2bd6"]},
+{vs:[["GRAPH","ti-chart-dots-3","#0f3d5c"],["TREE","ti-binary-tree","#13603f"]]},
+{t:"BUILD A DATABASE",s:"from scratch",i:"ti-database",g:["#0b2027","#00897b"]},
+{t:"DON'T DO THIS",i:"ti-briefcase",g:["#ff3d00","#ffb300"],bait:1,ht:"YOUR 5-YEAR PLAN"},
+{t:"SCAM?!",s:"$0 left",i:"ti-coin-bitcoin",g:["#1a0000","#d32f2f"],bait:1,ht:"FOLLOW THE MONEY"},
+{t:"RATES",s:"who decides?",i:"ti-building-bank",g:["#0d2b4d","#3a86ff"]},
+{t:"90+4'",s:"title race",i:"ti-ball-football",g:["#0b3d0b","#43a047"]},
+{t:"EVERY GOAL",s:"matchweek 12",i:"ti-ball-football",g:["#2a0030","#d1006b"]},
+{t:"5 SETS",s:"best points",i:"ti-ball-tennis",g:["#14451a","#9e9d24"]},
+{t:"LAST OVER",s:"6 to win",i:"ti-cricket",g:["#0d3a8a","#00acc1"]},
+{t:"MAIN EVENT",s:"title match",i:"ti-trophy",g:["#0a0a0a","#b71c1c"],a:"#ffca28"},
+{t:"BURNOUT",s:"starting over",i:"ti-microphone-2",g:["#2b1b16","#8d6e63"]},
+{t:"LOOKING BACK",s:"former No. 1",i:"ti-microphone-2",g:["#1c262b","#607d8b"]},
+{t:"ONE TAKE",s:"4 songs",i:"ti-guitar-pick",g:["#3b0f73","#f06292"]},
+{t:"SUNSET SET",s:"amapiano",i:"ti-headphones",g:["#ff6f00","#6a1b9a"]},
+{t:"£10,000",s:"24 hours",i:"ti-cash",g:["#00a844","#ffd600"],bait:1,a:"#ffffff",ht:"SPEND £10K"},
+{t:"IT BROKE DOWN",i:"ti-car-crash",g:["#5d4037","#ff7043"],bait:1,ht:"ROAD TRIP"},
+{t:"TOP GOALS",s:"of the decade",i:"ti-ball-football",g:["#14185c","#ff8f00"]},
+{t:"FULL CONCERT",s:"live",i:"ti-microphone",g:["#0a0a0a","#d81b60"]},
+{t:"MONEY 101",s:"from scratch",i:"ti-cash-banknote",g:["#0f3d14","#66bb6a"]},
+{t:"BIGGEST EVER",s:"challenge",i:"ti-flame",g:["#b00000","#ff6d00"],bait:1,ht:"YEAR'S CHALLENGE"},
+{t:"NEURAL NETS",s:"visually",i:"ti-brain",g:["#000428","#004e92"]},
+{t:"MCP SERVER",s:"20 min",i:"ti-plug-connected",g:["#2b1d14","#d97757"]},
+{t:"HOW FEEDS WORK",i:"ti-layout-list",g:["#1a1a1a","#7c4dff"]},
+{t:"£0 RESEARCH",s:"user interviews",i:"ti-users",g:["#004d40","#4db6ac"]},
+{t:"15 MIN PASTA",i:"ti-tools-kitchen-2",g:["#d84315","#ffb300"]},
+{t:"KNIFE SKILLS",s:"beginners",i:"ti-chef-hat",g:["#263238","#90a4ae"]},
+{t:"2004 vs 2024",s:"the serve",i:"ti-ball-tennis",g:["#003d33","#26a69a"]},
+{t:"JAPAN",s:"on a budget",i:"ti-torii",g:["#8e0000","#ff5252"]},
+{t:"MCP + YOUR APP",i:"ti-plug",g:["#1e1e1e","#cc785c"]},
+{t:"NIGHT TRAINS",s:"across Europe",i:"ti-train",g:["#0d1b2a","#415a77"]},
+{t:"TODAY",s:"5 stories",i:"ti-news",g:["#7f0000","#c62828"]},
+{t:"PRICES ↑",s:"why now?",i:"ti-shopping-cart",g:["#3e2723","#ef6c00"]},
+{t:"AI THIS WEEK",i:"ti-cpu",g:["#0a1931","#185adb"]},
+{t:"MARKETS",s:"today",i:"ti-chart-line",g:["#003300","#2e7d32"]},
+{t:"QUAKE ALERT",s:"early warning",i:"ti-wave-sine",g:["#1a237e","#00838f"]},
+{t:"STORM UPDATE",i:"ti-cloud-storm",g:["#101820","#455a64"],a:"#ff5252"},
+{t:"BATTERY",s:"explained",i:"ti-battery-charging",g:["#00251a","#00bfa5"]}];
+const durText=v=>{const sec=v.m*60+hash("d"+v.id)%60,h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),x=String(sec%60).padStart(2,"0");return h?`${h}:${String(m).padStart(2,"0")}:${x}`:`${m}:${x}`};
+function thumbArt(v){
+const d=THUMBS[v.id]||{t:v.tp.toUpperCase(),i:"ti-player-play",g:["#222","#555"]};
+if(d.vs)return `<div class="ytvs" aria-hidden="true">${d.vs.map(([l,ic,c])=>`<div style="background:${c}"><i class="ti ${ic}"></i><b>${esc(l)}</b></div>`).join("")}<span class="ytvsx">VS</span></div>`;
+const bait=d.bait&&!s.honest,text=!bait&&d.ht&&s.honest?d.ht:d.t;
+return `<div class="ytbg" style="background:linear-gradient(135deg,${d.g[0]},${d.g[1]})" aria-hidden="true"></div><div class="ytart" aria-hidden="true"><div class="yttx"><b class="yt1">${esc(text)}</b>${d.s&&!(s.honest&&d.ht)?`<b class="yt2" style="--acc:${d.a||"#ffd400"}">${esc(d.s)}</b>`:""}</div><i class="ti ${d.i} ytic"></i></div>${bait?`<span class="ytring" aria-hidden="true"></span><i class="ti ti-arrow-big-left-filled ytarrow" aria-hidden="true"></i>`:""}`;
+}
+function miniThumb(v,h){return `<div class="yt" style="height:${h}px">${thumbArt(v)}</div>`}
+function thumbHTML(v,h,o={}){const w=isWatched(v.id);return `<div class="watch yt" data-watch="${v.id}" role="button" aria-label="Play ${esc(v.h)}, ${durText(v)}" style="height:${h}px">${thumbArt(v)}${o.rank?`<span class="ytrank">#${o.rank}</span>`:""}${o.grip?`<span class="ytgrip" aria-hidden="true"><i class="ti ti-grip-vertical"></i></span>`:""}${w?`<span class="ytw">Watched</span>`:""}${v.live?`<span class="ytdur ytlive"><i class="ti ti-broadcast" aria-hidden="true"></i>LIVE</span>`:`<span class="ytdur">${durText(v)}</span>`}${w?`<span class="ytprog" aria-hidden="true"><i></i></span>`:""}${o.extra||""}</div>`}
+function meta(v,o){const showViews=!s.hideCounts||(kind()==="top"&&o.feed);const bits=[o.feed?wordTok("ch",v.ch):esc(v.ch)];if(!s.hideSubs)bits.push(v.subs+" subs");if(showViews)bits.push(v.v+" views");return `<div style="font-size:12px;color:var(--text-muted);margin-top:3px">${bits.join(" · ")}</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px">${o.feed?wordTok("tp",v.tp):esc(v.tp)} · ${ago(v.age)}${o.feed?blendTag(v):""}</div>`}
+function iconBtns(v,o){
+const saved=isSaved(v.id),w=isWatched(v.id),lopen=s.likeOpen===v.id;
+const save=`<button class="ib${saved?" on":""}" data-save="${v.id}" aria-label="${saved?"Remove from saved":"Save"}" title="${saved?"Saved":"Save"}"><i class="ti ${saved?"ti-bookmark":"ti-bookmark-plus"}" style="font-size:16px" aria-hidden="true"></i></button>`;
+const seen=`<button class="ib${w?" soft":""}" data-seen="${v.id}" aria-pressed="${w}" aria-label="${w?"Mark as not watched":"Mark as already watched"}" title="${w?"Watched":"Already watched"}"><i class="ti ${w?"ti-eye-check":"ti-eye"}" style="font-size:16px" aria-hidden="true"></i></button>`;
+if(!o.feed)return save+seen;
+return save+seen+`<button class="ib${lopen?" soft":""}" data-like="${v.id}" aria-expanded="${lopen}" aria-label="Videos like this" title="Videos like this"><i class="ti ti-carousel-horizontal" style="font-size:16px" aria-hidden="true"></i></button><button class="ib" ${o.pinned?`data-unpin="${v.id}"`:`data-del="${v.id}"`} aria-label="Remove from this session" title="Remove from session"><i class="ti ti-trash" style="font-size:16px" aria-hidden="true"></i></button>`;
+}
+function likeRow(v){return `<div class="row">${similar(v).map(x=>`<div class="mini">${thumbHTML(x,84,{extra:`<button class="ib" data-pin="${x.id}" aria-label="Add to this session" title="Add to session" style="position:absolute;top:4px;right:4px;width:26px;height:26px;background:var(--surface-2)"><i class="ti ti-plus" style="font-size:14px" aria-hidden="true"></i></button>`})}<div class="clamp" style="font-size:12px;font-weight:500;line-height:1.3;margin-top:5px">${esc(s.honest?x.h:x.t)}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${esc(x.ch)}</div></div>`).join("")}</div>`}
+function picker(v){return s.saving===v.id?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-top:8px;border-top:0.5px solid var(--border)"><span style="font-size:12px;color:var(--text-muted)">Save to</span>${s.folders.map((f,i)=>`<span class="fc" data-sv="${v.id}" data-fi="${i}"><i class="ti ti-folder" aria-hidden="true"></i>${esc(f.name)}</span>`).join("")}</div>`:""}
+// Grid cards share one fixed shape: 16:9 thumbnail, two-line title slot, one-line meta rows, full-width action bar.
+// Expanding panels (Save to, Videos like this) render as a full-width row after the card's row, so cards never grow.
+const GRID_COLS=3;
+// Descriptions: the real version reads snippet.description from videos.list (part=snippet, 1 quota unit).
+// The mock videos get a generated description in the same shape: summary, context, chapters, channel sign-off.
+const CHAPTER_NAMES=["Intro","Background","The main part","Key moments","Wrap-up"];
+function chaptersFor(v){const n=v.m>=40?5:v.m>=15?4:3;const names=[...CHAPTER_NAMES.slice(0,n-1),CHAPTER_NAMES[CHAPTER_NAMES.length-1]];const step=Math.floor(v.m*60/n);return names.map((nm,i)=>{const sec=i*step;return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")} ${nm}`})}
+function makeDesc(v){return [`${v.h}.`,TOPIC_BG[v.tp]||"",`Chapters\n${chaptersFor(v).join("\n")}`,`New videos from ${v.ch} every week. Subscribe for more ${v.tp}.`].filter(Boolean).join("\n\n")}
+const descCache=new Map();
+function descOf(id){if(!descCache.has(id))descCache.set(id,makeDesc(V[id]));return descCache.get(id)}
+const descFlat=id=>descOf(id).replace(/\s*\n+\s*/g," ");
+function descBox(v){
+const open=s.descOpen===v.id;
+return `<div class="dbox${open?" open":""}" data-desc="${v.id}" role="button" tabindex="0" aria-expanded="${open}" aria-label="${open?"Hide":"Show"} description">${open?`<div class="dfull">${esc(descOf(v.id))}</div><span class="dmore">Show less</span>`:`<p class="dtext clamp">${esc(descFlat(v.id))}</p><span class="dmore">…more</span>`}</div>`;
+}
+function gridDesc(v){const open=s.descOpen===v.id;return `<div class="gdesc" data-desc="${v.id}" role="button" tabindex="0" aria-expanded="${open}" aria-label="${open?"Hide":"Show"} description"><span>${esc(descFlat(v.id))}</span><i class="ti ${open?"ti-chevron-up":"ti-chevron-down"}" aria-hidden="true"></i></div>`}
+function gridCard(v,o){
+const open=s.saving===v.id||s.likeOpen===v.id||s.descOpen===v.id;
+return `<div class="gc${open?" sel":""}">${thumbHTML(v,0,{rank:o.pinned?0:o.rank})}<div class="gbody">${title(v,true)}<div class="gmeta">${meta(v,o)}</div>${gridDesc(v)}</div><div class="acts">${iconBtns(v,o)}</div></div>`;
+}
+function gridPanel(v){const d=s.descOpen===v.id?`<div class="dpanel"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><p class="wpop-h" style="flex:1">${esc(s.honest?v.h:v.t)}</p><button class="ib" data-desc="${v.id}" aria-label="Hide description" title="Hide description"><i class="ti ti-x" style="font-size:15px" aria-hidden="true"></i></button></div><div class="dfull">${esc(descOf(v.id))}</div></div>`:"";const body=`${d}${picker(v)}${s.likeOpen===v.id?likeRow(v):""}`;return body?`<div class="gpanel" aria-label="${esc(s.honest?v.h:v.t)}">${body}</div>`:""}
+function withGridPanels(vids,cards){
+const out=[];let pending="";
+cards.forEach((c,i)=>{out.push(c);const p=gridPanel(vids[i]);if(p)pending+=p;if((i+1)%GRID_COLS===0||i===cards.length-1){if(pending)out.push(pending);pending=""}});
+return out;
+}
+function title(v,clamp){return `<div class="watch${clamp?" clamp":""}" data-watch="${v.id}" style="font-size:14px;font-weight:500;line-height:1.35">${esc(s.honest?v.h:v.t)}</div>`}
+function card(v,o={}){
+if(o.feed&&s.view==="grid")return gridCard(v,o);
+if(o.fi!==undefined||o.hist)return `<div class="vc" draggable="true" data-drag="${v.id}" title="Drag into your feed to add it to this session">${thumbHTML(v,68,{grip:true})}<div style="min-width:0">${title(v)}${meta(v,o)}</div>${o.hist?`<button class="ib" data-unwatch="${v.id}" aria-label="Remove from watch history" title="Remove from history"><i class="ti ti-x" style="font-size:16px" aria-hidden="true"></i></button>`:`<button class="ib on" data-rm="${o.fi}:${v.id}" aria-label="Remove from this folder" title="Remove from folder"><i class="ti ti-bookmark" style="font-size:16px" aria-hidden="true"></i></button>`}</div>`;
+if(o.search){const done=cur().pinned.includes(v.id);return `<div class="vc">${thumbHTML(v,68)}<div style="min-width:0">${title(v)}${meta(v,o)}</div><div style="display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;align-self:stretch;gap:8px"><div style="display:flex;gap:6px">${iconBtns(v,o)}</div>${done?`<span class="addb done"><i class="ti ti-check" aria-hidden="true"></i>Added</span>`:`<button class="addb" data-pin="${v.id}"><i class="ti ti-playlist-add" aria-hidden="true"></i>Add to session</button>`}</div><div style="grid-column:1/-1">${picker(v)}</div></div>`}
+return `<div class="vc">${thumbHTML(v,68,{rank:o.rank})}<div style="min-width:0">${title(v)}${meta(v,o)}${o.feed?descBox(v):""}</div><div style="display:grid;grid-template-columns:32px 32px;gap:6px">${iconBtns(v,o)}</div><div style="grid-column:1/-1">${picker(v)}${s.likeOpen===v.id?likeRow(v):""}</div></div>`;
+}
+const isGroupedTab=n=>{const k=s.feeds[n]&&s.feeds[n].kind;return !!k&&k!=="home"&&LOCKED.includes(k)};
+function exploreChip(grouped){
+const act=grouped.includes(s.tab)&&s.page==="feed"?s.tab:null,f=act&&s.feeds[act],un=grouped.some(n=>s.feeds[n].kind==="shared")?unreadCount():0;
+const label=act?`<i class="ti ${KIND[f.kind][0]}" aria-hidden="true"${f.kind==="claude"?' style="color:var(--fill-brand)"':""}></i>${esc(act)}`:`<i class="ti ti-compass" aria-hidden="true"></i>Explore`;
+return `<button class="tab texp${act?" on":""}" data-pop="tabs" aria-haspopup="dialog" aria-expanded="${pop.key==="tabs"}" aria-controls="pop-tabs" aria-label="${act?esc(act)+", ":""}Explore feeds">${label}${un?(act&&f.kind!=="shared"?`<span class="tdot" aria-label="${un} unread in Shared with you"></span>`:`<span class="tcount" aria-label="${un} unread">${un}</span>`):""}<i class="ti ti-chevron-down" style="font-size:13px;color:var(--text-muted)" aria-hidden="true"></i></button>`;
+}
+function exploreHTML(){
+const items=barTabs().filter(isGroupedTab);
+return `<p class="lb" style="margin:0 0 6px"><span>Explore</span></p>${items.map(n=>{const f=s.feeds[n],on=s.tab===n&&s.page==="feed",un=f.kind==="shared"?unreadCount():0;return `<button class="wact xitem${on?" on":""}" data-goto="${esc(n)}"${on?' aria-current="page"':""}><i class="ti ${KIND[f.kind][0]}" aria-hidden="true"${f.kind==="claude"?' style="color:var(--fill-brand)"':""}></i><span style="flex:1;min-width:0"><span style="display:block;font-weight:500">${esc(n)}</span><span style="display:block;font-size:12px;color:var(--text-muted)">${KIND[f.kind][1]}</span></span>${un?`<span class="tcount">${un}</span>`:on?`<i class="ti ti-check" aria-hidden="true"></i>`:""}<span class="tclose xclose" data-close="${esc(n)}" role="button" tabindex="0" aria-label="Close ${esc(n)}" title="Close tab"><i class="ti ti-x" aria-hidden="true"></i></span></button>`}).join("")}<p class="pophint">Built-in feeds live here. Your own feeds stay in the tab bar.</p>`;
+}
+const closable=(n,extra)=>!s.editing&&!extra.includes(n)&&s.feeds[n].kind!=="home";
+// Closing a tab moves it to All tabs (nothing is deleted). Closing the open tab jumps to its neighbour, like Safari.
+function closeTab(n){
+const f=s.feeds[n];if(!f||f.kind==="home")return;hidePop();
+if(f.draft){if(s.tab===n)goTab("Everything");return}
+const vis=barTabs().filter(x=>!isGroupedTab(x)||x===n),i=vis.indexOf(n);
+const next=s.tab===n?(vis[i+1]||vis[i-1]||"Everything"):s.tab;
+s={...s,feeds:{...s.feeds,[n]:{...f,shelved:true}}};
+if(next!==s.tab)goTab(next==="Everything"||s.feeds[next]?next:"Everything");else render();
+
+}
+function renderTabs(){
+const names=barTabs();const extra=!names.includes(s.tab)&&s.page!=="all"?[s.tab]:[];
+// Built-in tabs (except Home) fold into one "Explore" dropdown outside edit mode; edit mode lists them all.
+const grouped=s.editing?[]:names.filter(isGroupedTab);
+const chip=n=>{const f=s.feeds[n];const ic=f.kind?KIND[f.kind][0]:f.draft?"ti-sparkles":"";const sel=s.editing&&s.sel.includes(n);const home=f.kind==="home";
+return `<span class="tab${home?" thome":""}${!s.editing&&s.tab===n&&s.page==="feed"?" on":""}${sel?" sel":""}${extra.includes(n)?" tmp":""}" data-tab="${esc(n)}" role="button"${home?` aria-label="${esc(n)} (home)" title="${esc(n)}"`:""}${s.editing?` aria-pressed="${sel}" draggable="true" data-tdrag="${esc(n)}"`:""}>${s.editing?`<i class="ti ${sel?"ti-circle-check":"ti-circle"}" aria-hidden="true"></i>`:""}${(!s.editing||home)&&ic?`<i class="ti ${ic}" aria-hidden="true"${f.kind==="claude"?' style="color:var(--fill-brand)"':home?' style="font-size:17px"':""}></i>`:""}${home?"":esc(n)}${f.kind==="shared"&&unreadCount()?`<span class="tcount" aria-label="${unreadCount()} unread">${unreadCount()}</span>`:""}${extra.includes(n)&&!s.editing?`<button class="tpin" data-shelf="${esc(n)}" aria-label="Keep ${esc(n)} in the tab bar" title="Keep in tab bar"><i class="ti ti-pin" style="font-size:14px" aria-hidden="true"></i></button>`:""}${closable(n,extra)?`<button class="tclose" data-close="${esc(n)}" aria-label="Close ${esc(n)}" title="Close tab"><i class="ti ti-x" aria-hidden="true"></i></button>`:""}</span>`};
+const chips=[...names,...extra].filter(n=>!grouped.includes(n)).map(chip);
+const at=names.findIndex(n=>s.feeds[n].kind==="home")+1;
+if(grouped.length)chips.splice(at,0,exploreChip(grouped));
+$("tabs").innerHTML=chips.join("");
+const shelved=Object.keys(s.feeds).length-names.length;
+$("alltabs").innerHTML=`<i class="ti ti-apps" style="font-size:17px" aria-hidden="true"></i>${shelved?`<span style="font-size:12px">${shelved}</span>`:""}`;
+$("alltabs").style.background=s.page==="all"?"var(--surface-2)":"";
+$("edit").textContent=s.editing?"Done":"Edit";
+const n=s.sel.length;
+$("editbar").innerHTML=s.editing?`<div class="pn" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;flex:1;color:var(--text-secondary)">${n?`${n} selected`:"Select tabs, or drag them to reorder"}</span>${s.confirm==="bulk"?`<span style="font-size:13px">Delete ${n} tab${n===1?"":"s"}? This can't be undone.</span><button data-act="delyes" style="font-size:13px;height:30px" class="danger">Delete</button><button data-act="cancel" style="font-size:13px;height:30px">Cancel</button>`:`${s.page==="all"?`<button data-act="unshelve" style="font-size:13px;height:30px"><i class="ti ti-layout-navbar" aria-hidden="true"></i> Show in tab bar</button>`:""}<button data-act="shelve" style="font-size:13px;height:30px"><i class="ti ti-apps" aria-hidden="true"></i> Move to All tabs</button><button data-act="del" style="font-size:13px;height:30px" class="danger"><i class="ti ti-trash" aria-hidden="true"></i> Delete</button>`}<div style="flex-basis:100%;font-size:12px;color:var(--text-danger)">${esc(s.editErr)}</div></div>`:"";
+}
+function renderAll(){
+const names=Object.keys(s.feeds);
+if(s.page!=="all"){$("allpage").innerHTML="";return}
+const inBar=names.filter(n=>!s.feeds[n].shelved),off=names.filter(n=>s.feeds[n].shelved);
+$("allpage").innerHTML=`<div class="pn" style="margin-bottom:14px;background:var(--surface-1)"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="font-size:15px;font-weight:500">All tabs</span><span style="font-size:12px;color:var(--text-muted);flex:1">${names.length} feeds</span><button id="minall" class="ib" aria-label="Minimize All tabs" title="Minimize"><i class="ti ti-arrows-minimize" style="font-size:16px" aria-hidden="true"></i></button></div>${s.allErr?`<div style="font-size:12px;color:var(--text-danger);margin:-4px 0 10px">${esc(s.allErr)}</div>`:""}<div class="seclab"><i class="ti ti-layout-navbar" aria-hidden="true"></i>In the tab bar <span class="ct">${barCount()} of ${MAXBAR} spaces · built-in feeds share the Explore button</span></div>${tabGrid(inBar)}<div class="seclab" style="margin-top:16px"><i class="ti ti-apps" aria-hidden="true"></i>Only in All tabs <span class="ct">${off.length}</span></div>${off.length?tabGrid(off):`<div style="font-size:13px;color:var(--text-muted);padding:4px 2px">Every feed is in the tab bar.</div>`}</div>`;
+}
+function tabGrid(names){
+return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px">${names.map(n=>{const f=s.feeds[n];const ic=f.kind?KIND[f.kind][0]:"ti-list";const d=f.kind?KIND[f.kind][1]:`${f.topics.length} topic${f.topics.length===1?"":"s"}${f.topics.length?": "+f.topics.slice(0,2).join(", ")+(f.topics.length>2?"…":""):""}`;const sel=s.editing&&s.sel.includes(n);
+return `<div class="atc${sel?" sel":""}" data-card="${esc(n)}" role="button"${s.editing?` draggable="true" data-tdrag="${esc(n)}"`:""}>${s.editing?`<i class="ti ${sel?"ti-circle-check":"ti-circle"}" style="position:absolute;top:10px;right:10px;font-size:20px;color:${sel?"var(--text-accent)":"var(--text-muted)"}" aria-hidden="true"></i>`:""}<i class="ti ${ic}" style="font-size:22px;color:${f.kind==="claude"?"var(--fill-brand)":"var(--text-secondary)"}" aria-hidden="true"></i><div style="font-size:14px;font-weight:500;margin-top:6px">${esc(n)}</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;line-height:1.4">${esc(d)}</div>${s.editing?"":`<button class="cbtn${f.shelved?" pri":""}" data-shelf="${esc(n)}"><i class="ti ${f.shelved?"ti-arrow-bar-to-up":"ti-arrow-bar-to-down"}" aria-hidden="true"></i>${f.shelved?"Add to tab bar":"Move to All tabs"}</button>`}</div>`}).join("")}</div>`;
+}
+function renderSearch(){
+if(s.page!=="search"){$("searchpage").innerHTML="";return}
+const q=s.q.toLowerCase();const res=V.filter(v=>[v.t,v.h,v.ch,v.tp].some(x=>x.toLowerCase().includes(q))&&!(s.hideCb&&v.thin));
+$("searchpage").innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button id="sback" class="ib" aria-label="Back to feed" title="Back"><i class="ti ti-arrow-left" style="font-size:17px" aria-hidden="true"></i></button><span style="font-size:14px"><b style="font-weight:500">${res.length} result${res.length===1?"":"s"}</b> for "${esc(s.q)}"</span><span style="font-size:12px;color:var(--text-muted);margin-left:auto">Adding to: ${esc(s.tab)}</span></div><div style="display:flex;flex-direction:column;gap:8px">${res.length?res.map(v=>card(v,{search:true})).join(""):`<div class="pn" style="text-align:center;font-size:13px;color:var(--text-secondary);padding:24px">No videos match that search. Try a channel name or topic.</div>`}</div>`;
+}
+function renderExtra(){
+const k=kind(),f=cur(),el=$("extra");
+if(k==="shared"){el.innerHTML=openShare()?sharedOpenHTML(openShare()):inboxHTML();return}
+if(f.draft){el.innerHTML=`<div class="pn" style="margin-bottom:12px;padding:16px"><p style="font-size:15px;font-weight:500;margin:0 0 10px">New feed</p><div style="display:flex;gap:6px"><input id="fname" type="text" placeholder="Name this feed" style="flex:1;font-size:14px" aria-label="Feed name"><button id="fnameok" class="ib" aria-label="Save name" title="Save name" style="width:36px;height:36px"><i class="ti ti-check" style="font-size:16px" aria-hidden="true"></i></button></div><div id="fnerr" style="font-size:12px;margin-top:6px;color:var(--text-danger)"></div><p style="font-size:13px;color:var(--text-secondary);margin:10px 0 0;line-height:1.5"><i class="ti ti-asterisk" style="color:var(--fill-brand)" aria-hidden="true"></i> Or tell Claude what you want in the bar above. Either one creates the feed.</p></div>`;return}
+if(k==="home"){const h=s.watched.slice(-3).reverse().map(i=>V[i]);el.innerHTML=h.length?`<div style="font-size:12px;color:var(--text-muted);margin:0 2px 10px">Based on what you've watched, like ${h.map(v=>`<span style="color:var(--text-secondary)">${esc(v.tp)}</span>`).join(", ")}. Click any video to teach it more.</div>`:`<div style="font-size:12px;color:var(--text-muted);margin:0 2px 10px">Watch a few videos and this tab will start learning what you like.</div>`;return}
+if(k==="news"){el.innerHTML=`<div style="margin:0 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div class="seg" role="group" aria-label="News category">${NEWS_CATS.map(c=>`<button data-newscat="${c}" class="${f.cat===c?"on":""}" aria-pressed="${f.cat===c}">${c}</button>`).join("")}</div><span style="font-size:12px;color:var(--text-muted)">Newest first. Live coverage is pinned to the top.</span></div>`;return}
+if(k==="top"){el.innerHTML=`<div style="margin:0 0 12px"><div class="seg" role="group" aria-label="Time range">${RANGES.map(([id,l])=>`<button data-range="${id}" class="${s.range===id?"on":""}" aria-pressed="${s.range===id}">${l}</button>`).join("")}</div></div>`;return}
+if(k==="claude"&&!f.connected){el.innerHTML=`<div class="pn" style="padding:18px;margin-bottom:12px"><div style="display:flex;gap:12px;align-items:flex-start"><i class="ti ti-asterisk" style="font-size:26px;color:var(--fill-brand)" aria-hidden="true"></i><div><p style="font-size:15px;font-weight:500;margin:0 0 4px">Build a feed from your Claude work</p><p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px;line-height:1.5">Claude shares a short summary of what you've been working on recently. Nothing else from your chats is shared, and you can edit or remove any topic.</p><button id="connect" style="font-size:13px"><i class="ti ti-plug-connected" aria-hidden="true"></i> Connect Claude</button></div></div></div>`;return}
+if(k==="claude"){el.innerHTML=`<div class="pn" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:13px;font-weight:500"><i class="ti ti-asterisk" style="color:var(--fill-brand)" aria-hidden="true"></i> From your recent Claude work</span><button class="ib" data-disc="1" aria-label="Disconnect Claude" title="Disconnect"><i class="ti ti-plug-connected-x" style="font-size:16px" aria-hidden="true"></i></button></div>${CLAUDE_WORK.map(w=>`<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:5px 0;border-top:0.5px solid var(--border)"><span>${esc(w.l)}</span><span style="color:var(--text-muted);font-size:12px">${w.t.join(", ")}</span></div>`).join("")}<div style="border-top:0.5px solid var(--border);margin-top:4px;padding-top:10px"><p style="font-size:14px;font-weight:500;margin:0 0 8px">What would you like to add?</p><div style="display:flex;gap:6px;flex-wrap:wrap">${["More MCP tutorials","Something to learn tonight","Surprise me"].map(x=>`<span class="fc" data-s="${x}">${x}</span>`).join("")}</div></div></div>`;return}
+if(k==="blend"&&!f.partner){el.innerHTML=`<div class="pn" style="padding:18px;margin-bottom:12px"><div style="display:flex;gap:12px;align-items:flex-start"><i class="ti ti-users" style="font-size:24px;color:var(--text-secondary)" aria-hidden="true"></i><div style="flex:1"><p style="font-size:15px;font-weight:500;margin:0 0 4px">Blend with a friend</p><p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px;line-height:1.5">Mix your taste with someone else's into one shared feed. Type their username to send an invite. The blend starts once they approve it in their account.</p><div style="display:flex;gap:6px"><input id="bin" type="text" placeholder="@username" style="flex:1;font-size:13px" aria-label="Their Yourfeed username"><button id="bgo" style="font-size:13px;display:inline-flex;align-items:center;gap:4px"><i class="ti ti-send" aria-hidden="true"></i>Send invite</button></div><div id="berr" style="font-size:12px;margin-top:6px;color:var(--text-danger)"></div></div></div></div>`;return}
+if(k==="blend"&&f.partner.status==="pending"){const n=esc(f.partner.name);el.innerHTML=`<div class="pn" style="padding:18px;margin-bottom:12px"><div style="display:flex;gap:12px;align-items:flex-start"><i class="ti ti-clock-hour-4" style="font-size:24px;color:var(--text-secondary)" aria-hidden="true"></i><div style="flex:1"><p style="font-size:15px;font-weight:500;margin:0 0 4px">Invite sent to @${n}</p><p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px;line-height:1.5">@${n} needs to approve it in their Yourfeed account. Your blend appears here once they do. Nothing about their taste is shared until then.</p><div style="display:flex;gap:6px;flex-wrap:wrap"><button data-unblend="1" style="font-size:13px">Cancel invite</button><button id="bapprove" style="font-size:13px;display:inline-flex;align-items:center;gap:4px;border-style:dashed" title="Demo only: pretend they approved"><i class="ti ti-flask" aria-hidden="true"></i>Simulate their approval</button></div></div></div></div>`;return}
+if(k==="blend"){const p=f.partner;el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin:0 2px 12px;flex-wrap:wrap"><div style="display:flex"><span style="width:28px;height:28px;border-radius:50%;background:var(--bg-accent);color:var(--text-accent);font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;border:2px solid var(--surface-1)">You</span><span style="width:28px;height:28px;border-radius:50%;background:#F5C4B3;color:#712B13;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;margin-left:-8px;border:2px solid var(--surface-1)">${esc(p.name[0].toUpperCase())}</span></div><span style="font-size:14px;font-weight:500">You + @${esc(p.name)}</span><span style="font-size:12px;color:var(--text-muted);display:inline-flex;align-items:center;gap:6px">${p.score}% match <span style="display:inline-block;width:48px;height:3px;border-radius:2px;background:var(--fill-control);position:relative;overflow:hidden"><span style="position:absolute;left:0;top:0;bottom:0;width:${p.score}%;background:var(--text-muted)"></span></span></span><button class="ib" data-unblend="1" aria-label="Blend with someone else" title="Change" style="margin-left:auto"><i class="ti ti-refresh" style="font-size:16px" aria-hidden="true"></i></button></div>`;return}
+el.innerHTML="";
+}
+function renderAsk(){
+const a=s.ask;if(!a){$("ask").innerHTML="";return}
+let body="";
+if(a.kind==="chips")body=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${a.items.map(x=>`<span class="fc${a.sel.includes(x)?" pk":""}" data-cv="${esc(x)}" role="button" aria-pressed="${a.sel.includes(x)}">${a.sel.includes(x)?'<i class="ti ti-check" aria-hidden="true"></i>':""}${esc(x)}</span>`).join("")}</div>`;
+if(a.kind==="videos")body=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:8px">${a.items.map(id=>{const v=V[id];const pk=a.sel.includes(id);return `<div class="pickv${pk?" pk":""}" data-cv="${id}" role="button" aria-pressed="${pk}"><div class="yt" style="height:56px;border-radius:6px">${thumbArt(v)}${pk?`<span style="position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;background:var(--fill-accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center"><i class="ti ti-check" style="font-size:13px" aria-hidden="true"></i></span>`:""}</div><div class="clamp" style="font-size:12px;font-weight:500;line-height:1.3;margin-top:5px">${esc(v.h)}</div></div>`}).join("")}</div>`;
+if(a.kind==="feedback")body=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:8px">${a.items.map(id=>{const v=V[id];return `<div class="pickv" style="cursor:default">${miniThumb(v,56)}<div class="clamp" style="font-size:12px;font-weight:500;line-height:1.3;margin-top:5px">${esc(v.h)}</div></div>`}).join("")}</div>`;
+const actions=a.kind==="feedback"?`<button class="ib" data-fb="good" aria-label="Looks good" title="Looks good"><i class="ti ti-thumb-up" style="font-size:16px" aria-hidden="true"></i></button><button class="ib" data-fb="bad" aria-label="Not quite" title="Not quite"><i class="ti ti-thumb-down" style="font-size:16px" aria-hidden="true"></i></button>`:`<button class="ib on" id="askadd" aria-label="Add selected" title="Add selected"><i class="ti ti-check" style="font-size:16px" aria-hidden="true"></i></button>`;
+$("ask").innerHTML=`<div class="pn" style="margin-bottom:10px;padding:12px 12px 10px"><div style="display:flex;align-items:flex-start;gap:8px"><i class="ti ti-asterisk" style="font-size:16px;color:var(--fill-brand);margin-top:2px" aria-hidden="true"></i><div style="flex:1;min-width:0"><div style="font-family:var(--font-voice);font-size:15px;line-height:1.5">${esc(a.q)}</div>${body}${a.err?`<div style="font-size:12px;color:var(--text-danger);margin-top:6px">${esc(a.err)}</div>`:""}</div><div style="display:flex;gap:6px;flex:none">${actions}<button class="ib" id="askx" aria-label="Dismiss" title="Dismiss"><i class="ti ti-x" style="font-size:16px" aria-hidden="true"></i></button></div></div></div>`;
+}
+function noteBox(key,ph){
+const r=s.rec===key;
+const vid=key==="feed"?null:+key.slice(2);
+const mic=`<button class="ib${r?" rec":""}" data-mic="${key}" aria-pressed="${r}" aria-label="${r?"Stop voice typing":"Type with your voice"}" title="${r?"Stop voice typing":"Type with your voice"}"><i class="ti ${r?"ti-player-stop":"ti-microphone"}" style="font-size:16px" aria-hidden="true"></i></button>`;
+if(vid===null)return `<div class="nb"><textarea data-note="${key}" rows="2" placeholder="${ph}" aria-label="${ph}">${esc(noteOf(key))}</textarea>${mic}</div>`;
+const ask=`<button class="ib" data-askq="${vid}" aria-label="Answer my last question" title="Answer my last question"><i class="ti ti-asterisk" style="font-size:16px;color:var(--fill-brand)" aria-hidden="true"></i></button>`;
+return `<div class="nb"><div class="sheet" data-sheet="${vid}"><div class="inkwrap"><div class="mirror" data-mirror="${vid}" aria-hidden="true">${mirrorHTML(vid)}</div><textarea data-note="${key}" rows="2" placeholder="${ph}. End a line with ? to ask." aria-label="${ph}">${esc(noteOf(key))}</textarea></div></div><div class="tools">${ask}${mic}</div></div><div class="nbhint" data-qerr="${vid}" aria-live="polite">${ASK_HINT}</div>`;
+}
+function renderSession(){
+const f=cur();
+if(f.kind==="shared"&&!openShare()){$("finished").innerHTML="";$("current").innerHTML="";return}
+const fin=f.finished.map(id=>V[id]);
+$("finished").innerHTML=fin.length?`<div class="sec"><div class="sechead" data-fintoggle="1" role="button" aria-expanded="${s.finOpen}" style="padding:4px 2px;margin-bottom:6px"><i class="ti ti-chevron-right chev${s.finOpen?" open":""}" aria-hidden="true"></i><i class="ti ti-circle-check" style="font-size:17px;color:var(--text-success)" aria-hidden="true"></i><span style="font-size:13px;font-weight:500;flex:1">Finished</span><span style="font-size:12px;color:var(--text-muted)">${fin.length} video${fin.length===1?"":"s"} · ${fmt(fin.reduce((a,v)=>a+v.m,0))}</span></div>${s.finOpen?`<div style="display:flex;flex-direction:column;gap:8px">${fin.map(v=>`<div class="vc">${thumbHTML(v,68)}<div style="min-width:0">${title(v)}${meta(v,{})}</div><button class="ib" data-unfin="${v.id}" aria-label="Move back to up next" title="Move back to up next"><i class="ti ti-arrow-back-up" style="font-size:16px" aria-hidden="true"></i></button><div style="grid-column:1/-1">${noteBox("v:"+v.id,"Notes on this video")}</div></div>`).join("")}</div>`:""}</div>`:"";
+const c=f.current===null?null:V[f.current];
+$("current").innerHTML=c?`<div class="sec"><div class="seclab"><span class="live" aria-hidden="true"></span>Watching now</div><div class="vc" style="border:2px solid var(--border-accent);padding:9px;grid-template-columns:120px minmax(0,1fr)">${thumbHTML(c,68)}<div style="min-width:0">${title(c)}${meta(c,{})}<div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap"><button class="ib" data-yt="${c.id}" aria-label="Open on YouTube again" title="Open on YouTube again"><i class="ti ti-brand-youtube" style="font-size:16px" aria-hidden="true"></i></button><button id="finish" class="${s.back?"pri":""}" style="font-size:13px;height:32px;padding:0 10px;display:inline-flex;align-items:center;gap:4px"><i class="ti ti-check" aria-hidden="true"></i>Finished</button></div></div><div style="grid-column:1/-1">${noteBox("v:"+c.id,"Notes while you watch")}</div></div></div>`:"";
+}
+function renderNotebook(){
+const f=cur();const ids=sessionIds(f);const withNotes=ids.filter(id=>(s.notes[id]||"").trim()).length;
+$("nbhead").innerHTML=`<div class="sechead" data-nbtoggle="1" role="button" tabindex="0" aria-expanded="${s.nbOpen}" aria-controls="nbbody"><i class="ti ti-notebook" style="font-size:18px" aria-hidden="true"></i><span style="flex:1;font-weight:500;font-size:15px">Feed notes</span><span style="font-size:12px;color:var(--text-muted)">${esc(s.tab)} · ${ids.length} video${ids.length===1?"":"s"} · ${withNotes} with notes</span></div>`;
+if(!s.nbOpen){$("nbbody").innerHTML="";return}
+const entry=id=>{const v=V[id];const now=id===f.current;return `<div class="nbe">${thumbHTML(v,52)}<div style="min-width:0"><div style="display:flex;align-items:center;flex-wrap:wrap"><span class="watch clamp" data-watch="${v.id}" style="font-size:13px;font-weight:500;line-height:1.35">${esc(s.honest?v.h:v.t)}</span><span class="badge${now?" now":""}">${now?"Watching now":"Finished"}</span></div><div style="font-size:12px;color:var(--text-muted);margin-top:2px">${esc(v.ch)} · ${v.m} min</div>${noteBox("v:"+v.id,"Notes on this video")}</div></div>`};
+$("nbbody").innerHTML=`<div style="padding:0 0 12px 22px"><div style="display:flex;justify-content:space-between;align-items:center;padding:2px 4px 6px;gap:8px"><span style="font-size:12px;color:var(--text-muted)">Every video you watch in this feed lands here with its notes.</span><button id="nbcopy" class="ib" aria-label="Copy all notes as Markdown" title="Copy as Markdown"><i class="ti ti-copy" style="font-size:16px" aria-hidden="true"></i></button></div><div class="pn" style="margin-bottom:8px"><p class="lb" style="margin:0"><span>About this feed</span></p>${noteBox("feed","Thoughts on this whole session")}</div><div style="display:flex;flex-direction:column;gap:8px">${ids.length?ids.map(entry).join(""):`<div style="font-size:13px;color:var(--text-muted);padding:6px 4px">Watch a video from this feed and it'll show up here, ready for notes.</div>`}</div></div>`;
+}
+// ---- Feed settings line + popovers (replaces the old sidebar) ----
+// The static popovers hold the original sidebar controls (same ids), so render() keeps filling them.
+// Hover a word to preview, click to pin it open, Esc or click outside to close.
+const POP_OPEN_MS=120,POP_CLOSE_MS=220;
+let pop={key:null,pinned:false,anchor:null},popTimer=null;
+const popEl=key=>$(key.startsWith("w:")?"pop-word":"pop-"+key);
+function wordTok(type,val){return `<span class="wtok" data-word="${type}" data-val="${esc(val)}" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false">${esc(val)}</span>`}
+function tok(key,label,aria){return `<button class="tok" data-pop="${key}" aria-haspopup="dialog" aria-expanded="${pop.key===key}" aria-controls="pop-${key}"${aria?` aria-label="${aria}" title="${aria}"`:""}>${label}</button>`}
+function renderRecipe(){
+if(kind()==="shared"){$("recipe").innerHTML="";return}
+const f=cur(),k=kind(),n=f[listKey()].length,m=f.muted.length,pl=(x,w)=>`${x} ${w}${x===1?"":"s"}`;
+const what=k==="subs"?pl(n,"channel"):k==="home"?(n?pl(n,"boosted topic"):"no boosted topics"):k==="top"?(n?pl(n,"topic"):"all topics"):k==="news"?(cur().cat==="All"?"all news":cur().cat+" news"):pl(n,"topic");
+const on2=TG.filter(([kk])=>s[kk]).length;
+$("recipe").innerHTML=`<span>Showing</span>${k==="news"?`<b style="font-weight:500;color:var(--text-primary)">${what}</b>`:tok("topics",what+(m?`, ${m} hidden`:""))}<span>·</span>${tok("len",`${f.len[0]}–${f.len[1]} min`)}<span>videos ·</span>${tok("ses",`${f.ses[0]}–${f.ses[1]} min`)}<span>sessions ·</span>${tok("filters",on2?pl(on2,"filter")+" on":"no filters")}${tok("more",'<i class="ti ti-dots" style="font-size:16px" aria-hidden="true"></i>',"Tab options")}`;
+}
+function rangeErr(msg){on("[data-rerr]",e=>e.textContent=msg)}
+function anchorOf(key){return pop.anchor&&document.body.contains(pop.anchor)?pop.anchor:(key.startsWith("w:")?null:document.querySelector(`[data-pop="${key}"]`))}
+function syncExpanded(){on("[data-pop]",b=>b.setAttribute("aria-expanded",String(b.dataset.pop===pop.key)));on("[data-word]",w=>w.setAttribute("aria-expanded",String(w===pop.anchor)))}
+function placePop(){
+if(!pop.key)return;const el=popEl(pop.key),a=anchorOf(pop.key);
+if(!a||!a.offsetParent){hidePop();return}
+const r=a.getBoundingClientRect();el.hidden=false;
+el.style.left=Math.max(scrollX+8,Math.min(r.left+scrollX,scrollX+innerWidth-el.offsetWidth-8))+"px";
+el.style.top=(r.bottom+scrollY+6)+"px";syncExpanded();
+}
+function fillPop(){
+if(pop.key.startsWith("w:"))$("pop-word").innerHTML=wordPopHTML(pop.anchor);
+else if(pop.key==="account")$("pop-account").innerHTML=accountHTML();
+else if(pop.key==="tabs")$("pop-tabs").innerHTML=exploreHTML();
+else if(pop.key==="len"||pop.key==="ses")rangeErr("");
+}
+function openPop(key,pinned,anchor){
+clearTimeout(popTimer);
+if(pop.key&&popEl(pop.key)!==popEl(key))popEl(pop.key).hidden=true;
+pop={key,pinned,anchor:anchor||null};fillPop();placePop();
+}
+function hidePop(){clearTimeout(popTimer);if(pop.key)popEl(pop.key).hidden=true;pop={key:null,pinned:false,anchor:null};syncExpanded()}
+function closeSoon(){
+clearTimeout(popTimer);if(pop.pinned)return;
+popTimer=setTimeout(()=>{const el=pop.key&&popEl(pop.key);if(el&&(el.matches(":hover")||el.contains(document.activeElement)))return;hidePop()},POP_CLOSE_MS);
+}
+function hoverable(el,key,anchor){
+el.onmouseenter=()=>{clearTimeout(popTimer);if(pop.key===key&&pop.anchor===(anchor||null))return;popTimer=setTimeout(()=>openPop(key,false,anchor),POP_OPEN_MS)};
+el.onmouseleave=closeSoon;
+el.onclick=ev=>{ev.stopPropagation();if(pop.key===key&&pop.pinned&&pop.anchor===(anchor||null))hidePop();else openPop(key,true,anchor)};
+if(el.tagName!=="BUTTON")el.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();el.click()}};
+}
+function bindPops(){
+on("[data-pop]",b=>hoverable(b,b.dataset.pop));
+on("[data-word]",w=>hoverable(w,`w:${w.dataset.word}:${w.dataset.val}`,w));
+}
+function subsFeedName(){return Object.keys(s.feeds).find(n=>s.feeds[n].kind==="subs")}
+function wordPopHTML(a){
+const type=a.dataset.word,val=a.dataset.val,f=cur(),k=kind(),n=V.filter(v=>(type==="tp"?v.tp:v.ch)===val).length;
+const act=(id,icon,label)=>`<button class="wact" data-wact="${id}"><i class="ti ${icon}" aria-hidden="true"></i>${label}</button>`;
+if(type==="ch"){
+const sn=subsFeedName(),follows=sn&&s.feeds[sn].channels.includes(val),subs=(V.find(v=>v.ch===val)||{}).subs;
+return `<p class="wpop-h">${esc(val)}</p><p class="wpop-s">${subs} subscribers · ${n} video${n===1?"":"s"} here${follows?" · You follow this channel":""}</p>${sn?(follows?act("unfollow","ti-user-minus","Remove from Subscriptions"):act("follow","ti-user-plus","Add to Subscriptions")):""}${act("search","ti-search","See all their videos")}`;
+}
+const inList=f.topics.includes(val),muted=f.muted.includes(val),editable=listKey()==="topics";
+const status=muted?"Hidden from this tab":inList?(k==="home"?"Boosted in this tab":"One of this tab's topics"):"Not one of this tab's topics";
+const main=muted?act("unhide","ti-eye","Show "+esc(val)+" again"):`${editable?(inList?act("remove","ti-minus",k==="home"?"Stop boosting":"Remove from "+esc(s.tab)):act("add","ti-plus",k==="home"?"Boost "+esc(val):"Add to "+esc(s.tab))):""}${act("hide","ti-eye-off","Hide "+esc(val)+" here")}`;
+return `<p class="wpop-h">${esc(val)}</p><p class="wpop-s">${status} · ${n} video${n===1?"":"s"}</p>${main}${act("search","ti-search","Search "+esc(val))}`;
+}
+function wordAction(id,type,val){
+const f=cur();hidePop();
+if(id==="search"){$("q").value=val;search();return}
+if(id==="follow"||id==="unfollow"){const sn=subsFeedName(),sf=s.feeds[sn];const ch=id==="follow"?[...sf.channels,val]:sf.channels.filter(x=>x!==val);up({feeds:{...s.feeds,[sn]:{...sf,channels:ch}}});return}
+pushUndo(snapshot());
+if(id==="add"){upFeed({topics:[...f.topics,val],muted:f.muted.filter(x=>x!==val)});}
+if(id==="remove"){upFeed({topics:f.topics.filter(x=>x!==val)});}
+if(id==="hide"){upFeed({topics:f.topics.filter(x=>x!==val),muted:[...new Set([...f.muted,val])]});}
+if(id==="unhide"){upFeed({muted:f.muted.filter(x=>x!==val)});}
+}
+function accountHTML(){
+const saved=s.folders.reduce((a,f)=>a+f.items.length,0),claude=Object.values(s.feeds).find(f=>f.kind==="claude");
+const item=(id,icon,label,n)=>`<button class="wact" data-acct="${id}"><i class="ti ${icon}" aria-hidden="true"></i>${label}${n!==undefined?`<span class="n">${n}</span>`:""}</button>`;
+return `<div class="acchead"><span class="acct" aria-hidden="true">Y</span><div><div style="font-weight:500;font-size:14px">You</div><div style="font-size:12px;color:var(--text-muted)">@you · demo account</div></div></div>${item("tabs","ti-layout-grid","All your feeds",Object.keys(s.feeds).length)}${item("saved","ti-bookmark","Saved",saved)}${item("hist","ti-history","Watch history",s.watched.length)}${item("notes","ti-notebook","Feed notes")}${item("shared","ti-inbox","Shared with you",s.inbox.length)}${item("blend","ti-users","Blends",s.blends.length)}${item("claude","ti-asterisk",claude&&claude.connected?"Claude connected":"Connect Claude")}<p class="pophint">Signing in isn't part of the prototype.</p>`;
+}
+function accountAction(id){
+hidePop();const kindTab=kd=>Object.keys(s.feeds).find(n=>s.feeds[n].kind===kd);
+if(id==="tabs"){up({page:"all",confirm:null});return}
+if(id==="blend"||id==="claude"||id==="shared"){const n=kindTab(id);if(n)goTab(n);return}
+const map={saved:["savedOpen","savedhead"],hist:["histOpen","histhead"],notes:["nbOpen","nbhead"]}[id];
+if(!map)return;up({page:"feed",[map[0]]:true});$(map[1]).scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("pop-word").onclick=e=>{const b=e.target.closest("[data-wact]");if(b&&pop.anchor)wordAction(b.dataset.wact,pop.anchor.dataset.word,pop.anchor.dataset.val)};
+$("pop-tabs").onclick=e=>{const x=e.target.closest("[data-close]");if(x){e.stopPropagation();closeTab(x.dataset.close);return}const b=e.target.closest("[data-goto]");if(b){hidePop();goTab(b.dataset.goto)}};
+$("pop-account").onclick=e=>{const b=e.target.closest("[data-acct]");if(b)accountAction(b.dataset.acct)};
+document.querySelectorAll(".pop").forEach(el=>{el.addEventListener("mouseenter",()=>clearTimeout(popTimer));el.addEventListener("mouseleave",closeSoon);el.addEventListener("focusin",()=>{if(pop.key)pop={...pop,pinned:true}})});
+document.addEventListener("mousedown",e=>{if(!pop.key)return;if(e.target.closest(".pop,[data-pop],[data-word]"))return;hidePop()});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape"||!pop.key)return;const a=anchorOf(pop.key);hidePop();if(a)a.focus()});
+window.addEventListener("resize",placePop);
+// ---- Shared with you (inbox of feeds other people sent) ----
+const openShare=()=>{const f=cur();return f&&f.kind==="shared"&&f.open?s.inbox.find(x=>x.id===f.open)||null:null};
+const unreadCount=()=>s.inbox.filter(x=>x.unread).length;
+const avatar=(name,size=28)=>`<span class="bav" style="width:${size}px;height:${size}px">${esc(name[0].toUpperCase())}</span>`;
+function shareMeta(x){const vids=x.ids.map(id=>V[id]);return `${vids.length} video${vids.length===1?"":"s"} · ${fmt(vids.reduce((a,v)=>a+v.m,0))} · ${esc(x.ago)}`}
+function inboxHTML(){
+if(!s.inbox.length)return `<div class="pn" style="padding:18px;margin-bottom:12px;text-align:center"><i class="ti ti-inbox" style="font-size:26px;color:var(--text-muted)" aria-hidden="true"></i><p style="font-size:15px;font-weight:500;margin:6px 0 4px">Nothing shared with you yet</p><p style="font-size:13px;color:var(--text-secondary);margin:0">When someone sends you a feed, it shows up here.</p></div>`;
+const card=x=>`<div class="shcard${x.unread?" new":""}" data-openshare="${x.id}" role="button" tabindex="0" aria-label="Open ${esc(x.title)} from @${esc(x.from)}">${avatar(x.from,36)}<div style="flex:1;min-width:0"><div style="font-size:14px"><b style="font-weight:500">@${esc(x.from)}</b> shared <b style="font-weight:500">${esc(x.title)}</b>${x.unread?`<span class="newdot" aria-label="New"></span>`:""}</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px">${shareMeta(x)}${Object.keys(x.notes).length?" · includes their notes":""}</div>${x.note?`<div class="shnote">“${esc(x.note)}”</div>`:""}<div class="shstrip">${x.ids.slice(0,4).map(id=>miniThumb(V[id],40)).join("")}</div></div><button class="ib" data-rmshare="${x.id}" aria-label="Remove ${esc(x.title)} from @${esc(x.from)}" title="Remove"><i class="ti ti-x" style="font-size:16px" aria-hidden="true"></i></button></div>`;
+return `<div style="font-size:12px;color:var(--text-muted);margin:0 2px 8px">Feeds people have sent you. Open one to watch it here, or save it as your own feed.</div><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">${s.inbox.map(card).join("")}</div>`;
+}
+function sharedOpenHTML(x){
+const theirs=Object.entries(x.notes).filter(([id])=>x.ids.includes(+id));
+return `<div class="pn" style="margin-bottom:12px;padding:12px 14px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="ib" id="shback" aria-label="Back to everything shared with you" title="All shared"><i class="ti ti-arrow-left" style="font-size:17px" aria-hidden="true"></i></button>${avatar(x.from)}<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">${esc(x.title)} <span style="font-weight:400;color:var(--text-secondary)">from @${esc(x.from)}</span></div><div style="font-size:12px;color:var(--text-muted)">${shareMeta(x)}</div></div><button id="shsave" style="font-size:13px;display:inline-flex;align-items:center;gap:4px"><i class="ti ti-playlist-add" aria-hidden="true"></i>Save as my feed</button><button class="ib" data-rmshare="${x.id}" aria-label="Remove this shared feed" title="Remove"><i class="ti ti-trash" style="font-size:16px" aria-hidden="true"></i></button></div>${x.note?`<div class="shnote" style="margin-top:8px">“${esc(x.note)}”</div>`:""}${theirs.length?`<div class="shtheirs"><p class="lb" style="margin:0 0 4px"><span>@${esc(x.from)}'s notes</span></p>${theirs.map(([id,n])=>`<div style="font-size:13px;line-height:1.45"><b style="font-weight:500">${esc(s.honest?V[id].h:V[id].t)}:</b> ${esc(n)}</div>`).join("")}</div>`:""}</div>`;
+}
+function openShareById(id){
+const x=s.inbox.find(i=>i.id===id);if(!x)return;const f=cur();
+s={...s,inbox:s.inbox.map(i=>i.id===id?{...i,unread:false}:i)};
+upFeed(f.open===id||f.last===id?{open:id}:{open:id,last:id,finished:[],current:null,pinned:[],removed:[]});
+}
+function removeShare(id){
+const x=s.inbox.find(i=>i.id===id);if(!x)return;const f=cur();
+s={...s,inbox:s.inbox.filter(i=>i.id!==id)};
+if(f.kind==="shared"&&f.open===id)upFeed({open:null,finished:[],current:null});else render();
+
+}
+function saveShareAsFeed(){
+const x=openShare();if(!x)return;
+const name=uniqueName(`${x.title} from @${x.from}`);
+up({feeds:{...s.feeds,[name]:F({pinned:[...x.ids],len:[1,120],ses:[10,240],c:Object.keys(s.feeds).length,shelved:barCount()>=MAXBAR})},tab:name,page:"feed",ask:null,share:null});
+
+}
+let shareSet=[];
+// Every video starts selected; s.share.off holds the ones the user unticked.
+function shareSel(){const off=(s.share&&s.share.off)||[];return shareSet.filter(id=>!off.includes(id))}
+function shareLink(){return SHARE_BASE+hash(s.tab+"|"+shareSel().join(",")+(s.share&&s.share.notes?"|n":"")).toString(36)}
+function renderShare(){
+const el=$("share"),sh=s.share;
+if(!sh||!shareSet.length){el.innerHTML="";return}
+const sel=shareSel(),none=!sel.length,vids=sel.map(id=>V[id]),total=vids.reduce((a,v)=>a+v.m,0),noted=sel.filter(id=>(s.notes[id]||"").trim()).length;
+const rows=shareSet.map(id=>{const v=V[id],on=sel.includes(id);return `<label class="shrow${on?"":" off"}"><input type="checkbox" data-shpick="${id}" ${on?"checked":""} aria-label="Include ${esc(s.honest?v.h:v.t)}"><span style="width:40px;flex:none">${miniThumb(v,22)}</span><span class="shtitle">${esc(s.honest?v.h:v.t)}</span><span style="font-size:12px;color:var(--text-muted);flex:none">${v.m}m</span></label>`}).join("");
+const all=sel.length===shareSet.length;
+const listHead=`<div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 6px"><span class="lb" style="margin:0">Videos · ${sel.length} of ${shareSet.length} selected</span><button class="lnk" id="shareall" style="font-size:12px">${all?"Clear all":"Select all"}</button></div>`;
+const quick=s.blends.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${s.blends.map(b=>`<button class="fc" data-shareto="${esc(b.name)}" style="height:26px">@${esc(b.name)}</button>`).join("")}</div>`:"";
+const sent=sh.sent.length?`<div style="font-size:12px;color:var(--text-success);margin-top:6px;display:flex;align-items:center;gap:4px"><i class="ti ti-check" aria-hidden="true"></i>Sent to ${sh.sent.map(n=>"@"+esc(n)).join(", ")}</div>`:"";
+el.innerHTML=`<div class="pn" style="margin-bottom:12px;padding:14px"><div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px"><i class="ti ti-share" style="font-size:20px;color:var(--text-secondary);margin-top:1px" aria-hidden="true"></i><div style="flex:1;min-width:0"><p style="font-size:15px;font-weight:500;margin:0">Share this feed</p><p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">${esc(s.tab)} · ${vids.length} video${vids.length===1?"":"s"}${none?"":` · ${fmt(total)}`}. Untick anything you don't want to send.</p></div><button class="ib" id="sharex" aria-label="Close sharing" title="Close"><i class="ti ti-x" style="font-size:16px" aria-hidden="true"></i></button></div>
+${listHead}<div class="shlist" id="shlist">${rows}</div>${none?`<div style="font-size:12px;color:var(--text-danger);margin:-6px 0 10px">Pick at least one video to share.</div>`:""}
+<p class="lb" style="margin:0 0 6px"><span>Link</span></p><div style="display:flex;gap:6px"><input id="sharelink" type="text" readonly value="${none?"":shareLink()}" placeholder="Pick a video first" aria-label="Share link" style="flex:1;min-width:0;font-size:13px;color:var(--text-secondary)"><button id="sharecopy" ${none?"disabled":""} style="font-size:13px;display:inline-flex;align-items:center;gap:4px"><i class="ti ti-copy" aria-hidden="true"></i>Copy link</button></div>
+<p class="lb" style="margin:14px 0 6px"><span>Send to someone on Yourfeed</span></p><div style="display:flex;gap:6px"><input id="sharein" type="text" placeholder="@username" aria-label="Username to send this feed to" style="flex:1;min-width:0;font-size:13px"><button id="sharesend" class="pri" ${none?"disabled":""} style="font-size:13px;display:inline-flex;align-items:center;gap:4px"><i class="ti ti-send" aria-hidden="true"></i>Send</button></div>${quick}<div id="shareerr" style="font-size:12px;margin-top:6px;color:var(--text-danger)"></div>${sent}
+${noted?`<label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:12px"><input type="checkbox" id="sharenotes" ${sh.notes?"checked":""}>Include my notes (${noted} video${noted===1?"":"s"})</label>`:""}
+<p style="font-size:11px;color:var(--text-muted);margin:12px 0 0">Demo only: the link doesn't open anything and nothing is actually sent.</p></div>`;
+}
+function copyShare(){
+if(!shareSel().length){toast("Pick at least one video to share.");return}
+const url=shareLink();
+if(!navigator.clipboard){toast("Copying isn't available here. Select the link and copy it yourself.");return}
+navigator.clipboard.writeText(url).then(()=>toast("Link copied.")).catch(err=>{console.warn("Clipboard write failed",err);toast("Couldn't copy the link. Try again.")});
+}
+function sendShare(name){
+const raw=(name??$("sharein").value).trim().replace(/^@/,""),er=$("shareerr");
+if(!shareSel().length){er.textContent="Pick at least one video to share";return}
+if(!raw){er.textContent="Type a username first";return}
+if(!USER_RX.test(raw)){er.textContent="Usernames are 3–20 letters, numbers, dots or underscores";return}
+const sh=s.share;if(sh.sent.some(n=>n.toLowerCase()===raw.toLowerCase())){er.textContent=`Already sent to @${raw}`;return}
+up({share:{...sh,to:"",sent:[...sh.sent,raw]}});
+const n=shareSel().length;
+}
+function renderSaved(){
+const total=s.folders.reduce((a,f)=>a+f.items.length,0);
+$("savedhead").innerHTML=`<div class="sechead" data-savedtoggle="1" role="button" aria-expanded="${s.savedOpen}"><i class="ti ti-bookmark" style="font-size:18px" aria-hidden="true"></i><span style="flex:1;font-weight:500;font-size:15px">Saved</span><span style="font-size:12px;color:var(--text-muted)">${s.folders.length} folders · ${total} videos</span></div>`;
+if(!s.savedOpen){$("savedbody").innerHTML="";return}
+$("savedbody").innerHTML=`<div style="padding:0 0 8px 22px"><div style="display:flex;justify-content:space-between;align-items:center;padding:2px 4px 6px;gap:8px"><span style="font-size:12px;color:var(--text-muted)">Drag a video into your feed to add it to this session</span><button id="nf" class="ib" aria-label="New folder" title="New folder"><i class="ti ti-folder-plus" style="font-size:16px" aria-hidden="true"></i></button></div>${s.newFolder?`<div style="display:flex;gap:6px;padding:0 4px 8px"><input id="nfin" type="text" placeholder="Folder name" style="flex:1;font-size:13px" aria-label="Folder name"><button id="nfok" class="ib" aria-label="Create folder"><i class="ti ti-check" style="font-size:16px" aria-hidden="true"></i></button></div><div id="nferr" style="font-size:12px;color:var(--text-danger);padding:0 6px 6px"></div>`:""}${s.folders.map((f,i)=>{const vids=f.items.map(id=>V[id]);const tot=vids.reduce((a,v)=>a+v.m,0);
+return `<div class="fr" data-fo="${i}" role="button" aria-expanded="${f.open}"><i class="ti ti-chevron-right chev${f.open?" open":""}" aria-hidden="true"></i><i class="ti ${f.open?"ti-folder-open":"ti-folder"}" style="font-size:20px;color:var(--text-accent)" aria-hidden="true"></i><span style="flex:1;font-weight:500">${esc(f.name)}</span><span style="font-size:12px;color:var(--text-muted)">${vids.length} ${vids.length===1?"video":"videos"}${tot?" · "+fmt(tot):""}</span></div>`+(f.open?`<div style="display:flex;flex-direction:column;gap:8px;padding:4px 0 10px 28px">${vids.length?vids.map(v=>card(v,{fi:i})).join(""):`<div style="font-size:13px;color:var(--text-muted);padding:6px 0">Empty. Use the bookmark on any video to add one.</div>`}</div>`:"")}).join("")}</div>`;
+}
+function renderHist(){
+const h=[...s.watched].reverse();
+$("histhead").innerHTML=`<div class="sechead" data-histtoggle="1" role="button" aria-expanded="${s.histOpen}"><i class="ti ti-history" style="font-size:18px" aria-hidden="true"></i><span style="flex:1;font-weight:500;font-size:15px">Watch history</span><span style="font-size:12px;color:var(--text-muted)">${h.length} video${h.length===1?"":"s"}</span></div>`;
+if(!s.histOpen){$("histbody").innerHTML="";return}
+$("histbody").innerHTML=`<div style="padding:0 0 8px 22px"><div style="display:flex;justify-content:space-between;align-items:center;padding:2px 4px 6px;gap:8px"><span style="font-size:12px;color:var(--text-muted)">Most recent first. Everything uses this to recommend videos.</span>${s.confirm==="hist"?`<span style="display:flex;gap:6px;align-items:center;font-size:12px">Clear all history?<button id="hyes" class="danger" style="font-size:12px;height:28px">Clear</button><button id="hno" style="font-size:12px;height:28px">Cancel</button></span>`:`<button id="hclear" class="ib" aria-label="Clear watch history" title="Clear history"${h.length?"":' aria-disabled="true"'}><i class="ti ti-trash" style="font-size:16px" aria-hidden="true"></i></button>`}</div><div style="display:flex;flex-direction:column;gap:8px">${h.length?h.map(id=>card(V[id],{hist:true})).join(""):`<div style="font-size:13px;color:var(--text-muted);padding:6px 4px">Nothing here yet. Videos you watch will show up here.</div>`}</div></div>`;
+}
+function renderChatUndo(){
+const n=s.chatUndo.length,r=s.chatRedo.length;
+const undo=n?`<button class="cundo" id="cundobtn" aria-label="Undo Claude's last change" title="Undo last change"><i class="ti ti-arrow-back-up" style="font-size:16px" aria-hidden="true"></i>${n>1?`<span>${n}</span>`:""}</button>`:"";
+const redo=r?`<button class="cundo" id="credobtn" aria-label="Redo the change you undid" title="Redo"><i class="ti ti-arrow-forward-up" style="font-size:16px" aria-hidden="true"></i>${r>1?`<span>${r}</span>`:""}</button>`:"";
+$("cundo").innerHTML=undo+redo;
+}
+function render(){
+renderTabs();renderAll();renderSearch();
+$("main").style.display=s.page==="feed"?"grid":"none";
+on("[data-view]",b=>{b.classList.toggle("on",b.dataset.view===s.view);b.setAttribute("aria-pressed",String(b.dataset.view===s.view))});
+if(s.page==="feed"){
+const f=cur(),k=kind();
+$("cin").placeholder=f.draft?"Tell Claude what you want in this feed":"Tell Claude what you want to watch";
+$("tlabel").textContent=k==="subs"?"Channels in this feed":k==="top"?"Limit to topics":k==="blend"?"Topics in this blend":k==="home"?"Boost topics":"Topics in this feed";
+const tin=$("tin");tin.placeholder=k==="subs"?"Add a channel":"Add a topic";tin.setAttribute("aria-label",tin.placeholder);
+$("topics").innerHTML=f[listKey()].map(t=>`<span class="tp">${esc(t)}<button data-tx="${esc(t)}" aria-label="Remove ${esc(t)}"><i class="ti ti-x" style="font-size:12px" aria-hidden="true"></i></button></span>`).join("")+f.muted.map(t=>`<span class="tp mu" title="Hidden from this feed">${esc(t)}<button data-unmute="${esc(t)}" aria-label="Show ${esc(t)} again"><i class="ti ti-eye" style="font-size:12px" aria-hidden="true"></i></button></span>`).join("")||`<span style="font-size:12px;color:var(--text-muted)">${k==="top"?"All topics. Add one to narrow it down.":k==="home"?"Recommendations come from what you watch. Add a topic to boost it.":k==="claude"?"Connect Claude to fill this in.":k==="blend"?"Blend with someone to fill this in.":"Nothing here yet. Add one below or ask Claude."}</span>`;
+syncRange("len",f.len,1,120);syncRange("ses",f.ses,10,240);
+$("toggles").innerHTML=TG.map(([kk,l])=>`<div class="tg" data-t="${kk}" role="switch" aria-checked="${s[kk]}"><span>${l}</span><span class="sw${s[kk]?" on":""}"></span></div>`).join("");
+const mv=`<button class="lnk" data-shelf="${esc(s.tab)}"><i class="ti ${f.shelved?"ti-layout-navbar":"ti-apps"}" aria-hidden="true"></i> ${f.shelved?"Show in tab bar":"Move to All tabs"}</button>`;
+const del=LOCKED.includes(f.kind)?"":s.confirm==="tab"?`<div style="font-size:13px;margin:6px 0">Delete "${esc(s.tab)}"? This can't be undone.</div><div style="display:flex;gap:6px"><button id="delyes" class="danger" style="font-size:13px;height:30px">Delete</button><button id="delno" style="font-size:13px;height:30px">Cancel</button></div>`:`<button id="delask" class="lnk danger"><i class="ti ti-trash" aria-hidden="true"></i> Delete tab</button>`;
+$("deltab").innerHTML=`<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">${mv}${del}${LOCKED.includes(f.kind)?`<span style="font-size:11px;color:var(--text-muted)">Built-in tabs can be moved but not deleted.</span>`:""}</div>`;
+renderRecipe();renderExtra();if(k==="blend"&&s.blends.length)$("extra").insertAdjacentHTML("beforeend",blendHistoryHTML());renderAsk();renderClaudeMode();renderChatUndo();renderSession();
+const{out,hidden,used}=pick();const pend=pending();const short=!pend&&used<f.ses[0];
+const note=k==="home"?"":k==="subs"?(f.seed?"fresh mix":"newest first"):k==="top"?"most views first":k==="news"?"newest first":k==="blend"?"shared picks first":k==="shared"?(openShare()?`in @${esc(openShare().from)}'s order`:""):hidden+" hidden by your rules";
+$("summary").innerHTML=pend&&!f.pinned.length?"":`<span><b style="font-weight:500;color:var(--text-primary)">Up next</b> · ${out.length+f.pinned.length} videos · ${fmt(used)} session${note?` · ${note}`:""}</span><span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${short?`<span class="fc" style="cursor:default;background:var(--bg-warning);color:var(--text-warning);border-color:var(--border-warning)"><i class="ti ti-alert-triangle" aria-hidden="true"></i>${fmt(f.ses[0]-used)} short of your minimum</span>`:""}<button id="sharebtn" class="${s.share?"pri":""}" aria-expanded="${!!s.share}" aria-controls="share" style="font-size:13px;height:30px;padding:0 10px;display:inline-flex;align-items:center;gap:4px"><i class="ti ti-share" aria-hidden="true"></i>Share</button></span>`;
+shareSet=[...new Set([...sessionIds(f),...f.pinned,...(pend?[]:out.map(v=>v.id))])];
+renderShare();
+const feed=$("feed");feed.style.cssText=s.view==="grid"?`display:grid;grid-template-columns:repeat(${GRID_COLS},minmax(0,1fr));gap:10px;align-items:stretch`:"display:flex;flex-direction:column;gap:8px";
+const shown=[...f.pinned.map(id=>({v:V[id],o:{pinned:true,feed:true}})),...(pend?[]:out.map((v,i)=>({v,o:{feed:true,rank:k==="top"?i+1:0}})))];
+const cards=shown.map(x=>card(x.v,x.o));
+const items=s.view==="grid"?withGridPanels(shown.map(x=>x.v),cards):cards;
+feed.innerHTML=items.length?items.join(""):pend?"":`<div style="padding:24px;text-align:center;font-size:13px;color:var(--text-secondary);grid-column:1/-1">Nothing fits these rules. Add a topic, widen the length range, or ask Claude.</div>`;
+renderNotebook();renderSaved();renderHist();
+}
+bind();
+}
+function toast(msg){
+const tok=++toastTok;
+$("toast").innerHTML=`<div class="toast"><i class="ti ti-asterisk" style="color:var(--fill-brand);font-size:15px;flex:none" aria-hidden="true"></i><span style="flex:1;font-family:var(--font-voice);font-size:14px;line-height:1.45">${esc(msg)}</span><span class="bar"></span></div>`;
+setTimeout(()=>{if(tok===toastTok)$("toast").innerHTML=""},5000);
+}
+const snapshot=()=>({feeds:s.feeds,folders:s.folders,tab:s.tab});
+const UNDO_MAX=10;
+function pushUndo(sn){s={...s,chatUndo:[...s.chatUndo,sn].slice(-UNDO_MAX),chatRedo:[]}}
+function restoreSnap(sn){return {feeds:sn.feeds,folders:sn.folders,tab:sn.feeds[sn.tab]?sn.tab:Object.keys(sn.feeds)[0],ask:null}}
+function undoChat(){const st=s.chatUndo;if(!st.length)return;const sn=st[st.length-1];s={...s,...restoreSnap(sn),chatUndo:st.slice(0,-1),chatRedo:[...s.chatRedo,snapshot()].slice(-UNDO_MAX)};render()}
+function redoChat(){const st=s.chatRedo;if(!st.length)return;const sn=st[st.length-1];s={...s,...restoreSnap(sn),chatRedo:st.slice(0,-1),chatUndo:[...s.chatUndo,snapshot()].slice(-UNDO_MAX)};render()}
+function renameFeed(old,name,patch){const feeds=Object.fromEntries(Object.entries(s.feeds).map(([k,v])=>k===old?[name,{...v,...patch}]:[k,v]));s={...s,feeds,tab:s.tab===old?name:s.tab}}
+// Built-in tab names are reserved: a generated name that matches one (any case) gets " picks" added,
+// and every check is case-insensitive so "news" can't sit next to "News".
+const builtinNames=()=>Object.keys(s.feeds).filter(n=>LOCKED.includes(s.feeds[n].kind)).map(n=>n.toLowerCase());
+const isBuiltinName=n=>builtinNames().includes(n.trim().toLowerCase());
+const nameTaken=n=>Object.keys(s.feeds).some(k=>k.toLowerCase()===n.toLowerCase());
+function uniqueName(n){const base=isBuiltinName(n)?`${n.trim()} picks`:n.trim();let x=base,i=2;while(nameTaken(x)||isBuiltinName(x))x=`${base} ${i++}`;return x}
+function applyTopics(topics){
+const f=cur();const add=topics.filter(t=>!f.topics.includes(t));
+const patch={topics:[...f.topics,...add],muted:f.muted.filter(m=>!add.includes(m))};
+if(f.draft)renameFeed(s.tab,uniqueName(add.slice(0,2).join(" & ")||"New feed"),{...patch,draft:false});
+else setFeed(patch);
+return add;
+}
+function sampleFor(topics,n){return V.filter(v=>topics.includes(v.tp)&&!(s.hideCb&&v.thin)).sort((a,b)=>a.age-b.age).slice(0,n).map(v=>v.id)}
+function afterAdd(added,first,snap){
+if(!added.length){toast("Already in this feed.");return}
+pushUndo(snap);
+}
+function addFlow(t,snap){
+const f=cur();const hits=Object.keys(TOPIC_RX).filter(k=>TOPIC_RX[k].test(t));
+const fresh=hits.filter(k=>!f.topics.includes(k));
+if(fresh.length){const first=f.topics.length<2&&kind()!=="home";afterAdd(applyTopics(fresh),first,snap);return}
+if(hits.length){toast("Already in this feed.");return}
+const broad=BROAD.find(b=>b.rx.test(t));
+if(broad){const opts=broad.opts.filter(o=>!f.topics.includes(o));if(opts.length){s={...s,ask:{kind:"chips",q:broad.q,items:opts,sel:[]}};return}}
+const seen=new Set(f.topics);const picks=[];
+for(const v of [...V].sort((a,b)=>hash(a.id+t)-hash(b.id+t))){if(!seen.has(v.tp)&&!v.thin){seen.add(v.tp);picks.push(v.id)}if(picks.length===4)break}
+s={...s,ask:{kind:"videos",q:"Pick the ones you're feeling and I'll add more like them.",items:picks,sel:[]}};
+}
+function agent(t){
+const f=cur(),k=kind();const snap=snapshot();const{out}=pick();const top=f.pinned.length?V[f.pinned[0]]:out[0];const list=f[listKey()];
+const anyTopic=Object.keys(TOPIC_RX).find(x=>TOPIC_RX[x].test(t));
+const item=list.find(x=>t.includes(x.toLowerCase())||(TOPIC_RX[x]&&TOPIC_RX[x].test(t)));
+if(/why/.test(t)&&top){toast(f.pinned.includes(top.id)?`"${top.h}" is first because you added it yourself.`:k==="home"?`"${top.h}" is first because you've been watching ${top.tp}.`:k==="subs"?`"${top.h}" is the newest upload from ${top.ch}.`:k==="top"?`"${top.h}" has the most views (${top.v}) in this range.`:`"${top.h}" matches ${top.tp} in this feed.`);return}
+if(/save/.test(t)&&top){pushUndo(snap);s={...s,folders:s.folders.map((x,i)=>i===0&&!x.items.includes(top.id)?{...x,items:[...x.items,top.id]}:x)};return}
+if(/less|fewer|no |without|skip|remove|drop|hide/.test(t)){
+if(item){pushUndo(snap);setFeed({[listKey()]:list.filter(x=>x!==item)});return}
+if(anyTopic&&topicFeed()){pushUndo(snap);setFeed({muted:[...new Set([...f.muted,anyTopic])]});return}}
+if(/short|quick/.test(t)&&!f.draft){pushUndo(snap);setFeed({len:[1,15]});return}
+if(/longer|deep dive/.test(t)&&!f.draft){pushUndo(snap);setFeed({len:[20,120]});return}
+if(topicFeed()){if(k==="claude"&&!f.connected){toast("Connect Claude first, then tell me what to add.");return}addFlow(t,snap);return}
+toast("This tab builds itself, so I can't add topics here. Try one of your own feeds or start a new one.");
+}
+// Claude bar mode: edit the current feed, or start a new feed from the request.
+// Built-in tabs can't be edited, so there it always makes a new feed; a draft is the new feed already.
+const claudeLocked=()=>LOCKED.includes(cur().kind);
+const claudeMakesNew=()=>!cur().draft&&(claudeLocked()||s.claudeNew);
+function renderClaudeMode(){
+const f=cur(),el=$("cmode");
+if(f.draft){el.innerHTML="";return}
+const isNew=claudeMakesNew(),locked=claudeLocked();
+const head=isNew?"Making a new feed":`Editing ${esc(s.tab)}`;
+const body=locked?`${esc(s.tab)} is built in and can't be edited, so Claude starts a new feed from what you ask.`:isNew?`Claude starts a new tab from what you ask. Click to edit ${esc(s.tab)} instead.`:`Claude changes this feed's topics and settings. Click to start a new feed instead.`;
+el.innerHTML=`<button class="cmode${isNew?" new":""}" id="cmodebtn" role="switch" aria-checked="${isNew}" ${locked?'aria-disabled="true"':""} aria-label="New feed mode. ${head}. ${body}"><span class="mtrack" aria-hidden="true"><i class="ti ti-pencil mend"></i><i class="ti ti-plus mend"></i><span class="mknob"><i class="ti ${isNew?"ti-plus":"ti-pencil"}"></i></span></span><span class="ctip" role="tooltip"><b>${head}</b>${body}</span></button>`;
+$("cin").placeholder=isNew?"Tell Claude what you want to watch":`Tell Claude what to change in ${s.tab}`;
+}
+function send(text){
+const t=(text||$("cin").value).trim();
+if(!t){$("cerr").textContent="Type something first";return}
+$("cerr").textContent="";$("cin").value="";s={...s,ask:null};
+// Built-in tabs build themselves, so a request there starts a new tab (a draft that Claude names from what it adds).
+if(claudeMakesNew()){newFeed()}
+agent(t.toLowerCase());render();
+}
+function askChoose(val){const a=s.ask;if(!a)return;const v=a.kind==="videos"?+val:val;const sel=a.sel.includes(v)?a.sel.filter(x=>x!==v):[...a.sel,v];up({ask:{...a,sel,err:""}})}
+function askCommit(){
+const a=s.ask;if(!a)return;
+if(!a.sel.length)return up({ask:{...a,err:"Pick at least one first"}});
+const snap=snapshot();const topics=a.kind==="videos"?[...new Set(a.sel.map(i=>V[i].tp))]:a.sel;
+const first=cur().topics.length<2&&kind()!=="home";s={...s,ask:null};
+afterAdd(applyTopics(topics),first,snap);render();
+}
+function askFeedback(val){
+const a=s.ask;if(!a)return;
+if(val==="good"){s={...s,ask:null};}
+else{pushUndo(snapshot());const f=cur();setFeed({topics:f.topics.filter(x=>!a.topics.includes(x))});s={...s,ask:null};}
+render();
+}
+function openYT(v){const w=window.open(ytURL(v),"_blank","noopener");if(!w)toast("Your browser blocked the YouTube tab. Allow pop-ups for this page to open videos.")}
+function watch(id){
+const v=V[id],f=cur();openYT(v);
+if(f.current===id){return}
+const fin=f.current===null?f.finished:[...f.finished.filter(x=>x!==f.current),f.current];
+setFeed({current:id,finished:fin.filter(x=>x!==id),pinned:f.pinned.filter(x=>x!==id)});
+s={...s,watched:[...s.watched.filter(x=>x!==id),id],likeOpen:null,back:false,page:s.page==="search"?"search":"feed"};
+render();
+}
+function finishCurrent(){const f=cur();if(f.current===null)return;const v=V[f.current];setFeed({finished:[...f.finished,f.current],current:null});s={...s,back:false};render()}
+function unfinish(id){const f=cur();upFeed({finished:f.finished.filter(x=>x!==id)})}
+function setShelved(n,v){
+if(!v&&barCount()>=MAXBAR){const m=`The tab bar holds ${MAXBAR} tabs. Move one to All tabs first.`;if(s.page==="all")return up({allErr:m});toast(m);return}
+up({feeds:{...s.feeds,[n]:{...s.feeds[n],shelved:v}},allErr:""});
+}
+function noteOf(key){return key==="feed"?(cur().fnote||""):(s.notes[key.slice(2)]||"")}
+function setNote(key,val){
+if(key==="feed")setFeed({fnote:val});else s={...s,notes:{...s.notes,[key.slice(2)]:val}};
+on(`[data-note="${key}"]`,t=>{if(t.value!==val)t.value=val});
+if(key!=="feed")paintAnswers(+key.slice(2));
+}
+let rec=null;
+function stopMic(){const r=rec;rec=null;if(r){try{r.stop()}catch(err){console.warn("Voice typing stop failed",err)}}}
+function toggleMic(key){
+const was=s.rec;stopMic();
+if(was){s={...s,rec:null};if(was===key)return render()}
+if(!SR){render();toast("Voice typing isn't available in this browser. Try Chrome, Edge or Safari.");return}
+const r=new SR();r.continuous=true;r.interimResults=false;r.lang=navigator.language||"en-US";
+r.onresult=ev=>{let t="";for(let i=ev.resultIndex;i<ev.results.length;i++)if(ev.results[i].isFinal)t+=ev.results[i][0].transcript;t=t.trim();if(!t)return;const old=noteOf(key);setNote(key,old?old.replace(/\s*$/," ")+t:t.charAt(0).toUpperCase()+t.slice(1))};
+r.onerror=ev=>{console.warn("Voice typing error",ev.error);toast(ev.error==="not-allowed"||ev.error==="service-not-allowed"?"Microphone access is blocked. Allow it for this page to dictate notes.":ev.error==="no-speech"?"Didn't catch anything. Tap the mic and try again.":"Voice typing stopped. Tap the mic to try again.")};
+r.onend=()=>{if(rec===r){rec=null;up({rec:null})}};
+try{r.start()}catch(err){console.warn("Voice typing start failed",err);toast("Couldn't start voice typing. Try again.");return render()}
+rec=r;up({rec:key});
+}
+// Video Q&A. Simulated: answers come from the video's own metadata plus a small glossary.
+// A real version would send the question, the transcript and the playback time to a backend that calls Claude.
+const QA_DELAY_MS=1400,QA_MAXLEN=300,QA_WORD_MS=45;
+const TOPIC_BG={"News":"News clips like this are short summaries. Check the upload time, because stories can change quickly after a video goes up.","AI":"AI videos like this one usually build on a few ideas: a model predicts text, and an agent wraps that model in a loop so it can call tools and act on the results.","Programming":"This is a programming video, so most of it is about trade-offs: what a structure or technique is good at, and what it costs in speed, memory or complexity.","Economics":"Economics videos tend to follow the money: who borrows, who lends, and how prices and interest rates push people's choices.","Careers":"Career videos usually give a framework for decisions rather than hard rules, so it helps to test each point against your own situation.","Premier League":"This is English top-flight football. Twenty clubs play each other twice a season, three points for a win, and the bottom three are relegated.","Tennis":"Tennis scoring goes points → games → sets. Men's Grand Slam finals are best of five sets, which is why 'five-set final' means it went the distance.","Cricket":"T20 is the shortest professional format: each side bats for 20 overs of six balls, so finishes are fast and close.","Wrestling":"Pro wrestling is scripted sports entertainment. The 'main event' is the final, headline match of a show.","Podcasts":"Long-form interviews like this jump between topics, so the guest's earlier answers often explain later ones.","Live music":"Live sessions are usually recorded in one take, so small differences from the studio versions are part of the point.","Vlogs":"Vlogs are personal, edited diaries. Challenges and stunts are often staged or cut together for pacing.","MCP":"MCP (Model Context Protocol) is an open standard that lets an AI app like Claude connect to outside tools and data through 'servers' that expose tools.","Product design":"Product design videos look at how something should work for the people using it: research first, then layouts, then testing.","Cooking":"Cooking videos move fast, so pause on the ingredient list and the heat level, since those matter most.","Travel":"Travel videos compress days into minutes, so costs and timings are usually rough and seasonal."};
+const GLOSSARY=[[/tool use|tool call/,"Tool use means the model can ask the app to run a function (search, a calculator, an API) and then read the result before answering."],[/\bagent/,"An agent is an AI model running in a loop: it decides on a step, uses a tool, looks at the result, and repeats until the task is done."],[/\bmcp\b|model context protocol/,TOPIC_BG.MCP],[/neural net/,"A neural network is layers of simple maths units. Training nudges millions of weights until its outputs match the examples it's shown."],[/\bllm|language model/,"A large language model predicts the next word, trained on huge amounts of text. That one skill turns out to cover writing, coding and reasoning."],[/interest rate|central bank/,"Central banks set a base interest rate. Raising it makes borrowing dearer, which cools spending and inflation; cutting it does the opposite."],[/inflation/,"Inflation is how fast prices rise overall. A little is normal; a lot erodes what savings can buy."],[/crypto|\bfund\b/,"A crypto fund pools investors' money into digital tokens. When one collapses it's usually from leverage, hidden losses or fraud."],[/\bgraph/,"A graph is points (nodes) joined by lines (edges), any of which can connect. A tree is a graph with no loops and a single root."],[/\btree/,"A tree is a hierarchy: one root, each item has one parent. That makes lookups and ordering easy."],[/database|index/,"A database stores data so it can be found fast. Indexes are sorted shortcuts, like the index at the back of a book."],[/relegat/,"Relegation: the bottom teams in a league drop down a division for the next season."],[/derby/,"A derby is a match between local or long-standing rivals."],[/\bt20\b|\bovers?\b/,TOPIC_BG.Cricket],[/\bsets?\b|tiebreak|deuce/,TOPIC_BG.Tennis],[/serve/,"The serve starts every point. Faster serves and better rackets have made it far more dominant over the last 20 years."],[/amapiano/,"Amapiano is a South African house style with log-drum basslines and jazzy piano."],[/burnout/,"Burnout is long-term exhaustion from sustained stress, usually work. It differs from tiredness in that rest alone doesn't fix it."]];
+function answerFor(v,raw){
+const q=raw.toLowerCase(),f=cur();
+const term=GLOSSARY.find(([rx])=>rx.test(q));
+if(/\bwho\b|channel|creator|made this/.test(q))return `It's from ${v.ch}, a channel with ${v.subs} subscribers. In this prototype I only know the channel's topic (${v.tp}), not who's on screen.`;
+if(/how long|length|minutes|time left/.test(q))return `It's ${v.m} minutes long. I can't see how far in you are yet; the real version would read the playback time.`;
+if(/why.*(here|feed|recommend)|recommend/.test(q))return f.topics.includes(v.tp)?`It's here because ${v.tp} is one of this feed's topics.`:`It's in this feed because it matched your watch history or popularity, not a topic you picked.`;
+if(term)return term[1];
+if(/summar|about|tl;?dr|gist|point/.test(q))return `Going by the title, it's about this: ${v.h}. ${TOPIC_BG[v.tp]||""}`.trim();
+const bg=TOPIC_BG[v.tp];
+return `${bg?bg+" ":""}I can only see the title and topic in this prototype. The real version would answer from the transcript at the point you're watching.`;
+}
+const AMARK="\u2731";
+const ASK_HINT=`<span class="amark" aria-hidden="true">${AMARK}</span> Ask Claude: end a line with ? and press Enter. The answer appears on the next line.`;
+const isALine=l=>l.trimStart().startsWith(AMARK);
+const QLINE=l=>!isALine(l)&&l.trim().length>=3&&l.trim().endsWith("?");
+function questionsIn(id){return (s.notes[id]||"").split("\n").filter(QLINE).map(l=>l.trim())}
+function unanswered(id){const ls=(s.notes[id]||"").split("\n");return ls.filter((l,i)=>QLINE(l)&&!(ls[i+1]!==undefined&&isALine(ls[i+1]))).map(l=>l.trim())}
+function inkWords(txt){let n=0;return txt.split(/(\s+)/).map(w=>!w||/^\s+$/.test(w)?w:`<span class="w" style="animation-delay:${(n++)*QA_WORD_MS}ms">${esc(w)}</span>`).join("")}
+function mirrorHTML(id){
+const list=s.answers[id]||[];
+const waiting=new Set(list.filter(x=>x.a===null).map(x=>x.q));
+const fresh=new Set(list.filter(x=>x.a!==null&&!x.shown).map(x=>x.a));
+return (s.notes[id]||"").split("\n").map(l=>{
+if(isALine(l)){const i=l.indexOf(AMARK),body=l.slice(i+1),isNew=fresh.has(body.trim());return `${esc(l.slice(0,i))}<span class="aline"><span class="amark${isNew?" new":""}">${AMARK}</span>${isNew?inkWords(body):esc(body)}</span>`}
+return QLINE(l)?`<span class="qmark">${esc(l)}</span>${waiting.has(l.trim())?'<span class="qdot"></span>':""}`:esc(l)}).join("\n")+"\n";
+}
+function paintAnswers(id){
+const m=mirrorHTML(id);let painted=false;on(`[data-mirror="${id}"]`,e=>{if(e.innerHTML!==m){e.innerHTML=m;painted=true}});
+if(painted&&(s.answers[id]||[]).some(x=>x.a!==null&&!x.shown))s={...s,answers:{...s.answers,[id]:s.answers[id].map(x=>x.a!==null?{...x,shown:true}:x)}};
+}
+function insertAnswer(id,q,a){
+const val=s.notes[id]||"",ls=val.split("\n");
+const i=ls.findIndex((l,j)=>QLINE(l)&&l.trim()===q&&!(ls[j+1]!==undefined&&isALine(ls[j+1])));
+if(i<0)return false;
+const line=`${AMARK} ${a}`,pos=ls.slice(0,i+1).join("\n").length,add=line.length+1;
+const next=[...ls.slice(0,i+1),line,...ls.slice(i+1)].join("\n");
+s={...s,notes:{...s.notes,[id]:next}};
+on(`[data-note="v:${id}"]`,ta=>{const focused=document.activeElement===ta,a0=ta.selectionStart,b0=ta.selectionEnd;ta.value=next;if(focused){ta.setSelectionRange(a0>=pos?a0+add:a0,b0>=pos?b0+add:b0)}grow(ta)});
+return true;
+}
+function grow(el){if(!el.closest(".sheet"))return;el.style.height="auto";el.style.height=el.scrollHeight+"px"}
+function qErr(id,msg){on(`[data-qerr="${id}"]`,e=>{e.classList.toggle("err",!!msg);if(msg)e.textContent=msg;else e.innerHTML=ASK_HINT})}
+function askQuestion(id,q){
+if(q.length>QA_MAXLEN){qErr(id,`Keep questions under ${QA_MAXLEN} characters`);return}
+const list=s.answers[id]||[];
+if(list.some(x=>x.q===q&&x.a===null)||!unanswered(id).includes(q))return;
+qErr(id,"");
+s={...s,answers:{...s.answers,[id]:[...list.filter(x=>x.q!==q),{q,a:null,shown:false}]}};paintAnswers(id);
+setTimeout(()=>{const a=answerFor(V[id],q).replace(/\s*\n\s*/g," ");const ok=insertAnswer(id,q,a);
+s={...s,answers:{...s.answers,[id]:(s.answers[id]||[]).flatMap(x=>x.q===q&&x.a===null?(ok?[{...x,a}]:[]):[x])}};paintAnswers(id)},QA_DELAY_MS);
+}
+function askLast(id){const qs=questionsIn(id);const busy=new Set((s.answers[id]||[]).filter(x=>x.a===null).map(x=>x.q));const q=[...unanswered(id)].reverse().find(x=>!busy.has(x));
+if(q)askQuestion(id,q);else qErr(id,qs.length?"Your questions are already answered. Write a new line ending in ?":"Write a question in your notes ending in ?, then press Enter")}
+function onNoteKey(ev,el){
+if(ev.key!=="Enter"||ev.shiftKey||!el.dataset.note.startsWith("v:"))return;
+const before=el.value.slice(0,el.selectionStart),line=before.slice(before.lastIndexOf("\n")+1);
+if(QLINE(line))askQuestion(+el.dataset.note.slice(2),line.trim());
+}
+
+function copyNotes(){
+const f=cur();const lines=[`# ${s.tab} notes`,""];
+if(f.fnote.trim())lines.push(f.fnote.trim(),"");
+sessionIds(f).forEach(id=>{const v=V[id];lines.push(`## ${v.h}`,`${v.ch} · ${v.m} min · ${id===f.current?"Watching now":"Finished"}`,ytURL(v),"",(s.notes[id]||"").trim()||"_No notes yet_","");});
+const text=lines.join("\n");
+if(!navigator.clipboard){toast("Copying isn't available here. Select the notes and copy them yourself.");return}
+navigator.clipboard.writeText(text).then(()=>toast("Notes copied.")).catch(err=>{console.warn("Clipboard write failed",err);toast("Couldn't copy the notes. Try again.")});
+}
+document.addEventListener("visibilitychange",()=>{const f=cur();if(document.visibilityState==="visible"&&f&&f.current!==null&&!s.back)up({back:true})});
+function toggleSeen(id){if(isWatched(id)){s={...s,watched:s.watched.filter(x=>x!==id)};}else{s={...s,watched:[...s.watched,id]};}render()}
+function pin(id){const f=cur();if(f.pinned.includes(id))return;upFeed({pinned:[id,...f.pinned],removed:f.removed.filter(x=>x!==id)})}
+function saveTo(id,fi){up({folders:s.folders.map((f,i)=>i===fi&&!f.items.includes(id)?{...f,items:[...f.items,id]}:f),saving:null})}
+function unsave(id){up({folders:s.folders.map(f=>({...f,items:f.items.filter(x=>x!==id)})),saving:null})}
+function dropDraft(){const f=cur();if(f&&f.draft){s={...s,feeds:Object.fromEntries(Object.entries(s.feeds).filter(([k])=>k!==s.tab))}}}
+function goTab(n){if(n!==s.tab)dropDraft();if(n!==s.tab&&s.feeds[n]&&s.feeds[n].kind==="shared"&&s.feeds[n].open){const sf=s.feeds[n];s={...s,feeds:{...s.feeds,[n]:{...sf,open:null,last:sf.open}}}}$("q").value="";up({tab:n,share:null,saving:null,q:"",confirm:null,likeOpen:null,page:"feed",ask:null})}
+function reorder(src,dst){if(src===dst)return;const keys=Object.keys(s.feeds).filter(k=>k!==src);const i=keys.indexOf(dst);keys.splice(i,0,src);up({feeds:Object.fromEntries(keys.map(k=>[k,s.feeds[k]]))})}
+function delTabs(names){
+const left=Object.keys(s.feeds).filter(n=>!names.includes(n));
+if(!left.length)return "Keep at least one feed.";
+const feeds=Object.fromEntries(left.map(n=>[n,s.feeds[n]]));
+const vis=left.filter(n=>!feeds[n].shelved);
+up({feeds,tab:left.includes(s.tab)?s.tab:(vis[0]||left[0]),sel:[],confirm:null,editErr:""});return "";
+}
+function bulk(act){
+const n=s.sel;
+if(act==="cancel")return up({confirm:null});
+if(!n.length)return up({editErr:"Select at least one tab first."});
+if(act==="del"){const built=n.filter(k=>LOCKED.includes(s.feeds[k].kind));if(built.length)return up({editErr:`${built.join(", ")} can't be deleted. You can move ${built.length>1?"them":"it"} to All tabs instead.`});return up({confirm:"bulk",editErr:""})}
+if(act==="delyes"){const e=delTabs(n);if(e)up({editErr:e,confirm:null});return}
+if(act==="shelve"){const feeds={...s.feeds};n.forEach(k=>feeds[k]={...feeds[k],shelved:true});return up({feeds,sel:[],editErr:""})}
+if(act==="unshelve"){const now=barCount(),adding=n.filter(k=>s.feeds[k].shelved&&!isGroupedTab(k)).length;if(now+adding>MAXBAR)return up({editErr:`The tab bar holds ${MAXBAR} tabs. Move some to All tabs first.`});const feeds={...s.feeds};n.forEach(k=>feeds[k]={...feeds[k],shelved:false});return up({feeds,sel:[],editErr:""})}
+}
+function toggleSel(n){up({sel:s.sel.includes(n)?s.sel.filter(x=>x!==n):[...s.sel,n],editErr:"",confirm:s.confirm==="bulk"?null:s.confirm})}
+function blend(){
+const raw=$("bin").value.trim().replace(/^@/,""),er=$("berr");
+if(!raw){er.textContent="Type a username first";return}
+if(!USER_RX.test(raw)){er.textContent="Usernames are 3–20 letters, numbers, dots or underscores";return}
+upFeed({partner:{...tasteOf(raw),status:"pending"},topics:[]});
+
+}
+function tasteOf(raw){
+const h=hash(raw.toLowerCase());const theirs=[...ALL_TOPICS].sort((a,b)=>hash(a+raw)-hash(b+raw)).slice(0,4+h%2);
+const mine=myTopics();const inter=theirs.filter(t=>mine.includes(t)).length;
+return {name:raw,topics:theirs,score:Math.min(96,Math.round(38+55*inter/Math.max(1,Math.min(mine.length,theirs.length))+h%7))};
+}
+function blendTopics(theirs){const mine=myTopics();return [...new Set([...mine.filter(t=>theirs.includes(t)),...mine.slice(0,4),...theirs])]}
+function approveBlend(){
+const p=cur().partner;if(!p||p.status!=="pending")return;
+const rec={name:p.name,topics:p.topics,score:p.score};
+s={...s,blends:[rec,...s.blends.filter(b=>b.name.toLowerCase()!==p.name.toLowerCase())]};
+upFeed({partner:{...p,status:"accepted"},topics:blendTopics(p.topics)});
+
+}
+function openBlend(name){
+const b=s.blends.find(x=>x.name===name);if(!b)return;
+const p=cur().partner;if(p&&p.status==="accepted"&&p.name===name)return;
+upFeed({partner:{...b,status:"accepted"},topics:blendTopics(b.topics)});
+
+}
+function forgetBlend(name){
+const p=cur().partner,active=p&&p.status==="accepted"&&p.name===name;
+s={...s,blends:s.blends.filter(x=>x.name!==name)};
+if(active)upFeed({partner:null,topics:[]});else render();
+}
+function blendHistoryHTML(){
+const p=cur().partner,act=p&&p.status==="accepted"?p.name:null;
+const head=`<div class="sechead" data-blendstoggle="1" role="button" tabindex="0" aria-expanded="${s.blendsOpen}" style="padding:6px 4px"><i class="ti ti-chevron-right chev${s.blendsOpen?" open":""}" aria-hidden="true"></i><i class="ti ti-history" style="font-size:17px" aria-hidden="true"></i><span style="flex:1;font-weight:500;font-size:14px">Previous blends</span><span style="font-size:12px;color:var(--text-muted)">${s.blends.length}</span></div>`;
+const rows=s.blends.map(b=>{const on=b.name===act;return `<div class="brow${on?" on":""}" data-openblend="${esc(b.name)}" role="button" tabindex="0" aria-current="${on}"><span class="bav">${esc(b.name[0].toUpperCase())}</span><span style="flex:1;min-width:0"><span style="font-size:13px;font-weight:500">You + @${esc(b.name)}</span><span style="display:block;font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.score}% match · ${b.topics.map(esc).join(", ")}</span></span>${on?`<span class="badge">Open</span>`:""}<button class="ib" data-forgetblend="${esc(b.name)}" aria-label="Remove blend with @${esc(b.name)}" title="Remove"><i class="ti ti-x" style="font-size:15px" aria-hidden="true"></i></button></div>`}).join("");
+return `<div style="margin-bottom:12px">${head}${s.blendsOpen?`<div style="display:flex;flex-direction:column;gap:6px;padding:2px 0 0 22px">${rows}</div>`:""}</div>`;
+}
+function newFeed(){dropDraft();const name=uniqueName("New feed");up({feeds:{...s.feeds,[name]:F({len:[5,60],ses:[20,90],c:Object.keys(s.feeds).length,draft:true,shelved:barCount()>=MAXBAR})},tab:name,page:"feed",editing:false,sel:[],confirm:null,q:"",ask:null})}
+function saveName(){
+const n=$("fname").value.trim(),er=$("fnerr");
+if(!n){er.textContent="Type a name first";return}
+if(n.length>24){er.textContent="Keep it under 25 characters";return}
+if(isBuiltinName(n)){er.textContent=`"${n}" is a built-in tab. Pick a different name.`;return}
+if(nameTaken(n)&&n.toLowerCase()!==s.tab.toLowerCase()){er.textContent="You already have a feed with that name";return}
+renameFeed(s.tab,n,{draft:false});render();
+}
+// Logo: load a new set of videos for the tab you're on. The set you just saw is skipped;
+// once a feed has nothing new left it starts over with a fresh shuffle. Undo brings the last set back.
+function homeAndRefresh(){
+if(s.page!=="feed"){$("q").value="";s={...s,page:"feed",q:""}}
+if(cur().draft){render();return}
+s={...s,ask:null,editing:false,sel:[],confirm:null,likeOpen:null,descOpen:null};
+const f=cur(),shown=pick().out.map(v=>v.id),snap={tab:s.tab,seed:f.seed,skip:f.skip||[]};
+const seed=f.seed+1+Math.floor(Math.random()*1000);
+setFeed({seed,skip:[...new Set([...snap.skip,...shown])]});
+if(!pick().out.length)setFeed({seed,skip:[]});
+render();window.scrollTo({top:0,behavior:"smooth"});
+const tok=++undoTok;
+$("undo").innerHTML=`<button class="undo" id="undobtn" aria-label="Bring back the previous set" title="Bring back the previous set"><i class="ti ti-arrow-back-up" style="font-size:15px" aria-hidden="true"></i></button>`;
+$("undobtn").onclick=()=>{if(s.feeds[snap.tab]){s={...s,feeds:{...s.feeds,[snap.tab]:{...s.feeds[snap.tab],seed:snap.seed,skip:snap.skip}}};render()}$("undo").innerHTML=""};
+setTimeout(()=>{if(tok===undoTok)$("undo").innerHTML=""},5000);
+}
+function setRange(key,lo,hi,step,a,b){
+let x=parseInt(a,10),y=parseInt(b,10);
+if(Number.isNaN(x)||Number.isNaN(y)){rangeErr("Enter whole numbers of minutes");return}
+x=Math.max(lo,Math.min(hi,x));y=Math.max(lo,Math.min(hi,y));
+if(x>y)[x,y]=[y,x];if(x===y)y=Math.min(hi,x+step);
+rangeErr("");upFeed({[key]:[x,y]});
+}
+function bind(){
+placePop();
+on("[data-tab]",e=>e.onclick=()=>{const n=e.dataset.tab;if(s.editing)return toggleSel(n);goTab(n)});
+on("[data-card]",e=>e.onclick=()=>{const n=e.dataset.card;if(s.editing)return toggleSel(n);goTab(n)});
+on("[data-tdrag]",e=>{e.ondragstart=ev=>{dragTab=e.dataset.tdrag;ev.dataTransfer.setData("text/plain","tab");ev.dataTransfer.effectAllowed="move"};e.ondragover=ev=>{if(dragTab){ev.preventDefault();e.classList.add("over")}};e.ondragleave=()=>e.classList.remove("over");e.ondrop=ev=>{ev.preventDefault();e.classList.remove("over");if(dragTab){const src=dragTab;dragTab=null;reorder(src,e.dataset.tdrag)}};e.ondragend=()=>{dragTab=null}});
+on("[data-act]",e=>e.onclick=()=>bulk(e.dataset.act));
+on("[data-range]",e=>e.onclick=()=>up({range:e.dataset.range}));
+on("[data-newscat]",e=>e.onclick=()=>{const c=e.dataset.newscat;if(NEWS_CATS.includes(c))upFeed({cat:c})});
+on("[data-disc]",e=>e.onclick=()=>upFeed({connected:false,topics:[]}));
+on("[data-unblend]",e=>e.onclick=()=>upFeed({partner:null,topics:[]}));
+on("[data-tx]",e=>e.onclick=()=>upFeed({[listKey()]:cur()[listKey()].filter(x=>x!==e.dataset.tx)}));
+on("[data-unmute]",e=>e.onclick=()=>upFeed({muted:cur().muted.filter(x=>x!==e.dataset.unmute)}));
+on("[data-t]",e=>e.onclick=()=>up({[e.dataset.t]:!s[e.dataset.t]}));
+on("[data-save]",e=>e.onclick=()=>{const id=+e.dataset.save;if(isSaved(id))unsave(id);else up({saving:s.saving===id?null:id})});
+on("[data-seen]",e=>e.onclick=()=>toggleSeen(+e.dataset.seen));
+on("[data-unwatch]",e=>e.onclick=()=>up({watched:s.watched.filter(x=>x!==+e.dataset.unwatch)}));
+on("[data-sv]",e=>e.onclick=()=>saveTo(+e.dataset.sv,+e.dataset.fi));
+on("[data-like]",e=>e.onclick=()=>{const id=+e.dataset.like;up({likeOpen:s.likeOpen===id?null:id})});
+on("[data-pin]",e=>e.onclick=ev=>{ev.stopPropagation();pin(+e.dataset.pin)});
+on("[data-watch]",e=>e.onclick=()=>watch(+e.dataset.watch));
+on("[data-unpin]",e=>e.onclick=()=>upFeed({pinned:cur().pinned.filter(x=>x!==+e.dataset.unpin)}));
+on("[data-del]",e=>e.onclick=()=>upFeed({removed:[...cur().removed,+e.dataset.del]}));
+on("[data-savedtoggle]",e=>e.onclick=()=>up({savedOpen:!s.savedOpen}));
+on("[data-histtoggle]",e=>e.onclick=()=>up({histOpen:!s.histOpen,confirm:null}));
+on("[data-fo]",e=>e.onclick=()=>{const i=+e.dataset.fo;up({folders:s.folders.map((f,j)=>j===i?{...f,open:!f.open}:f)})});
+on("[data-rm]",e=>e.onclick=()=>{const[fi,id]=e.dataset.rm.split(":").map(Number);up({folders:s.folders.map((f,j)=>j===fi?{...f,items:f.items.filter(x=>x!==id)}:f)})});
+on("[data-s]",e=>e.onclick=()=>send(e.dataset.s));
+on("[data-cv]",e=>e.onclick=()=>askChoose(e.dataset.cv));
+on("[data-fb]",e=>e.onclick=()=>askFeedback(e.dataset.fb));
+on("[data-shelf]",e=>e.onclick=ev=>{ev.stopPropagation();const n=e.dataset.shelf;if(s.feeds[n])setShelved(n,!s.feeds[n].shelved)});
+on("[data-note]",e=>{grow(e);e.oninput=()=>{setNote(e.dataset.note,e.value);grow(e)};e.onkeydown=ev=>onNoteKey(ev,e)});
+on("[data-sheet]",e=>e.onclick=ev=>{if(ev.target===e||ev.target.closest(".ans")){const ta=e.querySelector("textarea");if(ta)ta.focus()}});
+on("[data-mic]",e=>e.onclick=()=>toggleMic(e.dataset.mic));
+on("[data-unfin]",e=>e.onclick=()=>unfinish(+e.dataset.unfin));
+on("[data-yt]",e=>e.onclick=()=>watch(+e.dataset.yt));
+on("[data-fintoggle]",e=>e.onclick=()=>up({finOpen:!s.finOpen}));
+on("[data-nbtoggle]",e=>{e.onclick=()=>up({nbOpen:!s.nbOpen});e.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();up({nbOpen:!s.nbOpen});const h=document.querySelector("[data-nbtoggle]");if(h)h.focus()}}});
+bindPops();
+on("#tabs [data-close]",e=>e.onclick=ev=>{ev.stopPropagation();closeTab(e.dataset.close)});
+on("[data-openshare]",e=>{const go=()=>openShareById(e.dataset.openshare);e.onclick=ev=>{if(ev.target.closest("[data-rmshare]"))return;go()};e.onkeydown=ev=>{if(ev.target===e&&(ev.key==="Enter"||ev.key===" ")){ev.preventDefault();go()}}});
+on("[data-rmshare]",e=>e.onclick=ev=>{ev.stopPropagation();removeShare(e.dataset.rmshare)});
+on("[data-desc]",e=>{const id=+e.dataset.desc;const tog=()=>up({descOpen:s.descOpen===id?null:id});e.onclick=tog;if(e.tagName!=="BUTTON")e.onkeydown=ev=>{if(ev.target===e&&(ev.key==="Enter"||ev.key===" ")){ev.preventDefault();tog()}}});
+on("[data-askq]",e=>e.onclick=()=>askLast(+e.dataset.askq));
+const keyClick=(e,fn)=>{e.onclick=fn;e.onkeydown=ev=>{if(ev.target===e&&(ev.key==="Enter"||ev.key===" ")){ev.preventDefault();fn(ev)}}};
+on("[data-blendstoggle]",e=>keyClick(e,()=>up({blendsOpen:!s.blendsOpen})));
+on("[data-openblend]",e=>keyClick(e,()=>openBlend(e.dataset.openblend)));
+on("[data-forgetblend]",e=>e.onclick=ev=>{ev.stopPropagation();forgetBlend(e.dataset.forgetblend)});
+const fw=$("feedwrap");
+on("[data-drag]",e=>{e.ondragstart=ev=>{ev.dataTransfer.setData("text/plain",e.dataset.drag);ev.dataTransfer.effectAllowed="copy";fw.classList.add("drop")};e.ondragend=()=>fw.classList.remove("drop")});
+fw.ondragover=ev=>{if(dragTab)return;ev.preventDefault();ev.dataTransfer.dropEffect="copy"};
+fw.ondrop=ev=>{ev.preventDefault();fw.classList.remove("drop");const id=parseInt(ev.dataTransfer.getData("text/plain"),10);if(!Number.isNaN(id)&&V[id])pin(id)};
+const g=(id,fn)=>{const el=$(id);if(el)el.onclick=fn};
+g("askadd",askCommit);g("askx",()=>up({ask:null}));g("cundobtn",undoChat);g("cmodebtn",()=>{if(claudeLocked())return;const b=$("cmodebtn"),next=!s.claudeNew;b.classList.toggle("new",next);b.setAttribute("aria-checked",String(next));const k=b.querySelector(".mknob i");if(k)k.className=`ti ${next?"ti-plus":"ti-pencil"}`;setTimeout(()=>up({claudeNew:next}),180)});g("credobtn",redoChat);
+g("connect",()=>upFeed({connected:true,topics:[...new Set(CLAUDE_WORK.flatMap(w=>w.t))]}));
+g("minall",()=>up({page:"feed"}));
+g("sback",()=>{$("q").value="";up({page:"feed",q:""})});
+g("delask",()=>up({confirm:"tab"}));g("delno",()=>up({confirm:null}));g("delyes",()=>delTabs([s.tab]));
+g("hclear",()=>{if(s.watched.length)up({confirm:"hist"})});g("hno",()=>up({confirm:null}));g("hyes",()=>up({watched:[],confirm:null}));
+g("fnameok",saveName);g("finish",finishCurrent);g("bapprove",approveBlend);g("shback",()=>upFeed({open:null}));g("shsave",saveShareAsFeed);
+g("sharebtn",()=>up({share:s.share?null:{to:"",notes:false,sent:[],off:[]}}));
+const keepScroll=fn=>{const l=$("shlist"),y=l?l.scrollTop:0;fn();const l2=$("shlist");if(l2)l2.scrollTop=y};
+on("[data-shpick]",e=>e.onchange=()=>{const id=+e.dataset.shpick,off=s.share.off||[];keepScroll(()=>up({share:{...s.share,off:e.checked?off.filter(x=>x!==id):[...off,id]}}))});
+g("shareall",()=>keepScroll(()=>up({share:{...s.share,off:shareSel().length===shareSet.length?[...shareSet]:[]}})));g("sharex",()=>up({share:null}));g("sharecopy",copyShare);g("sharesend",()=>sendShare());
+if($("sharein")){const si=$("sharein");si.value=s.share.to;si.oninput=()=>{s={...s,share:{...s.share,to:si.value}};$("shareerr").textContent=""};si.onkeydown=e=>{if(e.key==="Enter")sendShare()}}
+if($("sharelink"))$("sharelink").onfocus=e=>e.target.select();
+if($("sharenotes"))$("sharenotes").onchange=e=>up({share:{...s.share,notes:e.target.checked}});
+on("[data-shareto]",e=>e.onclick=()=>sendShare(e.dataset.shareto));g("nbcopy",copyNotes);
+if($("fname")){$("fname").onkeydown=e=>{if(e.key==="Enter")saveName()};$("fname").oninput=()=>$("fnerr").textContent=""}
+if($("bgo")){$("bgo").onclick=blend;$("bin").onkeydown=e=>{if(e.key==="Enter")blend()};$("bin").oninput=()=>$("berr").textContent=""}
+g("nf",()=>up({newFolder:!s.newFolder}));
+const nok=$("nfok");
+if(nok){const ni=$("nfin");const mk=()=>{const n=ni.value.trim(),er=$("nferr");if(!n){er.textContent="Name the folder first";return}if(s.folders.some(f=>f.name.toLowerCase()===n.toLowerCase())){er.textContent="You already have a folder with that name";return}up({folders:[...s.folders,{name:n,items:[],open:true}],newFolder:false})};nok.onclick=mk;ni.onkeydown=e=>{if(e.key==="Enter")mk();if(e.key==="Escape")up({newFolder:false})};ni.oninput=()=>$("nferr").textContent=""}
+}
+function wire(id,key,step,lo,hi){
+$(id+"-a").oninput=()=>{const r=cur()[key];upFeed({[key]:[Math.min(+$(id+"-a").value,r[1]-step),r[1]]})};
+$(id+"-b").oninput=()=>{const r=cur()[key];upFeed({[key]:[r[0],Math.max(+$(id+"-b").value,r[0]+step)]})};
+const typed=()=>setRange(key,lo,hi,step,$(id+"-min").value,$(id+"-max").value);
+[$(id+"-min"),$(id+"-max")].forEach(el=>{el.onchange=typed;el.onkeydown=e=>{if(e.key==="Enter")el.blur()}});
+}
+wire("len","len",1,1,120);wire("ses","ses",10,10,240);
+function addItem(){const i=$("tin"),er=$("terr"),v=i.value.trim();const key=listKey();if(!v){er.textContent=key==="channels"?"Type a channel name first":"Type a topic first";return}const n=key==="channels"?v:v.charAt(0).toUpperCase()+v.slice(1);if(cur()[key].some(x=>x.toLowerCase()===n.toLowerCase())){er.textContent="That's already in this feed";return}i.value="";if(cur().draft){applyTopics([n]);render()}else upFeed({[key]:[...cur()[key],n]})}
+$("tadd").onclick=addItem;
+$("tin").addEventListener("keydown",e=>{if(e.key==="Enter")addItem()});
+$("tin").addEventListener("input",()=>$("terr").textContent="");
+$("logo").onclick=homeAndRefresh;
+$("newfeed").onclick=newFeed;
+on("[data-view]",b=>b.onclick=()=>{const v=b.dataset.view;if(!VIEWS.includes(v))return;saveView(v);up({view:v,likeOpen:null,descOpen:null})});
+$("alltabs").onclick=()=>up({page:s.page==="all"?"feed":"all",confirm:null});
+$("edit").onclick=()=>up({editing:!s.editing,sel:[],confirm:null,editErr:""});
+// Google-style autocomplete. Suggestions come from titles, channels and topics; recent searches come first.
+// Weight = summed views, so short popular queries (topics, channels) outrank single long titles, as on Google.
+const SUGG_CORPUS=(()=>{const m=new Map();const add=(p,w)=>{const k=p.toLowerCase().replace(/\s+/g," ").trim();if(k)m.set(k,(m.get(k)||0)+w)};V.forEach(v=>{add(v.t,v.vn);if(v.h!==v.t)add(v.h,v.vn);add(v.ch,v.vn);add(v.tp,v.vn*2);add(v.tp+" "+v.ch.toLowerCase(),v.vn/4)});return [...m].map(([p,w])=>({p,w}))})();
+let ac={items:[],active:-1,typed:""};
+const suggScore=x=>x.w/(1+(x.p.split(" ").length-1)*0.5);
+const byScore=(a,b)=>suggScore(b)-suggScore(a);
+function suggestFor(raw){
+const q=raw.toLowerCase().replace(/\s+/g," ").trimStart();
+const rec=s.recent.filter(r=>!q||r.startsWith(q)).map(p=>({p,rec:true}));
+if(!q)return rec.slice(0,SUGG_MAX);
+const wordHit=p=>p.split(" ").some((_,i,a)=>a.slice(i).join(" ").startsWith(q));
+const seen=new Set(rec.map(r=>r.p));
+const pre=SUGG_CORPUS.filter(x=>x.p.startsWith(q)&&!seen.has(x.p)).sort(byScore);
+const mid=SUGG_CORPUS.filter(x=>!x.p.startsWith(q)&&wordHit(x.p)&&!seen.has(x.p)).sort(byScore);
+return [...rec,...pre,...mid].slice(0,SUGG_MAX).map(x=>({p:x.p,rec:!!x.rec}));
+}
+function boldRest(p,typed){
+const q=typed.toLowerCase().trim();if(!q)return esc(p);
+const i=p.indexOf(q);if(i<0)return `<b>${esc(p)}</b>`;
+return `${i?`<b>${esc(p.slice(0,i))}</b>`:""}${esc(p.slice(i,i+q.length))}<b>${esc(p.slice(i+q.length))}</b>`;
+}
+function paintSugg(){
+const box=$("sugg"),inp=$("q"),open=ac.items.length>0;
+box.hidden=!open;$("sbar").classList.toggle("open",open);inp.setAttribute("aria-expanded",String(open));
+if(!open){box.innerHTML="";inp.removeAttribute("aria-activedescendant");return}
+box.innerHTML=ac.items.map((x,i)=>`<div class="sug${x.rec?" rec":""}${i===ac.active?" act":""}" id="sug-${i}" role="option" aria-selected="${i===ac.active}" data-sug="${i}"><i class="ti ${x.rec?"ti-history":"ti-search"} ic" aria-hidden="true"></i><span class="tx">${boldRest(x.p,ac.typed)}</span>${x.rec?`<button class="sb" data-sugrm="${i}" tabindex="-1" aria-label="Remove ${esc(x.p)} from recent searches" title="Remove"><i class="ti ti-x" style="font-size:15px" aria-hidden="true"></i></button>`:""}<button class="sb" data-sugfill="${i}" tabindex="-1" aria-label="Fill in ${esc(x.p)}" title="Fill in"><i class="ti ti-arrow-up-left" style="font-size:16px" aria-hidden="true"></i></button></div>`).join("");
+if(ac.active>=0)inp.setAttribute("aria-activedescendant","sug-"+ac.active);else inp.removeAttribute("aria-activedescendant");
+on("[data-sug]",e=>e.onmousedown=ev=>{if(ev.target.closest(".sb"))return;ev.preventDefault();inp.value=ac.items[+e.dataset.sug].p;search()});
+on("[data-sugfill]",e=>e.onmousedown=ev=>{ev.preventDefault();ev.stopPropagation();const v=ac.items[+e.dataset.sugfill].p+" ";inp.value=v;openSugg(v)});
+on("[data-sugrm]",e=>e.onmousedown=ev=>{ev.preventDefault();ev.stopPropagation();const p=ac.items[+e.dataset.sugrm].p;s={...s,recent:s.recent.filter(r=>r!==p)};openSugg(inp.value)});
+}
+function openSugg(typed){ac={items:suggestFor(typed),active:-1,typed};paintSugg()}
+function closeSugg(){ac={items:[],active:-1,typed:ac.typed};paintSugg()}
+function moveSugg(d){
+if(!ac.items.length){openSugg($("q").value);return}
+const n=ac.items.length,next=ac.active+d<-1?n-1:ac.active+d>=n?-1:ac.active+d;
+ac={...ac,active:next};$("q").value=next<0?ac.typed:ac.items[next].p;paintSugg();
+}
+const search=()=>{const q=$("q").value.trim();closeSugg();if(!q)return;const k=q.toLowerCase().replace(/\s+/g," ");$("q").blur();
+s={...s,recent:[k,...s.recent.filter(r=>r!==k)].slice(0,RECENT_MAX)};up({q,page:"search",saving:null,editing:false})};
+$("qgo").onclick=search;
+$("q").addEventListener("keydown",e=>{
+if(e.key==="Enter"){e.preventDefault();search()}
+else if(e.key==="ArrowDown"){e.preventDefault();moveSugg(1)}
+else if(e.key==="ArrowUp"){e.preventDefault();moveSugg(-1)}
+else if(e.key==="Escape"&&ac.items.length){e.preventDefault();$("q").value=ac.typed;closeSugg()}});
+$("q").addEventListener("input",e=>openSugg(e.target.value));
+$("q").addEventListener("focus",e=>openSugg(e.target.value));
+$("q").addEventListener("blur",()=>closeSugg());
+$("mic").onclick=()=>{const m=$("mic"),q=$("q");if(s.listening)return;s={...s,listening:true};m.classList.add("on");q.placeholder="Listening…";setTimeout(()=>{s={...s,listening:false};m.classList.remove("on");q.placeholder="Search"},1800)};
+$("send").onclick=()=>send();
+$("cin").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();send()}});
+$("cin").addEventListener("input",()=>$("cerr").textContent="");
+s={...s,blends:DEMO_BLENDS.map(tasteOf),inbox:DEMO_INBOX};
+render();
+</script>
+</body>
+</html>
