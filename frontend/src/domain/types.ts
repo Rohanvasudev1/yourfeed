@@ -13,12 +13,26 @@ export type Video = Readonly<{
   newsCategory: string | null;
 }>;
 
-export type FeedKind = "home" | "subs" | "top" | "news" | "claude" | "topics";
+export const FEED_KINDS = ["home", "subs", "top", "news", "claude", "topics"] as const;
+export type FeedKind = (typeof FEED_KINDS)[number];
 
 export type Range = readonly [min: number, max: number];
 
+export const TOP_RANGES = ["day", "year", "all"] as const;
+/** Most viewed's time range: last 24 hours, last year or all time. */
+export type TopRange = (typeof TOP_RANGES)[number];
+
 export type Feed = Readonly<{
+  /** Unique across feeds (ignoring case); also the tab label. */
+  name: string;
   kind: FeedKind;
+  /** Moved off the tab bar into All tabs. */
+  shelved: boolean;
+  /** A new feed the user hasn't named or filled yet. */
+  draft: boolean;
+  /** Index into the feed colour palette. */
+  color: number;
+  topRange: TopRange;
   topics: readonly string[];
   channels: readonly string[];
   /** Video length bounds in minutes. */
@@ -38,16 +52,25 @@ export type Feed = Readonly<{
 export const NEWS_CATEGORIES = ["All", "World", "Business", "Tech", "Science"] as const;
 export type NewsCategory = (typeof NEWS_CATEGORIES)[number];
 
-export type GlobalFilters = Readonly<{
+/** The global filters composition reads. */
+export type CompositionFilters = Readonly<{
   hideClickbait: boolean;
   boostSmallCreators: boolean;
   includeShorts: boolean;
 }>;
 
+/** All six global filters: the ones composition reads plus the ones that only change how cards look. */
+export type GlobalFilters = CompositionFilters &
+  Readonly<{
+    honestTitles: boolean;
+    hideViewCounts: boolean;
+    hideSubscriberCounts: boolean;
+  }>;
+
 export type ComposeInput = Readonly<{
   catalog: readonly Video[];
   feed: Feed;
-  filters: GlobalFilters;
+  filters: CompositionFilters;
   /** Videos marked watched anywhere (the eye toggle). */
   watched: readonly string[];
   /** Max age in hours for Most viewed. */

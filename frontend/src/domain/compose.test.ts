@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { composeFeed } from "./compose";
 import { makeFeed } from "./feed";
-import type { ComposeInput, GlobalFilters, Video } from "./types";
+import type { ComposeInput, CompositionFilters, Video } from "./types";
 
 let next = 0;
 const video = (o: Partial<Video> = {}): Video => ({
@@ -20,7 +20,7 @@ const video = (o: Partial<Video> = {}): Video => ({
   ...o,
 });
 
-const filters: GlobalFilters = { hideClickbait: true, boostSmallCreators: false, includeShorts: false };
+const filters: CompositionFilters = { hideClickbait: true, boostSmallCreators: false, includeShorts: false };
 
 const compose = (o: Partial<ComposeInput>) =>
   composeFeed({ catalog: [], feed: makeFeed(), filters, watched: [], topMaxAgeHours: Infinity, ...o });

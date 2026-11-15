@@ -1,53 +1,64 @@
-import { useEffect, useMemo, useState } from "react";
-import { fetchCatalog } from "./api/catalog";
-import { composeFeed } from "./domain/compose";
-import { makeFeed } from "./domain/feed";
+import { useEffect, useReducer, useState } from "react";
+import { CatalogError } from "./components/CatalogError";
+import { FeedView } from "./components/FeedView";
+import { Footer } from "./components/Footer";
+import { Header } from "./components/Header";
 import type { Video } from "./domain/types";
+import type { CatalogLoader, StateStorage } from "./ports";
+import { currentFeedOf, makeReducer } from "./state/appState";
+import { restoreState } from "./state/persistence";
+import { DEMO_SEED } from "./state/seed";
+import { usePersist } from "./state/usePersist";
 
-const LEARN = makeFeed({ topics: ["AI", "Programming", "Economics", "Careers"], length: [10, 60], session: [30, 90] });
-const FILTERS = { hideClickbait: true, boostSmallCreators: true, includeShorts: false } as const;
+type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage }>;
 
-type Load = { state: "loading" } | { state: "error"; message: string } | { state: "ready"; catalog: readonly Video[] };
+type CatalogState =
+  | Readonly<{ status: "loading" }>
+  | Readonly<{ status: "error"; message: string }>
+  | Readonly<{ status: "ready"; catalog: readonly Video[] }>;
 
-export default function App() {
-  const [load, setLoad] = useState<Load>({ state: "loading" });
-  const [seed, setSeed] = useState(0);
+const reducer = makeReducer(DEMO_SEED);
+
+const restore = (storage: StateStorage) => restoreState(storage.load(), DEMO_SEED);
+
+export default function App({ loadCatalog, storage }: Props) {
+  const [state, dispatch] = useReducer(reducer, storage, restore);
+  usePersist(storage, state);
+  const [catalog, setCatalog] = useState<CatalogState>({ status: "loading" });
+
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    fetchCatalog()
-      .then((catalog) => setLoad({ state: "ready", catalog }))
-      .catch((err: Error) => setLoad({ state: "error", message: err.message }));
-  }, []);
+    let live = true;
+    setCatalog({ status: "loading" });
+    loadCatalog()
+      .then((videos) => live && setCatalog({ status: "ready", catalog: videos }))
+      .catch((err: unknown) => {
+        console.error("Catalog failed to load", err);
+        if (live) setCatalog({ status: "error", message: errorMessage(err) });
+      });
+    return () => {
+      live = false;
+    };
+  }, [loadCatalog, attempt]);
 
-  const result = useMemo(
-    () =>
-      load.state === "ready"
-        ? composeFeed({ catalog: load.catalog, feed: { ...LEARN, seed }, filters: FILTERS, watched: [], topMaxAgeHours: 8760 })
-        : null,
-    [load, seed],
-  );
-
+  const feed = currentFeedOf(state);
   return (
-    <main style={{ maxWidth: 720, margin: "32px auto", padding: "0 16px", fontFamily: "system-ui, sans-serif" }}>
-      <h1 style={{ cursor: "pointer" }} onClick={() => setSeed((s) => s + 1)} title="New set for this feed">
-        Yourfeed
-      </h1>
-      {load.state === "loading" && <p>Loading…</p>}
-      {load.state === "error" && <p role="alert">{load.message}</p>}
-      {result && (
-        <>
-          <p>
-            Learn · {result.upNext.length} videos · {result.usedMinutes} of 90 min · {result.hidden} hidden
-          </p>
-          <ol>
-            {result.upNext.map((v) => (
-              <li key={v.id}>
-                {v.honestTitle} <small>· {v.channel} · {v.minutes} min · {v.topic}</small>
-              </li>
-            ))}
-          </ol>
-        </>
-      )}
-    </main>
+    <div className="app">
+      <Header />
+      <main>
+        <h2 className="feed-title">{feed.name}</h2>
+        {catalog.status === "loading" && <p className="muted">Loading…</p>}
+        {catalog.status === "error" && (
+          <CatalogError message={catalog.message} onRetry={() => setAttempt((n) => n + 1)} />
+        )}
+        {catalog.status === "ready" && (
+          <FeedView catalog={catalog.catalog} feed={feed} filters={state.filters} watched={state.watched} />
+        )}
+      </main>
+      <Footer onReset={() => dispatch({ type: "reset" })} />
+    </div>
   );
 }
+
+const errorMessage = (err: unknown) => (err instanceof Error ? err.message : "Couldn't load videos.");

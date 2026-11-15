@@ -1,68 +1,123 @@
+/* Design tokens from prototype/index.html (light), with the matching dark theme. */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --surface-0: #ffffff;
+  --surface-1: #f2f2f2;
+  --surface-2: #ffffff;
+  --text-primary: #0f0f0f;
+  --text-secondary: #606060;
+  --text-muted: #757575;
+  --border: rgba(0, 0, 0, 0.1);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --border-stronger: rgba(0, 0, 0, 0.35);
+  --bg-accent: #def1ff;
+  --text-accent: #065fd4;
+  --border-accent: #065fd4;
+  --fill-accent: #065fd4;
+  --fill-accent-hover: #0556bf;
+  --on-accent: #ffffff;
+  --bg-accent-muted: rgba(6, 95, 212, 0.06);
+  --bg-danger: #fdecea;
+  --text-danger: #b3261e;
+  --border-danger: #f2a7a1;
+  --bg-success: #e6f4ea;
+  --text-success: #1e7e34;
+  --border-success: #8fd19e;
+  --bg-warning: #fef4e5;
+  --text-warning: #8a5300;
+  --border-warning: #f0b357;
+  --fill-brand: #c96442;
+  --on-brand: #ffffff;
+  --fill-primary: #0f0f0f;
+  --on-primary: #ffffff;
+  --fill-control: rgba(0, 0, 0, 0.1);
+  --ink-voice: color-mix(in srgb, var(--fill-brand) 30%, var(--text-primary));
+  --radius: 8px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  --font-voice: Georgia, "Times New Roman", serif;
+  color-scheme: light;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
+    --surface-0: #0f0f0f;
+    --surface-1: #272727;
+    --surface-2: #212121;
+    --text-primary: #f1f1f1;
+    --text-secondary: #aaaaaa;
+    --text-muted: #8c8c8c;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.18);
+    --border-stronger: rgba(255, 255, 255, 0.4);
+    --bg-accent: #263850;
+    --text-accent: #3ea6ff;
+    --border-accent: #3ea6ff;
+    --fill-accent: #3ea6ff;
+    --fill-accent-hover: #65b8ff;
+    --on-accent: #0f0f0f;
+    --bg-accent-muted: rgba(62, 166, 255, 0.1);
+    --bg-danger: #4a1714;
+    --text-danger: #ff8a80;
+    --border-danger: #b3261e;
+    --bg-success: #16301d;
+    --text-success: #81c995;
+    --border-success: #1e7e34;
+    --bg-warning: #3d2a0a;
+    --text-warning: #fdd663;
+    --border-warning: #8a5300;
+    --fill-primary: #f1f1f1;
+    --on-primary: #0f0f0f;
+    --fill-control: rgba(255, 255, 255, 0.16);
+    color-scheme: dark;
   }
 }
+
+/* Base elements */
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+}
+button {
+  font: inherit;
+  color: var(--text-primary);
+  background: transparent;
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  height: 36px;
+  padding: 0 14px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+button:hover { background: var(--surface-1); }
+:focus-visible { outline: 2px solid var(--border-accent); outline-offset: 2px; }
+h2, h3, p { margin: 0; }
+.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.muted { color: var(--text-muted); }
+
+/* App shell */
+.app { max-width: 1120px; min-height: 100vh; margin: 0 auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 12px; }
+.app main { flex: 1; min-width: 0; }
+.app-header { display: flex; align-items: center; gap: 12px; }
+.logo { display: flex; align-items: center; gap: 6px; font-weight: 500; font-size: 15px; }
+.feed-title { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
+.app-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 12px; border-top: 0.5px solid var(--border); font-size: 12px; color: var(--text-muted); }
+.link-button { height: auto; padding: 2px 6px; border: none; font-size: 12px; color: var(--text-secondary); text-decoration: underline; }
+
+.catalog-error { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px; border-radius: 12px; background: var(--bg-danger); border: 0.5px solid var(--border-danger); color: var(--text-danger); }
+
+/* Feed: three same-size cards per row */
+.feed-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .feed-grid { grid-template-columns: minmax(0, 1fr); } }
+.card { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); min-width: 0; }
+.card-body { min-width: 0; }
+.card-title { font-size: 14px; font-weight: 500; line-height: 1.35; min-height: calc(2 * 1.35em); }
+.card-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Generic thumbnail (the mockup's fallback design); per-video designs come later */
+.thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; container-type: inline-size; background: linear-gradient(135deg, #222, #555); display: flex; align-items: center; padding: 0 5cqw; }
+.thumb-caption { font: 900 11.5cqw/0.95 Impact, "Arial Black", "Helvetica Neue", Arial, sans-serif; color: #fff; -webkit-text-stroke: 0.5cqw #000; paint-order: stroke fill; overflow-wrap: anywhere; }
+.thumb-duration { position: absolute; right: 4px; bottom: 4px; background: rgba(0, 0, 0, 0.8); color: #fff; font: 500 clamp(9px, 4.4cqw, 12px)/1 Roboto, Arial, sans-serif; padding: 3px 4px; border-radius: 4px; }
