@@ -18,8 +18,8 @@ export function FeedView({ catalog, feed, filters, watched }: Props) {
   );
   return (
     <ul className="feed-grid" aria-label="Up next">
-      {upNext.map((video) => (
-        <VideoCard key={video.id} video={video} filters={filters} />
+      {upNext.map((video, i) => (
+        <VideoCard key={video.id} video={video} filters={filters} rank={feed.kind === "top" ? i + 1 : undefined} />
       ))}
     </ul>
   );

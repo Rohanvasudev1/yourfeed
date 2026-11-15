@@ -1,4 +1,4 @@
-import type { GlobalFilters, Feed } from "../domain/types";
+import type { Feed, GlobalFilters, NewsCategory, TopRange } from "../domain/types";
 
 export const VIEWS = ["grid", "list"] as const;
 export type View = (typeof VIEWS)[number];
@@ -20,14 +20,29 @@ export type AppState = Readonly<{
   view: View;
 }>;
 
-export type Action = Readonly<{ type: "reset" }>;
+export type Action =
+  | Readonly<{ type: "reset" }>
+  | Readonly<{ type: "open_feed"; feed: string }>
+  | Readonly<{ type: "set_top_range"; feed: string; range: TopRange }>
+  | Readonly<{ type: "set_news_category"; feed: string; category: NewsCategory }>;
 
-/** Builds the app reducer; `reset` returns to `seed`. */
+const updateFeed = (state: AppState, name: string, changes: Partial<Feed>): AppState => ({
+  ...state,
+  feeds: state.feeds.map((f) => (f.name === name ? { ...f, ...changes } : f)),
+});
+
+/** Builds the app reducer; `reset` returns to `seed`. Actions naming a feed that doesn't exist change nothing. */
 export function makeReducer(seed: AppState) {
-  return (_state: AppState, action: Action): AppState => {
+  return (state: AppState, action: Action): AppState => {
     switch (action.type) {
       case "reset":
         return seed;
+      case "open_feed":
+        return state.feeds.some((f) => f.name === action.feed) ? { ...state, currentFeed: action.feed } : state;
+      case "set_top_range":
+        return updateFeed(state, action.feed, { topRange: action.range });
+      case "set_news_category":
+        return updateFeed(state, action.feed, { newsCategory: action.category });
     }
   };
 }

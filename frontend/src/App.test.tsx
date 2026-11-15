@@ -1,22 +1,9 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import App from "./App";
-import type { CatalogLoader, StateStorage } from "./ports";
+import type { CatalogLoader } from "./ports";
 import { blockedStorage, CATALOG, EVERYTHING_ORDER, memoryStorage, rawLocalStorage } from "./test/fixtures";
-
-type Setup = { loadCatalog?: CatalogLoader; storage?: StateStorage };
-
-function renderApp({ loadCatalog = async () => CATALOG, storage = memoryStorage() }: Setup = {}) {
-  return render(<App loadCatalog={loadCatalog} storage={storage} />);
-}
-
-async function feedTitles(): Promise<string[]> {
-  const feed = await screen.findByRole("list", { name: "Up next" });
-  return within(feed)
-    .getAllByRole("heading", { level: 3 })
-    .map((h) => h.textContent ?? "");
-}
+import { feedTitles, renderApp } from "./test/renderApp";
 
 describe("opening the app", () => {
   it("opens on Everything, ranked by what you watch, without watched or clickbait videos", async () => {

@@ -29,3 +29,9 @@ export const TOP_RANGE_HOURS: Readonly<Record<TopRange, number>> = {
   year: HOURS_PER_YEAR,
   all: Infinity,
 };
+
+/** Built-in feeds can be shelved but never deleted; only `topics` feeds are the visitor's own. */
+export const isBuiltIn = (feed: Feed): boolean => feed.kind !== "topics";
+
+/** Built-in feeds other than Home share the one Explore button in the tab bar. */
+export const isInExplore = (feed: Feed): boolean => isBuiltIn(feed) && feed.kind !== "home";

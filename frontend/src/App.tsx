@@ -1,8 +1,10 @@
 import { useEffect, useReducer, useState } from "react";
 import { CatalogError } from "./components/CatalogError";
+import { FeedControls } from "./components/FeedControls";
 import { FeedView } from "./components/FeedView";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
+import { TabBar } from "./components/TabBar";
 import type { Video } from "./domain/types";
 import type { CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
@@ -46,8 +48,14 @@ export default function App({ loadCatalog, storage }: Props) {
   return (
     <div className="app">
       <Header />
+      <TabBar feeds={state.feeds} current={feed} onOpen={(name) => dispatch({ type: "open_feed", feed: name })} />
       <main>
         <h2 className="feed-title">{feed.name}</h2>
+        <FeedControls
+          feed={feed}
+          onTopRange={(range) => dispatch({ type: "set_top_range", feed: feed.name, range })}
+          onNewsCategory={(category) => dispatch({ type: "set_news_category", feed: feed.name, category })}
+        />
         {catalog.status === "loading" && <p className="muted">Loading…</p>}
         {catalog.status === "error" && (
           <CatalogError message={catalog.message} onRetry={() => setAttempt((n) => n + 1)} />
