@@ -1,5 +1,5 @@
 import { IconHome } from "@tabler/icons-react";
-import { isInExplore } from "../domain/feed";
+import { isBuiltIn, isInExplore } from "../domain/feed";
 import type { Feed } from "../domain/types";
 import { ExploreMenu } from "./ExploreMenu";
 
@@ -14,7 +14,7 @@ export function TabBar({ feeds, current, onOpen }: Props) {
   const inBar = feeds.filter((f) => !f.shelved);
   const home = inBar.filter((f) => f.kind === "home");
   const explore = inBar.filter(isInExplore);
-  const own = inBar.filter((f) => f.kind === "topics");
+  const own = inBar.filter((f) => !isBuiltIn(f));
   const currentPage = (f: Feed) => (f.name === current.name ? "page" : undefined);
 
   return (

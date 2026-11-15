@@ -101,6 +101,16 @@ describe("the Explore menu", () => {
     expect(exploreButton()).toHaveFocus();
   });
 
+  it("closes when focus tabs out of it", async () => {
+    renderFeeds();
+    await userEvent.click(exploreButton());
+    await userEvent.tab();
+    await userEvent.tab();
+    await userEvent.tab();
+    expect(screen.queryByRole("dialog", { name: "Explore feeds" })).not.toBeInTheDocument();
+    expect(within(tabBar()).getByRole("button", { name: "Learn" })).toHaveFocus();
+  });
+
   it("closes when you click outside it", async () => {
     renderFeeds();
     await userEvent.click(exploreButton());

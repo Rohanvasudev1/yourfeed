@@ -3,10 +3,10 @@ import App from "../App";
 import type { CatalogLoader, StateStorage } from "../ports";
 import { CATALOG, memoryStorage } from "./fixtures";
 
-export type Setup = { loadCatalog?: CatalogLoader; storage?: StateStorage };
+export type RenderAppOptions = { loadCatalog?: CatalogLoader; storage?: StateStorage };
 
 /** Renders the whole app the way a visitor gets it, with an injected catalog and in-memory storage. */
-export function renderApp({ loadCatalog = async () => CATALOG, storage = memoryStorage() }: Setup = {}) {
+export function renderApp({ loadCatalog = async () => CATALOG, storage = memoryStorage() }: RenderAppOptions = {}) {
   return render(<App loadCatalog={loadCatalog} storage={storage} />);
 }
 

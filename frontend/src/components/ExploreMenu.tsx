@@ -12,7 +12,7 @@ type Props = Readonly<{
 
 /**
  * The one tab-bar button for the built-in feeds other than Home. It shows the open feed's
- * name and icon when one of them is open. Click toggles the menu; Escape and outside clicks close it.
+ * name and icon when one of them is open. Click toggles the menu; Escape, outside clicks and focus leaving it close it.
  */
 export function ExploreMenu({ feeds, current, onOpen }: Props) {
   const [open, setOpen] = useState(false);
@@ -29,14 +29,16 @@ export function ExploreMenu({ feeds, current, onOpen }: Props) {
       setOpen(false);
       button.current?.focus();
     };
-    const onPointer = (e: PointerEvent) => {
+    const closeIfOutside = (e: Event) => {
       if (!wrapper.current?.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("pointerdown", closeIfOutside);
+    document.addEventListener("focusin", closeIfOutside);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("pointerdown", closeIfOutside);
+      document.removeEventListener("focusin", closeIfOutside);
     };
   }, [open]);
 
