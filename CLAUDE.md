@@ -6,6 +6,7 @@ Read `CONTEXT.md` for the vocabulary and `docs/adr/` for decisions before changi
 
 - Backend tests: `cd backend && uv run pytest`
 - Frontend tests: `cd frontend && npm test`, typecheck: `cd frontend && npx tsc -b`
+- Frontend coverage gate (80%): `cd frontend && npm run coverage`; Playwright smoke: `cd frontend && npm run e2e`
 
 ## Worktrees
 
