@@ -1,5 +1,6 @@
 import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
+import { appendDictation, type NoteTarget } from "../domain/notes";
 import { finishCurrent, moveBackToUpNext, startWatching } from "../domain/session";
 import type { Feed, GlobalFilters, NewsCategory, TopRange } from "../domain/types";
 
@@ -38,6 +39,9 @@ export type Action =
   | Readonly<{ type: "watch_video"; feed: string; video: string }>
   | Readonly<{ type: "finish_current"; feed: string }>
   | Readonly<{ type: "move_back_to_up_next"; feed: string; video: string }>
+  | Readonly<{ type: "set_note"; target: NoteTarget; text: string }>
+  /** Adds words heard by voice typing to the end of a note. */
+  | Readonly<{ type: "add_dictation"; target: NoteTarget; heard: string }>
   /** Loads (or, for undo, restores) a feed set. */
   | Readonly<{ type: "set_feed_set"; set: FeedSet }>;
 
@@ -48,6 +52,11 @@ const mapFeed = (state: AppState, name: string, change: (feed: Feed) => Feed): A
 
 const updateFeed = (state: AppState, name: string, changes: Partial<Feed>): AppState =>
   mapFeed(state, name, (f) => ({ ...f, ...changes }));
+
+const writeNote = (state: AppState, target: NoteTarget, write: (note: string) => string): AppState =>
+  "video" in target
+    ? { ...state, notes: { ...state.notes, [target.video]: write(state.notes[target.video] ?? "") } }
+    : mapFeed(state, target.feed, (f) => ({ ...f, note: write(f.note) }));
 
 const without = (items: readonly string[], item: string) => items.filter((x) => x !== item);
 const withItem = (items: readonly string[], item: string) => (items.includes(item) ? items : [...items, item]);
@@ -86,6 +95,10 @@ export function makeReducer(seed: AppState) {
         return mapFeed(state, action.feed, finishCurrent);
       case "move_back_to_up_next":
         return mapFeed(state, action.feed, (f) => moveBackToUpNext(f, action.video));
+      case "set_note":
+        return writeNote(state, action.target, () => action.text);
+      case "add_dictation":
+        return writeNote(state, action.target, (note) => appendDictation(note, action.heard));
       case "set_feed_set":
         return updateFeed(state, action.set.feed, { seed: action.set.seed, skipped: action.set.skipped });
     }

@@ -1,11 +1,11 @@
 import type { Dispatch } from "react";
+import { FLASH_MS } from "../components/Flash";
 import { youtubeSearchUrl } from "../domain/session";
 import type { Feed, Video } from "../domain/types";
 import type { Action } from "./appState";
 import { useReturnNudge } from "./useReturnNudge";
 import { useTimedValue } from "./useTimedValue";
 
-const FLASH_MS = 5000;
 const POPUP_BLOCKED = "Your browser blocked the YouTube tab. Allow pop-ups for this page to open videos.";
 
 /** The open feed's session (Watching now and Finished) and what the visitor can do with it. */

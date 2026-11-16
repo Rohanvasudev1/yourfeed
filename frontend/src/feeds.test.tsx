@@ -114,7 +114,7 @@ describe("the Explore menu", () => {
   it("closes when you click outside it", async () => {
     renderFeeds();
     await userEvent.click(exploreButton());
-    await userEvent.click(screen.getByRole("heading", { level: 2 }));
+    await userEvent.click(screen.getByRole("heading", { level: 2, name: "Everything" }));
     expect(screen.queryByRole("dialog", { name: "Explore feeds" })).not.toBeInTheDocument();
   });
 });

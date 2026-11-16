@@ -1,5 +1,6 @@
 import { useMemo, useReducer } from "react";
 import { CatalogError } from "./components/CatalogError";
+import { FeedNotes } from "./components/FeedNotes";
 import { FeedControls } from "./components/FeedControls";
 import { FeedView } from "./components/FeedView";
 import { Flash } from "./components/Flash";
@@ -20,6 +21,7 @@ import { DEMO_SEED } from "./state/seed";
 import { useCatalog } from "./state/useCatalog";
 import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
+import { useNotes } from "./state/useNotes";
 import { useSession } from "./state/useSession";
 
 type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage }>;
@@ -43,6 +45,8 @@ export default function App({ loadCatalog, storage }: Props) {
   const composition = useMemo(() => input && composeFeed(input), [input]);
   const byId = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const session = useSession(feed, byId, dispatch);
+  const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
+  const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, dispatch });
   const { refresh, undo } = useRefresh(input, dispatch);
 
   return (
@@ -71,12 +75,20 @@ export default function App({ loadCatalog, storage }: Props) {
         />
         {catalog.status === "loading" && <p className="muted">Loading…</p>}
         {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
-        <Flash message={session.flash} />
+        <Flash message={notes.flash ?? session.flash} />
         {session.finished.length > 0 && (
-          <FinishedSection videos={session.finished} filters={state.filters} onPlay={session.play} onMoveBack={session.moveBack} />
+          <FinishedSection videos={session.finished} filters={state.filters}
+            noteFor={notes.forVideo}
+            onPlay={session.play}
+            onMoveBack={session.moveBack}
+          />
         )}
         {session.current && (
-          <WatchingNow video={session.current} filters={state.filters} nudge={session.nudge} onPlay={session.play} onFinish={session.finish} />
+          <WatchingNow video={session.current} filters={state.filters} nudge={session.nudge}
+            note={notes.forVideo(session.current.id)}
+            onPlay={session.play}
+            onFinish={session.finish}
+          />
         )}
         {composition && <UpNextLine feed={feed} composition={composition} />}
         {composition && (
@@ -90,6 +102,7 @@ export default function App({ loadCatalog, storage }: Props) {
             onPlay={session.play}
           />
         )}
+        <FeedNotes feed={feed} videos={sessionVideos} filters={state.filters} notes={notes} onPlay={session.play} />
       </main>
       <Footer onReset={() => dispatch({ type: "reset" })} />
     </div>
