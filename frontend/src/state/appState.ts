@@ -2,7 +2,7 @@ import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
 import { appendDictation, type NoteTarget } from "../domain/notes";
 import { finishCurrent, moveBackToUpNext, startWatching } from "../domain/session";
-import type { Feed, GlobalFilters, NewsCategory, TopRange } from "../domain/types";
+import type { Feed, GlobalFilters, NewsCategory, Range, TopRange } from "../domain/types";
 
 export const VIEWS = ["grid", "list"] as const;
 export type View = (typeof VIEWS)[number];
@@ -27,6 +27,7 @@ export type AppState = Readonly<{
 export type Action =
   | Readonly<{ type: "reset" }>
   | Readonly<{ type: "setView"; view: View }>
+  | Readonly<{ type: "toggle_filter"; filter: keyof GlobalFilters }>
   | Readonly<{ type: "open_feed"; feed: string }>
   | Readonly<{ type: "set_top_range"; feed: string; range: TopRange }>
   | Readonly<{ type: "set_news_category"; feed: string; category: NewsCategory }>
@@ -36,6 +37,10 @@ export type Action =
   | Readonly<{ type: "remove_from_feed"; feed: string; item: string }>
   | Readonly<{ type: "mute_topic"; feed: string; topic: string }>
   | Readonly<{ type: "unmute_topic"; feed: string; topic: string }>
+  /** Sets the shortest and longest video, already checked against the length limits. */
+  | Readonly<{ type: "set_length_range"; feed: string; range: Range }>
+  /** Sets the minimum and maximum session minutes, already checked against the session limits. */
+  | Readonly<{ type: "set_session_range"; feed: string; range: Range }>
   | Readonly<{ type: "watch_video"; feed: string; video: string }>
   | Readonly<{ type: "finish_current"; feed: string }>
   | Readonly<{ type: "move_back_to_up_next"; feed: string; video: string }>
@@ -69,6 +74,8 @@ export function makeReducer(seed: AppState) {
         return seed;
       case "setView":
         return state.view === action.view ? state : { ...state, view: action.view };
+      case "toggle_filter":
+        return { ...state, filters: { ...state.filters, [action.filter]: !state.filters[action.filter] } };
       case "open_feed":
         return state.feeds.some((f) => f.name === action.feed) ? { ...state, currentFeed: action.feed } : state;
       case "set_top_range":
@@ -89,6 +96,10 @@ export function makeReducer(seed: AppState) {
         return mapFeed(state, action.feed, (f) => ({ ...f, muted: withItem(f.muted, action.topic) }));
       case "unmute_topic":
         return mapFeed(state, action.feed, (f) => ({ ...f, muted: without(f.muted, action.topic) }));
+      case "set_length_range":
+        return updateFeed(state, action.feed, { length: action.range });
+      case "set_session_range":
+        return updateFeed(state, action.feed, { session: action.range });
       case "watch_video":
         return mapFeed(state, action.feed, (f) => startWatching(f, action.video));
       case "finish_current":

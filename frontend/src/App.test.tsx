@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { CatalogLoader } from "./ports";
 import { blockedStorage, CATALOG, EVERYTHING_ORDER, memoryStorage, rawLocalStorage } from "./test/fixtures";
-import { feedTitles, renderApp, savedWithFilters } from "./test/renderApp";
+import { feedTitles, renderApp, toggleFilters } from "./test/renderApp";
 
 describe("opening the app", () => {
   it("opens on Everything, ranked by what you watch, without watched or clickbait videos", async () => {
@@ -32,22 +32,28 @@ describe("when the catalog can't load", () => {
 
 const BAIT_TITLE = "YOU WON'T BELIEVE this AI trick";
 
-/** Clickbait shown with honest titles off, so the bait title is visible. */
-const savedWithClickbaitShown = () => savedWithFilters({ hideClickbait: false, honestTitles: false });
+/** Shows clickbait under its bait title, so the change is visible in the feed. */
+async function showClickbait() {
+  await feedTitles();
+  await toggleFilters("Hide clickbait", "Honest titles");
+  expect(await feedTitles()).toContain(BAIT_TITLE);
+}
 
 describe("saving state in the browser", () => {
   it("keeps state across a reload", async () => {
-    const storage = memoryStorage(await savedWithClickbaitShown());
-    renderApp({ storage }).unmount();
+    const storage = memoryStorage();
+    const { unmount } = renderApp({ storage });
+    await showClickbait();
+    unmount();
 
     renderApp({ storage });
     expect(await feedTitles()).toContain(BAIT_TITLE);
   });
 
   it("Reset demo restores the starting example, and it stays reset after a reload", async () => {
-    const storage = memoryStorage(await savedWithClickbaitShown());
+    const storage = memoryStorage();
     const { unmount } = renderApp({ storage });
-    expect(await feedTitles()).toContain(BAIT_TITLE);
+    await showClickbait();
 
     await userEvent.click(screen.getByRole("button", { name: "Reset demo" }));
     expect(await feedTitles()).toEqual(EVERYTHING_ORDER);
