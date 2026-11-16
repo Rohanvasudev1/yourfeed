@@ -3,10 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import type { Video } from "./domain/types";
 import { CARDS_CATALOG, CATALOG } from "./test/fixtures";
-import { cardFor, feedTitles, filtersButton, renderApp, toggleFilters } from "./test/renderApp";
+import { cardFor, feedTitles, filtersButton, filtersPopup, renderApp, toggleFilters } from "./test/renderApp";
 
-const filtersPopup = () => screen.findByRole("dialog", { name: "Filters and display" });
-const filtersPhrase = () => filtersButton().textContent;
+const filtersButtonText = () => filtersButton().textContent;
 
 describe("the filters popup", () => {
   it("lists the six filters as switches, with the starting example's four on", async () => {
@@ -28,16 +27,16 @@ describe("the filters popup", () => {
   it("counts the filters that are on in the settings line", async () => {
     renderApp();
     await feedTitles();
-    expect(filtersPhrase()).toBe("4 filters on");
+    expect(filtersButtonText()).toBe("4 filters on");
 
     await toggleFilters("Hide clickbait");
-    expect(filtersPhrase()).toBe("3 filters on");
+    expect(filtersButtonText()).toBe("3 filters on");
 
     await toggleFilters("Honest titles", "Hide view counts", "Boost small creators");
-    expect(filtersPhrase()).toBe("no filters");
+    expect(filtersButtonText()).toBe("no filters");
 
     await toggleFilters("Include Shorts");
-    expect(filtersPhrase()).toBe("1 filter on");
+    expect(filtersButtonText()).toBe("1 filter on");
   });
 
   it("stays open while switches are flipped, so the feed updates behind it", async () => {
@@ -65,7 +64,7 @@ describe("the filters popup", () => {
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog", { name: "Filters and display" })).not.toBeInTheDocument();
     expect(filtersButton()).toHaveFocus();
-    expect(filtersPhrase()).toBe("3 filters on");
+    expect(filtersButtonText()).toBe("3 filters on");
   });
 });
 

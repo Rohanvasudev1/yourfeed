@@ -33,10 +33,12 @@ export const settingsLine = () => screen.getByRole("group", { name: "Feed settin
 /** The settings line phrase that opens the filters popup ("4 filters on", "no filters"). */
 export const filtersButton = () => within(settingsLine()).getByRole("button", { name: /^(\d+ filters? on|no filters)$/ });
 
+export const filtersPopup = () => screen.findByRole("dialog", { name: "Filters and display" });
+
 /** Flips global filters the way a user does: opens the filters popup, clicks each switch by name, then closes it. */
 export async function toggleFilters(...names: readonly string[]): Promise<void> {
   await userEvent.click(filtersButton());
-  const popup = await screen.findByRole("dialog", { name: "Filters and display" });
+  const popup = await filtersPopup();
   for (const name of names) await userEvent.click(within(popup).getByRole("switch", { name }));
   await userEvent.keyboard("{Escape}");
 }
