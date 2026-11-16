@@ -1,0 +1,50 @@
+/* Tab management: the tab bar's close and pin buttons, New feed and All tabs, the All tabs page,
+   the Name this feed box and the Tab options popup. */
+.tab-row { display: flex; align-items: center; gap: 8px; }
+.tab-row .tab-bar { flex: 1; }
+.tab-tools { display: flex; gap: 6px; flex: none; }
+.tab-all { height: 32px; padding: 0 10px; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+.tab-all[aria-current="page"] { background: var(--surface-2); }
+
+/* The × takes its space all the time and only shows on hover or focus, so nothing shifts. */
+.tab-chip { position: relative; display: inline-flex; align-items: center; border-radius: var(--radius); }
+.tab-chip .tab { padding-right: 26px; }
+.tab-chip[draggable="true"] { cursor: grab; }
+.tab-close, .tab-pin { position: absolute; right: 5px; width: 18px; height: 18px; min-height: 0; padding: 0; border: none; border-radius: 50%; background: transparent; color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; }
+.tab-close { opacity: 0; }
+.tab-chip:hover .tab-close, .tab-close:focus-visible { opacity: 1; }
+.tab-close:hover { background: var(--surface-1); color: var(--text-primary); }
+.tab-pin { color: var(--text-accent); }
+.tab-temporary { border: 0.5px dashed var(--border-strong); }
+.tab-temporary .tab[aria-current="page"] { border-color: transparent; }
+
+.name-feed { margin-bottom: 12px; padding: 16px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); }
+.name-feed-row { display: flex; gap: 6px; }
+.name-feed-row input { flex: 1; min-width: 0; font-size: 14px; }
+.name-feed-row .icon-button { width: 36px; height: 36px; }
+.name-feed-message, .all-tabs-message { margin-top: 6px; font-size: 12px; color: var(--text-danger); }
+
+.all-tabs { padding: 16px; border-radius: 12px; background: var(--surface-1); border: 0.5px solid var(--border); }
+.all-tabs-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.all-tabs-head h2 { font-size: 15px; font-weight: 500; }
+.all-tabs-head .muted { flex: 1; }
+.all-tabs-group + .all-tabs-group { margin-top: 16px; }
+.all-tabs-group-label { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); }
+.all-tabs-group-label h3 { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.all-tabs-group-label .muted { font-size: 12px; }
+.tab-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.tab-card { display: flex; flex-direction: column; align-items: flex-start; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); }
+.tab-card h4 { margin-top: 6px; font-size: 14px; font-weight: 500; }
+.tab-card-open { all: unset; cursor: pointer; }
+.tab-card-open:hover { text-decoration: underline; }
+.tab-card-open:focus-visible { outline: 2px solid var(--border-accent); outline-offset: 2px; }
+.tab-card-desc { margin-top: 2px; font-size: 12px; line-height: 1.4; color: var(--text-muted); }
+.tab-card-move { height: 28px; margin-top: auto; padding: 0 10px; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+.tab-card-desc + .tab-card-move { margin-top: 10px; }
+
+.phrase-icon { display: inline-flex; vertical-align: middle; text-decoration: none; }
+.tab-options { line-height: 1.4; color: var(--text-primary); }
+.popup-action { height: auto; min-height: 32px; padding: 4px 8px; border: none; display: flex; align-items: center; gap: 8px; font-size: 13px; text-align: left; }
+.danger { color: var(--text-danger); }
+.tab-options-confirm { padding: 4px 8px; font-size: 13px; }
+.tab-options-buttons { display: flex; gap: 6px; margin-top: 6px; }

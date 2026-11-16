@@ -1,5 +1,6 @@
 import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
+import { reduceTabs, type TabAction } from "../domain/tabs";
 import { finishCurrent, moveBackToUpNext, startWatching } from "../domain/session";
 import type { Feed, GlobalFilters, NewsCategory, TopRange } from "../domain/types";
 
@@ -24,9 +25,9 @@ export type AppState = Readonly<{
 }>;
 
 export type Action =
+  | TabAction
   | Readonly<{ type: "reset" }>
   | Readonly<{ type: "setView"; view: View }>
-  | Readonly<{ type: "open_feed"; feed: string }>
   | Readonly<{ type: "set_top_range"; feed: string; range: TopRange }>
   | Readonly<{ type: "set_news_category"; feed: string; category: NewsCategory }>
   /** Adds a topic (a channel on Subscriptions) to the feed's list, unmuting a topic that was muted. */
@@ -61,7 +62,16 @@ export function makeReducer(seed: AppState) {
       case "setView":
         return state.view === action.view ? state : { ...state, view: action.view };
       case "open_feed":
-        return state.feeds.some((f) => f.name === action.feed) ? { ...state, currentFeed: action.feed } : state;
+      case "leave_draft":
+      case "new_feed":
+      case "name_feed":
+      case "set_shelved":
+      case "close_tab":
+      case "delete_feed":
+      case "move_feed": {
+        const tabs = reduceTabs(state, action);
+        return tabs.feeds === state.feeds && tabs.currentFeed === state.currentFeed ? state : { ...state, ...tabs };
+      }
       case "set_top_range":
         return updateFeed(state, action.feed, { topRange: action.range });
       case "set_news_category":
