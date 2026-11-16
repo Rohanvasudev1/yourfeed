@@ -63,6 +63,7 @@ export default function App({ loadCatalog, storage }: Props) {
             onMute: (topic) => dispatch({ type: "mute_topic", feed: feed.name, topic }),
             onUnmute: (topic) => dispatch({ type: "unmute_topic", feed: feed.name, topic }),
           }}
+          onToggleFilter={(filter) => dispatch({ type: "toggle_filter", filter })}
         />
         <FeedControls
           feed={feed}

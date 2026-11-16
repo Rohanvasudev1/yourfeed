@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import App from "../App";
 import type { CatalogLoader, StateStorage } from "../ports";
-import type { GlobalFilters } from "../domain/types";
 import { CATALOG, memoryStorage } from "./fixtures";
 
 export type RenderAppOptions = { loadCatalog?: CatalogLoader; storage?: StateStorage };
@@ -28,18 +28,15 @@ export async function cardFor(title: string): Promise<HTMLElement> {
   return card;
 }
 
-type Saved = { state: { filters: GlobalFilters } };
+export const settingsLine = () => screen.getByRole("group", { name: "Feed settings" });
 
-/**
- * What the app saves on a first visit, with some global filters changed. This reads the saved
- * shape only because no filter controls exist yet; switch callers to clicking the filters popup
- * once that lands.
- */
-export async function savedWithFilters(filters: Partial<GlobalFilters>): Promise<Saved> {
-  const storage = memoryStorage();
-  const { unmount } = renderApp({ storage });
-  await feedTitles();
-  unmount();
-  const saved = storage.saved() as Saved;
-  return { ...saved, state: { ...saved.state, filters: { ...saved.state.filters, ...filters } } };
+/** The settings line phrase that opens the filters popup ("4 filters on", "no filters"). */
+export const filtersButton = () => within(settingsLine()).getByRole("button", { name: /^(\d+ filters? on|no filters)$/ });
+
+/** Flips global filters the way a user does: opens the filters popup, clicks each switch by name, then closes it. */
+export async function toggleFilters(...names: readonly string[]): Promise<void> {
+  await userEvent.click(filtersButton());
+  const popup = await screen.findByRole("dialog", { name: "Filters and display" });
+  for (const name of names) await userEvent.click(within(popup).getByRole("switch", { name }));
+  await userEvent.keyboard("{Escape}");
 }
