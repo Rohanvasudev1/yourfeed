@@ -112,6 +112,16 @@ describe("the video length popup", () => {
     expect(sentence()).toContain("10–60 min videos");
   });
 
+  it("drops a rejected value once the slider moves", async () => {
+    const popup = await openLearnPopup(lengthPhrase, "Video length");
+    const box = within(popup).getByRole("spinbutton", { name: LENGTH_BOXES[0] });
+    await userEvent.clear(box);
+    await userEvent.type(box, "abc{Enter}");
+    drag(within(popup).getByRole("slider", { name: "Shortest video" }), 15);
+    expect(within(popup).queryByText("Enter whole numbers of minutes.")).not.toBeInTheDocument();
+    expect(box).toHaveValue(15);
+  });
+
   it("applies a typed value when focus leaves the boxes", async () => {
     const popup = await openLearnPopup(lengthPhrase, "Video length");
     const box = within(popup).getByRole("spinbutton", { name: LENGTH_BOXES[1] });

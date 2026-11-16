@@ -22,11 +22,11 @@ export function typedRange(limits: RangeLimits, minText: string, maxText: string
   if (!WHOLE_NUMBER.test(minTrimmed) || !WHOLE_NUMBER.test(maxTrimmed)) return { kind: "message", message: NOT_WHOLE_MINUTES };
   const clamp = (n: number) => Math.max(limits.lowest, Math.min(limits.highest, n));
   const [a, b] = [clamp(Number(minTrimmed)), clamp(Number(maxTrimmed))];
-  return { kind: "range", range: apart(limits, [Math.min(a, b), Math.max(a, b)]) };
+  return { kind: "range", range: keepOneStepApart(limits, [Math.min(a, b), Math.max(a, b)]) };
 }
 
 /** Keeps an empty range one step wide, inside the limits. */
-function apart(limits: RangeLimits, [min, max]: Range): Range {
+function keepOneStepApart(limits: RangeLimits, [min, max]: Range): Range {
   if (min < max) return [min, max];
   return max + limits.step <= limits.highest ? [min, max + limits.step] : [min - limits.step, max];
 }

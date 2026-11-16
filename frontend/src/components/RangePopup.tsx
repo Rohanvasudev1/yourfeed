@@ -32,6 +32,13 @@ export function RangePopup({ setting, value, onChange, popupProps }: Props) {
     if (!sameRange(range, value)) onChange(range);
   };
 
+  /** The thumb wins over anything typed: the boxes follow it again. */
+  const drag = (range: Range) => {
+    setDrafts(NO_DRAFTS);
+    setMessage("");
+    change(range);
+  };
+
   const applyDrafts = () => {
     if (drafts === NO_DRAFTS) return;
     const result = typedRange(limits, drafts.min ?? String(value[0]), drafts.max ?? String(value[1]));
@@ -77,7 +84,7 @@ export function RangePopup({ setting, value, onChange, popupProps }: Props) {
       <p className="popup-label" id={labelId}>
         {setting.label}
       </p>
-      <DualSlider setting={setting} value={value} onChange={change} />
+      <DualSlider setting={setting} value={value} onChange={drag} />
       <div className="range-boxes" onBlur={leaveBoxes}>
         {box("min", setting.minName, value[0])}
         <span>to</span>

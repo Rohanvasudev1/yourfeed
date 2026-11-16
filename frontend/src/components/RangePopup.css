@@ -7,12 +7,11 @@
 .dual-range input::-webkit-slider-runnable-track { height: 4px; border: none; background: transparent; }
 .dual-range input::-moz-range-track { border: none; background: transparent; }
 .dual-range input::-webkit-slider-thumb { pointer-events: auto; -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--surface-2); border: 1.5px solid var(--fill-accent); cursor: pointer; }
-.dual-range input::-moz-range-thumb { pointer-events: auto; width: 14px; height: 14px; border-radius: 50%; background: var(--surface-2); border: 1.5px solid var(--fill-accent); cursor: pointer; }
+.dual-range input::-moz-range-thumb { pointer-events: auto; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; background: var(--surface-2); border: 1.5px solid var(--fill-accent); cursor: pointer; }
 .dual-range input:focus-visible { outline: none; }
 .dual-range input:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--bg-accent); }
 .dual-range input:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--bg-accent); }
 
 .range-boxes { display: flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 11px; color: var(--text-muted); }
-.range-boxes input { width: 52px; height: 26px; padding: 0 4px; font-size: 12px; text-align: center; }
-.range-boxes input { font: inherit; font-size: 12px; color: var(--text-primary); background: var(--surface-2); border: 0.5px solid var(--border-strong); border-radius: var(--radius); }
+.range-boxes input { width: 52px; height: 26px; padding: 0 4px; font: inherit; font-size: 12px; text-align: center; color: var(--text-primary); background: var(--surface-2); border: 0.5px solid var(--border-strong); border-radius: var(--radius); }
 .range-boxes input:focus { outline: none; border-color: var(--border-accent); box-shadow: 0 0 0 3px var(--bg-accent); }
