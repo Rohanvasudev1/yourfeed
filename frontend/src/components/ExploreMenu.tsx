@@ -2,6 +2,7 @@ import { IconCheck, IconChevronDown, IconCompass } from "@tabler/icons-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { Feed } from "../domain/types";
 import { kindInfo } from "./feedKindInfo";
+import { useDismissal } from "./popup/useDismissal";
 
 type Props = Readonly<{
   /** The built-in feeds grouped under Explore, in tab order. */
@@ -22,25 +23,14 @@ export function ExploreMenu({ feeds, current, onOpen }: Props) {
   const menuId = useId();
   const active = feeds.find((f) => f.name === current.name) ?? null;
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+  useDismissal(
+    open,
+    (target) => target instanceof Node && (wrapper.current?.contains(target) ?? false),
+    (reason) => {
       setOpen(false);
-      button.current?.focus();
-    };
-    const closeIfOutside = (e: Event) => {
-      if (!wrapper.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", closeIfOutside);
-    document.addEventListener("focusin", closeIfOutside);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", closeIfOutside);
-      document.removeEventListener("focusin", closeIfOutside);
-    };
-  }, [open]);
+      if (reason === "escape") button.current?.focus();
+    },
+  );
 
   useEffect(() => {
     if (!open) return;

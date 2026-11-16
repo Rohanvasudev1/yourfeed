@@ -1,3 +1,4 @@
+import { activeItems } from "./feedList";
 import { hash } from "./hash";
 import { HOURS_PER_YEAR } from "./time";
 import type { ComposeInput, Composition, CompositionFilters, Feed, Video } from "./types";
@@ -33,6 +34,12 @@ function isExcluded(video: Video, feed: Feed): boolean {
   );
 }
 
+/** Most viewed with no (unmuted) topics shows every topic. */
+function limitedToTopic(feed: Feed, topic: string): boolean {
+  const topics = activeItems(feed);
+  return topics.length === 0 || topics.includes(topic);
+}
+
 function matchesKind(video: Video, input: ComposeInput): boolean {
   const { feed } = input;
   switch (feed.kind) {
@@ -41,7 +48,7 @@ function matchesKind(video: Video, input: ComposeInput): boolean {
     case "subs":
       return feed.channels.includes(video.channel);
     case "top":
-      return video.ageHours <= input.topMaxAgeHours && (feed.topics.length === 0 || feed.topics.includes(video.topic));
+      return video.ageHours <= input.topMaxAgeHours && limitedToTopic(feed, video.topic);
     case "news":
       return video.topic === "News" && (feed.newsCategory === "All" || video.newsCategory === feed.newsCategory);
     case "claude":
@@ -54,7 +61,7 @@ function homeScore(video: Video, input: ComposeInput, byId: ReadonlyMap<string, 
   const history = input.watched.flatMap((id) => byId.get(id) ?? []);
   const sameTopic = history.filter((h) => h.topic === video.topic).length;
   const sameChannel = history.filter((h) => h.channel === video.channel).length;
-  const boosted = input.feed.topics.includes(video.topic) ? 4 : 0;
+  const boosted = activeItems(input.feed).includes(video.topic) ? 4 : 0;
   const jitter = (seededRank(video.id, input.feed.seed) % 100) / 60;
   return 3 * sameTopic + 2 * sameChannel + boosted + Math.log10(Math.max(video.views, 1)) / 2 + jitter;
 }
