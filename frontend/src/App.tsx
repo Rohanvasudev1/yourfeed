@@ -1,4 +1,5 @@
 import { useMemo, useReducer } from "react";
+import { AllTabsPage } from "./components/AllTabsPage";
 import { CatalogError } from "./components/CatalogError";
 import { FeedNotes } from "./components/FeedNotes";
 import { FeedControls } from "./components/FeedControls";
@@ -6,6 +7,7 @@ import { FeedView } from "./components/FeedView";
 import { Flash } from "./components/Flash";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
+import { NameFeed } from "./components/NameFeed";
 import { SettingsLine } from "./components/SettingsLine";
 import { FinishedSection, WatchingNow } from "./components/Session";
 import { TabBar } from "./components/TabBar";
@@ -23,12 +25,14 @@ import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
 import { useNotes } from "./state/useNotes";
 import { useSession } from "./state/useSession";
+import { useTabs } from "./state/useTabs";
 
 type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage }>;
 
 const reducer = makeReducer(DEMO_SEED);
 
-const restore = (storage: StateStorage) => restoreState(storage.load(), DEMO_SEED);
+/** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */
+const restore = (storage: StateStorage) => reducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" });
 
 export default function App({ loadCatalog, storage }: Props) {
   const [state, dispatch] = useReducer(reducer, storage, restore);
@@ -48,66 +52,88 @@ export default function App({ loadCatalog, storage }: Props) {
   const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
   const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, dispatch, showFlash: session.showFlash });
   const { refresh, undo } = useRefresh(input, dispatch);
+  const tabs = useTabs(state, feed, dispatch);
 
   return (
     <div className="app">
       <Header onRefresh={refresh} onUndoRefresh={undo} />
-      <TabBar feeds={state.feeds} current={feed} onOpen={(name) => dispatch({ type: "open_feed", feed: name })} />
+      <TabBar feeds={state.feeds} current={feed} tabs={tabs} />
+      <Flash message={tabs.flash} />
       <main>
-        <div className="feed-toolbar">
-          <h2 className="feed-title">{feed.name}</h2>
-          <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
-        </div>
-        <SettingsLine
-          feed={feed}
-          filters={state.filters}
-          topicActions={{
-            onAdd: (item) => dispatch({ type: "add_to_feed", feed: feed.name, item }),
-            onRemove: (item) => dispatch({ type: "remove_from_feed", feed: feed.name, item }),
-            onMute: (topic) => dispatch({ type: "mute_topic", feed: feed.name, topic }),
-            onUnmute: (topic) => dispatch({ type: "unmute_topic", feed: feed.name, topic }),
-          }}
-          rangeActions={{
-            onLength: (range) => dispatch({ type: "set_length_range", feed: feed.name, range }),
-            onSession: (range) => dispatch({ type: "set_session_range", feed: feed.name, range }),
-          }}
-          onToggleFilter={(filter) => dispatch({ type: "toggle_filter", filter })}
-        />
-        <FeedControls
-          feed={feed}
-          onTopRange={(range) => dispatch({ type: "set_top_range", feed: feed.name, range })}
-          onNewsCategory={(category) => dispatch({ type: "set_news_category", feed: feed.name, category })}
-        />
-        {catalog.status === "loading" && <p className="muted">Loading…</p>}
-        {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
-        <Flash message={session.flash} />
-        {session.finished.length > 0 && (
-          <FinishedSection videos={session.finished} filters={state.filters}
-            noteFor={notes.forVideo}
-            onPlay={session.play}
-            onMoveBack={session.moveBack}
-          />
+        {tabs.page === "all" ? (
+          <AllTabsPage feeds={state.feeds} tabs={tabs} />
+        ) : (
+          <>
+            <div className="feed-toolbar">
+              <h2 className="feed-title">{feed.name}</h2>
+              <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
+            </div>
+            {feed.draft ? (
+              <NameFeed onName={tabs.name} />
+            ) : (
+              <>
+                <SettingsLine
+                  // Each feed opens with its popups closed, so one never shows another feed's options.
+                  key={feed.name}
+                  feed={feed}
+                  tabOptions={tabs}
+                  filters={state.filters}
+                  topicActions={{
+                    onAdd: (item) => dispatch({ type: "add_to_feed", feed: feed.name, item }),
+                    onRemove: (item) => dispatch({ type: "remove_from_feed", feed: feed.name, item }),
+                    onMute: (topic) => dispatch({ type: "mute_topic", feed: feed.name, topic }),
+                    onUnmute: (topic) => dispatch({ type: "unmute_topic", feed: feed.name, topic }),
+                  }}
+                  rangeActions={{
+                    onLength: (range) => dispatch({ type: "set_length_range", feed: feed.name, range }),
+                    onSession: (range) => dispatch({ type: "set_session_range", feed: feed.name, range }),
+                  }}
+                  onToggleFilter={(filter) => dispatch({ type: "toggle_filter", filter })}
+                />
+                <FeedControls
+                  feed={feed}
+                  onTopRange={(range) => dispatch({ type: "set_top_range", feed: feed.name, range })}
+                  onNewsCategory={(category) => dispatch({ type: "set_news_category", feed: feed.name, category })}
+                />
+                {catalog.status === "loading" && <p className="muted">Loading…</p>}
+                {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
+                <Flash message={session.flash} />
+                {session.finished.length > 0 && (
+                  <FinishedSection
+                    videos={session.finished}
+                    filters={state.filters}
+                    noteFor={notes.forVideo}
+                    onPlay={session.play}
+                    onMoveBack={session.moveBack}
+                  />
+                )}
+                {session.current && (
+                  <WatchingNow
+                    video={session.current}
+                    filters={state.filters}
+                    nudge={session.nudge}
+                    note={notes.forVideo(session.current.id)}
+                    onPlay={session.play}
+                    onFinish={session.finish}
+                  />
+                )}
+                {composition && <UpNextLine feed={feed} composition={composition} />}
+                {composition && (
+                  <FeedView
+                    // Switching layouts or loading a new set starts with every description closed, as in the mockup.
+                    key={`${state.view}-${feed.seed}`}
+                    upNext={composition.upNext}
+                    kind={feed.kind}
+                    filters={state.filters}
+                    view={state.view}
+                    onPlay={session.play}
+                  />
+                )}
+                <FeedNotes feed={feed} videos={sessionVideos} filters={state.filters} notes={notes} onPlay={session.play} />
+              </>
+            )}
+          </>
         )}
-        {session.current && (
-          <WatchingNow video={session.current} filters={state.filters} nudge={session.nudge}
-            note={notes.forVideo(session.current.id)}
-            onPlay={session.play}
-            onFinish={session.finish}
-          />
-        )}
-        {composition && <UpNextLine feed={feed} composition={composition} />}
-        {composition && (
-          <FeedView
-            // Switching layouts or loading a new set starts with every description closed, as in the mockup.
-            key={`${state.view}-${feed.seed}`}
-            upNext={composition.upNext}
-            kind={feed.kind}
-            filters={state.filters}
-            view={state.view}
-            onPlay={session.play}
-          />
-        )}
-        <FeedNotes feed={feed} videos={sessionVideos} filters={state.filters} notes={notes} onPlay={session.play} />
       </main>
       <Footer onReset={() => dispatch({ type: "reset" })} />
     </div>
