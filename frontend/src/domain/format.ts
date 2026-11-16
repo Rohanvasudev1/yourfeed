@@ -22,11 +22,19 @@ export function ago(hours: number): string {
   return `${plural(Math.floor(hours / HOURS_PER_YEAR), "year")} ago`;
 }
 
+/** The mockup keyed videos by number, so demo-N hashes as N to keep its durations ("demo-0" → 34:35). */
+const DEMO_ID = /^demo-(\d+)$/;
+const durationKey = (id: string) => DEMO_ID.exec(id)?.[1] ?? id;
+
 /** A realistic duration badge ("34:35", "1:14:32"): the minutes plus stable seconds per video. */
 export function durationText(video: Video): string {
-  const total = video.minutes * 60 + (hash(`d${video.id}`) % 60);
+  const total = video.minutes * 60 + (hash(`d${durationKey(video.id)}`) % 60);
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = String(total % 60).padStart(2, "0");
   return h ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
+
+/** The title a card shows: the honest one while Honest titles is on. */
+export const displayTitle = (video: Video, filters: Readonly<{ honestTitles: boolean }>): string =>
+  filters.honestTitles ? video.honestTitle : video.title;

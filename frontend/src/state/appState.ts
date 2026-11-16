@@ -22,6 +22,7 @@ export type AppState = Readonly<{
 
 export type Action =
   | Readonly<{ type: "reset" }>
+  | Readonly<{ type: "setView"; view: View }>
   | Readonly<{ type: "open_feed"; feed: string }>
   | Readonly<{ type: "set_top_range"; feed: string; range: TopRange }>
   | Readonly<{ type: "set_news_category"; feed: string; category: NewsCategory }>;
@@ -37,6 +38,8 @@ export function makeReducer(seed: AppState) {
     switch (action.type) {
       case "reset":
         return seed;
+      case "setView":
+        return state.view === action.view ? state : { ...state, view: action.view };
       case "open_feed":
         return state.feeds.some((f) => f.name === action.feed) ? { ...state, currentFeed: action.feed } : state;
       case "set_top_range":

@@ -65,3 +65,17 @@ export function rawLocalStorage(raw: string): StateStorage {
   } as Storage;
   return browserStorage(() => store);
 }
+
+/**
+ * Real demo videos (ids, titles, minutes) with designed thumbnails, plus one live clip and one
+ * video with no design. None is in the seed's watched list or flagged clickbait, so Everything
+ * shows them all (231 minutes, inside its 240-minute session).
+ */
+export const CARDS_CATALOG: readonly Video[] = [
+  video({ id: "demo-1", title: "Graphs vs trees: when to use which", topic: "Programming", minutes: 18, channel: "Byte Garden" }),
+  video({ id: "demo-2", title: "Building a tiny database from scratch", topic: "Programming", minutes: 41, channel: "Byte Garden", channelSubscribers: 88_000, views: 1_900_000, ageHours: 72 }),
+  video({ id: "demo-3", title: "The ONE career mistake everyone makes", honestTitle: "Planning your next five years", topic: "Careers", minutes: 22 }),
+  video({ id: "demo-11", title: "A founder on burnout, ambition and starting over", topic: "Podcasts", minutes: 95 }),
+  video({ id: "demo-36", title: "Live: storm update and travel disruption", topic: "News", minutes: 45, live: true, newsCategory: "World" }),
+  video({ id: "demo-60", title: "Pruning roses in winter", minutes: 10 }),
+];

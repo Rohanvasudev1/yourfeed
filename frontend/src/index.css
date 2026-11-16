@@ -129,22 +129,69 @@ h2, h3, p { margin: 0; }
 
 /* Per-kind controls above Up next */
 .feed-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-.seg { display: inline-flex; flex-wrap: wrap; background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; }
-.seg button { height: auto; border: none; border-radius: 999px; font-size: 13px; padding: 5px 12px; color: var(--text-secondary); }
-.seg button[aria-pressed="true"] { background: var(--fill-primary); color: var(--on-primary); }
+.feed-controls .seg { flex-wrap: wrap; flex: initial; }
+.feed-controls .seg button { font-size: 13px; }
 
-/* Feed: three same-size cards per row */
-.feed-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+/* Feed toolbar: title and the layout toggle */
+.feed-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.feed-toolbar .feed-title { margin-bottom: 0; }
+.seg { display: inline-flex; background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; flex: none; }
+.seg button { border: none; background: transparent; border-radius: 999px; height: auto; padding: 5px 12px; color: var(--text-secondary); display: flex; align-items: center; }
+.seg button:hover { background: var(--surface-1); }
+.seg button.on, .seg button[aria-pressed="true"] { background: var(--fill-primary); color: var(--on-primary); }
+.icon-button { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+
+/* Feed: three same-size cards per row (grid) or one per row (list) */
+.feed-grid, .feed-list { list-style: none; margin: 0; padding: 0; }
+.feed-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
 @media (max-width: 720px) { .feed-grid { grid-template-columns: minmax(0, 1fr); } }
+.feed-list { display: flex; flex-direction: column; gap: 8px; }
 .card { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); min-width: 0; }
-.card-body { min-width: 0; }
-.card-title { font-size: 14px; font-weight: 500; line-height: 1.35; min-height: calc(2 * 1.35em); }
+.card.selected { border: 1.5px solid var(--border-accent); padding: 7px; }
+.card-body { min-width: 0; display: flex; flex-direction: column; }
+.card-title { font-size: 14px; font-weight: 500; line-height: 1.35; }
+.feed-grid .card-title { min-height: calc(2 * 1.35em); }
 .card-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feed-list .card { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; padding: 10px; align-items: start; }
+.feed-list .thumb { aspect-ratio: auto; height: 68px; }
+.feed-list .card-meta { white-space: normal; }
 
-/* Generic thumbnail (the mockup's fallback design); per-video designs come later */
-.thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; container-type: inline-size; background: linear-gradient(135deg, #222, #555); display: flex; align-items: center; padding: 0 5cqw; }
-.thumb-caption { font: 900 11.5cqw/0.95 Impact, "Arial Black", "Helvetica Neue", Arial, sans-serif; color: #fff; -webkit-text-stroke: 0.5cqw #000; paint-order: stroke fill; overflow-wrap: anywhere; }
-.thumb-badge { position: absolute; z-index: 2; background: rgba(0, 0, 0, 0.8); color: #fff; font: 500 clamp(9px, 4.4cqw, 12px)/1 Roboto, Arial, sans-serif; padding: 3px 4px; border-radius: 4px; letter-spacing: 0.02em; }
-.thumb-duration { right: 4px; bottom: 4px; }
-.thumb-rank { left: 4px; top: 4px; font-weight: 700; }
+/* Descriptions: a one-line preview in grid cards, two lines with …more in the list */
+.grid-desc { display: flex; align-items: center; gap: 6px; width: 100%; height: auto; margin-top: 6px; padding: 4px 8px; border: none; border-radius: 6px; background: var(--surface-1); font-size: 12px; color: var(--text-secondary); text-align: left; }
+.grid-desc span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.grid-desc svg { flex: none; color: var(--text-muted); }
+.grid-desc:hover, .grid-desc[aria-expanded="true"] { color: var(--text-primary); background: var(--surface-1); }
+.desc-box { margin-top: 8px; padding: 6px 10px; border-radius: 8px; background: var(--surface-1); font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
+.desc-more { height: auto; margin-top: 2px; padding: 0; border: none; font-size: 12px; font-weight: 500; color: var(--text-primary); }
+.desc-more:hover { background: transparent; text-decoration: underline; }
+.desc-full { display: block; white-space: pre-line; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.grid-panel-row { grid-column: 1 / -1; }
+.grid-panel { padding: 8px 12px 12px; border-radius: 12px; background: var(--surface-2); border: 1.5px solid var(--border-accent); }
+.grid-panel-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.grid-panel-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; }
+
+/* YouTube-style thumbnails (the mockup's designs). Sizes use container query units so one design fits any width. */
+.thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; container-type: inline-size; isolation: isolate; background: #111; color: #fff; }
+.thumb-art { position: absolute; inset: 0; display: flex; align-items: center; gap: 2cqw; padding: 0 4cqw 0 5cqw; }
+.thumb-bg { position: absolute; inset: 0; z-index: -1; }
+.thumb-bg::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 78% 45%, rgba(255, 255, 255, 0.28), transparent 45%), linear-gradient(0deg, rgba(0, 0, 0, 0.28), transparent 45%); }
+.thumb-text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2cqw; }
+.thumb-caption { font: 900 11.5cqw/0.95 Impact, "Arial Black", "Helvetica Neue", Arial, sans-serif; letter-spacing: 0.01em; color: #fff; -webkit-text-stroke: 0.5cqw #000; paint-order: stroke fill; text-shadow: 0 0.8cqw 0 rgba(0, 0, 0, 0.55), 0 0 3cqw rgba(0, 0, 0, 0.35); overflow-wrap: anywhere; }
+.thumb-label { font: 900 6cqw/1 Impact, "Arial Black", Arial, sans-serif; text-transform: uppercase; color: #111; background: var(--accent, #ffd400); padding: 0.8cqw 2cqw; border-radius: 1cqw; transform: rotate(-3deg); box-shadow: 0 0.8cqw 0 rgba(0, 0, 0, 0.35); white-space: nowrap; }
+.thumb-icon { width: 34cqw; height: 34cqw; flex: none; color: #fff; transform: rotate(-8deg); filter: drop-shadow(0 1.5cqw 2cqw rgba(0, 0, 0, 0.5)); }
+.thumb-ring { position: absolute; right: 1cqw; top: 50%; width: 40cqw; height: 40cqw; transform: translateY(-50%); border: 1.6cqw solid #ff1a1a; border-radius: 50%; box-shadow: 0 0 0 0.5cqw rgba(255, 255, 255, 0.7); }
+.thumb-arrow { position: absolute; right: 38cqw; bottom: 6cqw; width: 15cqw; height: 15cqw; color: #ff1a1a; transform: rotate(-25deg); filter: drop-shadow(0 0 0.5cqw #fff) drop-shadow(0 1cqw 1cqw rgba(0, 0, 0, 0.5)); }
+.thumb-versus { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
+.thumb-versus > div { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1cqw; background-image: linear-gradient(0deg, rgba(0, 0, 0, 0.3), transparent 50%); }
+.thumb-versus svg { width: 22cqw; height: 22cqw; filter: drop-shadow(0 1cqw 1.5cqw rgba(0, 0, 0, 0.5)); }
+.thumb-versus b { font: 900 10cqw/1 Impact, "Arial Black", Arial, sans-serif; -webkit-text-stroke: 0.4cqw #000; paint-order: stroke fill; }
+.thumb-vs { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-8deg); font: 900 9cqw/1 Impact, "Arial Black", Arial, sans-serif; color: #111; background: #ffd400; padding: 1.5cqw 2.5cqw; border-radius: 2cqw; box-shadow: 0 1cqw 0 rgba(0, 0, 0, 0.4); }
+.thumb-badge { position: absolute; right: 4px; bottom: 4px; z-index: 2; background: rgba(0, 0, 0, 0.8); color: #fff; font: 500 clamp(9px, 4.4cqw, 12px)/1 Roboto, Arial, sans-serif; letter-spacing: 0.02em; padding: 3px 4px; border-radius: 4px; }
 .thumb-live { background: #cc0000; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; }
+.thumb-rank { left: 4px; top: 4px; right: auto; bottom: auto; font-weight: 700; }
+.thumb-live svg { width: 1.1em; height: 1.1em; }
+@container (max-width: 180px) { .thumb-label { display: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .thumb-art, .thumb-versus { transition: transform 0.25s ease; }
+  .thumb:hover .thumb-art, .thumb:hover .thumb-versus { transform: scale(1.04); }
+}
