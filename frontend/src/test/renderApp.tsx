@@ -46,8 +46,8 @@ export async function toggleFilters(...names: readonly string[]): Promise<void> 
   await userEvent.keyboard("{Escape}");
 }
 
-/** Matches a paragraph whose whole text is `text`, even when parts of it are buttons (a card's topic and channel). */
+/** Matches the element whose whole text is `text`, even when parts of it are buttons (a card's topic and channel). */
 export const wholeLine =
   (text: string) =>
   (_: string, element: Element | null): boolean =>
-    element?.tagName === "P" && element.textContent === text;
+    element?.textContent === text && [...element.children].every((child) => child.textContent !== text);

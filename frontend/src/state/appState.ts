@@ -51,7 +51,7 @@ export type Action =
   | Readonly<{ type: "add_dictation"; target: NoteTarget; heard: string }>
   /** Adds a video to the session by hand, first in Up next. */
   | Readonly<{ type: "pin_video"; feed: string; video: string }>
-  /** Unpins a video, or keeps it out of the feed's Up next. */
+  /** Unpins a video and keeps it out of the feed's Up next. */
   | Readonly<{ type: "remove_from_session"; feed: string; video: string }>
   /** The eye toggle: the visitor has seen this video elsewhere, so it joins watch history. */
   | Readonly<{ type: "mark_watched"; video: string }>

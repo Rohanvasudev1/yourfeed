@@ -32,6 +32,9 @@ export const isInSession = (feed: Feed, id: string): boolean => inSessionIds(fee
 export const pinVideo = (feed: Feed, id: string): Feed =>
   isInSession(feed, id) ? feed : { ...feed, pinned: [id, ...feed.pinned], removed: without(feed.removed, id) };
 
-/** Takes a video out of the session: a pinned one is unpinned, any other is kept out of Up next. */
-export const removeFromSession = (feed: Feed, id: string): Feed =>
-  feed.pinned.includes(id) ? { ...feed, pinned: without(feed.pinned, id) } : { ...feed, removed: [...without(feed.removed, id), id] };
+/** Takes a video out of the session and keeps it out of Up next, pinned or not. Pinning it again brings it back. */
+export const removeFromSession = (feed: Feed, id: string): Feed => ({
+  ...feed,
+  pinned: without(feed.pinned, id),
+  removed: [...without(feed.removed, id), id],
+});

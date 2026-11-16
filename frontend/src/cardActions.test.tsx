@@ -84,7 +84,7 @@ describe("Videos like this", () => {
       .find((title) => !shown.includes(title))!;
     await userEvent.click(within(row).getByRole("button", { name: `Add ${extra} to this session` }));
     expect((await feedTitles())[0]).toBe(extra);
-    expect(within(row).getAllByText("In this session").length).toBeGreaterThan(0);
+    expect(within(row).queryByRole("button", { name: `Add ${extra} to this session` })).toBeNull();
   });
 });
 

@@ -1,7 +1,10 @@
 /* Card quick actions: topic and channel words, their popups, and the Videos like this row */
 .word { height: auto; padding: 0; border: none; background: none; font: inherit; color: inherit; text-decoration: underline dotted transparent; text-underline-offset: 2px; }
 .word:hover, .word[aria-expanded="true"] { background: none; color: var(--text-primary); text-decoration-color: currentColor; }
-.card-meta .popup-anchor { display: inline; }
+/* The meta line clips long text, which would clip the popup too, so the word takes the ellipsis instead. */
+.card-meta:has(.popup-anchor) { overflow: visible; }
+.card-meta .popup-anchor { max-width: 100%; vertical-align: bottom; }
+.card-meta .word { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .word-popup { width: 250px; white-space: normal; }
 .word-popup-heading { font-size: 14px; font-weight: 500; color: var(--text-primary); }
 

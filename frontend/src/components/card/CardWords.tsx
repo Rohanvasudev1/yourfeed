@@ -10,7 +10,7 @@ type WordProps = Readonly<{ value: string; actions: CardActions; popups: PopupCo
 
 type Choice = Readonly<{ label: string; icon: Icon; run: () => void }>;
 
-const videos = (n: number) => `${n} video${n === 1 ? "" : "s"}`;
+const videoCount = (n: number) => `${n} video${n === 1 ? "" : "s"}`;
 
 /** A topic or channel name on a card that opens its quick actions, using the shared popup controller. */
 function Word({ kind, value, popups, popupKey, status, choices }: WordProps & Readonly<{ kind: "Topic" | "Channel"; status: string; choices: readonly Choice[] }>) {
@@ -54,7 +54,7 @@ function topicStatus({ feed, listed, muted, count }: TopicStanding): string {
         ? "Boosted in this tab"
         : "One of this tab's topics"
       : "Not one of this tab's topics";
-  return `${where} · ${videos(count)}`;
+  return `${where} · ${videoCount(count)}`;
 }
 
 function topicChoices(topic: string, standing: TopicStanding, actions: CardActions): readonly Choice[] {
@@ -81,7 +81,7 @@ export function ChannelWord(props: WordProps & Readonly<{ hideSubscriberCounts: 
   const { subscribers, count, followed } = actions.channel(value);
   const status = [
     ...(hideSubscriberCounts ? [] : [`${compactCount(subscribers)} subscribers`]),
-    `${videos(count)} here`,
+    `${videoCount(count)} here`,
     ...(followed ? ["You follow this channel"] : []),
   ].join(" · ");
   const choice: Choice = followed

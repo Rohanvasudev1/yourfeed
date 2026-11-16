@@ -25,7 +25,8 @@ type Props = Readonly<{
 }>;
 
 /** The one card panel open at a time: its description (grid only; the list shows it inline) or Videos like this. */
-type OpenPanel = Readonly<{ id: string; panel: "description" | "like" }> | null;
+type PanelKind = "description" | "like";
+type OpenPanel = Readonly<{ id: string; panel: PanelKind }> | null;
 
 type Item = Readonly<{ kind: "card" | "panel"; video: Video }>;
 
@@ -41,11 +42,11 @@ function withRowPanel(videos: readonly Video[], open: OpenPanel, columns: number
 export function FeedView({ pinned, upNext, kind, filters, view, onPlay, saveActions, cardActions }: Props) {
   const [open, setOpen] = useState<OpenPanel>(null);
   const popups = usePopupController<string>();
-  const toggle = (id: string, panel: "description" | "like") => setOpen((o) => (o?.id === id && o.panel === panel ? null : { id, panel }));
+  const toggle = (id: string, panel: PanelKind) => setOpen((o) => (o?.id === id && o.panel === panel ? null : { id, panel }));
   const ranks = new Map(kind === "top" ? upNext.map((v, i) => [v.id, i + 1] as const) : []);
   const panelInRow = view === "grid" || open?.panel === "like" ? open : null;
   const items = withRowPanel([...pinned, ...upNext], panelInRow, view === "grid" ? GRID_COLUMNS : 1);
-  const isOpen = (id: string, panel: "description" | "like") => open?.id === id && open.panel === panel;
+  const isOpen = (id: string, panel: PanelKind) => open?.id === id && open.panel === panel;
 
   return (
     <ul className={view === "grid" ? "feed-grid" : "feed-list"} aria-label="Up next">

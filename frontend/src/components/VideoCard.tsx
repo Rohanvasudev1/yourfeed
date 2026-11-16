@@ -43,13 +43,14 @@ export function VideoCard(props: Props) {
       <PlayableThumbnail video={video} title={title} honest={filters.honestTitles} rank={rank} watched={watched} onPlay={onPlay} />
       <div className="card-body">
         <PlayableTitle title={title} clamp={view === "grid"} onPlay={onPlay} />
-        <p className="card-meta">
+        {/* Divs, not paragraphs: the topic and channel popups hold block content. */}
+        <div className="card-meta">
           <ChannelWord value={video.channel} popupKey={`channel-${video.id}`} hideSubscriberCounts={filters.hideSubscriberCounts} {...wordProps} />
           {counts.map((count) => ` · ${count}`)}
-        </p>
-        <p className="card-meta">
+        </div>
+        <div className="card-meta">
           <TopicWord value={video.topic} popupKey={`topic-${video.id}`} {...wordProps} /> · {ago(video.ageHours)}
-        </p>
+        </div>
         <Description video={video} title={title} open={descriptionOpen} onToggle={onToggleDescription} />
       </div>
       <CardButtons {...props} title={title} watched={watched} />

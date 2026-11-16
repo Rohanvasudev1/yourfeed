@@ -68,6 +68,7 @@ export function useCardActions(state: AppState, feed: Feed, catalog: readonly Vi
       followed: subs?.channels.includes(channel) ?? false,
     }),
     setFollowed: (channel, followed) => {
+      // Subscriptions is built in and can't be deleted, so `subs` is always there.
       if (subs) dispatch({ type: followed ? "add_to_feed" : "remove_from_feed", feed: subs.name, item: channel });
     },
     isWatched,

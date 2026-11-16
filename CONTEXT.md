@@ -18,6 +18,9 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Finished**: the user said they're done with the video. Returning to the page never marks a video Finished by itself.
 - **Feed set**: which videos a feed shows right now: its seed plus its skipped videos. Clicking the logo loads a new set that skips what was just shown, and starts over when nothing new is left; undo brings the previous set back for 5 seconds.
 - **Pinned**: videos the user added to this session by hand, which always count toward the session. They come first in Up next. The + on a saved or history video pins it.
+- **Removed**: videos the user took out of a feed's session with a card's trash button. Up next leaves them out until they're pinned again.
+- **Boost**: on Everything, the feed's topics don't limit what shows; they rank those topics higher. Adding a topic there is boosting it. Not the same as the Boost small creators filter.
+- **Card quick actions**: what a card offers besides playing: its topic and channel open popups (add, remove or boost the topic, hide it here or show it again; follow the channel in Subscriptions), the eye toggle (mark **watched**), **Videos like this** (ten similar videos, each with + to pin) and the trash button (**Removed**).
 - **Saved folder**: a named list of videos the user saved (Watch later, Weekend, Learning, or their own). Saving a video twice to one folder changes nothing and says "Already in <folder>."
 - **Watch history**: every **watched** video, newest first. Playing a video adds it; moving a Finished video back to Up next takes it out again, since that undoes a mis-click. Everything ranks by it and hides what's in it.
 - **Composition**: the pure function that turns a catalog, a feed and global filters into Up next plus a hidden count. It's the heart of the app (`composeFeed`).
