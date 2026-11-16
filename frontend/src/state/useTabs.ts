@@ -1,5 +1,5 @@
 import { useState, type Dispatch } from "react";
-import { BAR_FULL, feedNameProblem, fitsInBar, ownTabs } from "../domain/tabs";
+import { BAR_FULL, feedNameProblem, fitsInBar, ownNeighbours } from "../domain/tabs";
 import type { Feed } from "../domain/types";
 import type { Action, AppState } from "./appState";
 import { useTimedValue } from "./useTimedValue";
@@ -16,8 +16,8 @@ export type TabControls = Readonly<{
   newFeed: () => void;
   name: (name: string) => string | null;
   close: (name: string) => void;
-  shelve: (name: string) => void;
-  showInBar: (name: string) => string | null;
+  /** Moves a feed to All tabs, or back to the bar when there's room. */
+  toggleShelved: (feed: Feed) => string | null;
   /** Keeps a temporarily shown feed in the bar, flashing a message when it can't. */
   pin: (name: string) => void;
   remove: (name: string) => void;
@@ -56,8 +56,11 @@ export function useTabs(state: AppState, current: Feed, dispatch: Dispatch<Actio
       return problem;
     },
     close: (name) => dispatch({ type: "close_tab", feed: name }),
-    shelve: (name) => dispatch({ type: "set_shelved", feed: name, shelved: true }),
-    showInBar,
+    toggleShelved: (feed) => {
+      if (feed.shelved) return showInBar(feed.name);
+      dispatch({ type: "set_shelved", feed: feed.name, shelved: true });
+      return null;
+    },
     pin: (name) => {
       const problem = showInBar(name);
       if (problem) showFlash(problem);
@@ -69,10 +72,6 @@ export function useTabs(state: AppState, current: Feed, dispatch: Dispatch<Actio
       setPage("all");
     },
     closeAllTabs: () => setPage("feed"),
-    neighbours: (name) => {
-      const own = ownTabs(state.feeds);
-      const i = own.findIndex((f) => f.name === name);
-      return i < 0 ? { left: null, right: null } : { left: own[i - 1]?.name ?? null, right: own[i + 1]?.name ?? null };
-    },
+    neighbours: (name) => ownNeighbours(state.feeds, name),
   };
 }

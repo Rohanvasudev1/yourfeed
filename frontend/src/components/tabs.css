@@ -48,3 +48,5 @@
 .danger { color: var(--text-danger); }
 .tab-options-confirm { padding: 4px 8px; font-size: 13px; }
 .tab-options-buttons { display: flex; gap: 6px; margin-top: 6px; }
+/* Touch screens have no hover, so the × always shows there. */
+@media (hover: none) { .tab-close { opacity: 1; } }

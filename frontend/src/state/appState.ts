@@ -1,6 +1,6 @@
 import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
-import { reduceTabs, type TabAction } from "../domain/tabs";
+import { isTabAction, reduceTabs, type TabAction } from "../domain/tabs";
 import { finishCurrent, moveBackToUpNext, startWatching } from "../domain/session";
 import type { Feed, GlobalFilters, NewsCategory, TopRange } from "../domain/types";
 
@@ -56,22 +56,15 @@ const withItem = (items: readonly string[], item: string) => (items.includes(ite
 /** Builds the app reducer; `reset` returns to `seed`. Actions naming a feed that doesn't exist change nothing. */
 export function makeReducer(seed: AppState) {
   return (state: AppState, action: Action): AppState => {
+    if (isTabAction(action)) {
+      const tabs = reduceTabs(state, action);
+      return tabs.feeds === state.feeds && tabs.currentFeed === state.currentFeed ? state : { ...state, ...tabs };
+    }
     switch (action.type) {
       case "reset":
         return seed;
       case "setView":
         return state.view === action.view ? state : { ...state, view: action.view };
-      case "open_feed":
-      case "leave_draft":
-      case "new_feed":
-      case "name_feed":
-      case "set_shelved":
-      case "close_tab":
-      case "delete_feed":
-      case "move_feed": {
-        const tabs = reduceTabs(state, action);
-        return tabs.feeds === state.feeds && tabs.currentFeed === state.currentFeed ? state : { ...state, ...tabs };
-      }
       case "set_top_range":
         return updateFeed(state, action.feed, { topRange: action.range });
       case "set_news_category":

@@ -1,6 +1,6 @@
 import { IconAlignJustified, IconApps, IconArrowBarToDown, IconArrowBarToUp, IconArrowsMinimize, IconLayoutNavbar } from "@tabler/icons-react";
 import { useId, useState, type ReactNode } from "react";
-import { barSpaces, MAX_BAR_SPACES } from "../domain/tabs";
+import { barSpaces, canShelve, MAX_BAR_SPACES } from "../domain/tabs";
 import type { Feed } from "../domain/types";
 import type { TabControls } from "../state/useTabs";
 import { kindInfo } from "./feedKindInfo";
@@ -16,13 +16,7 @@ export function AllTabsPage({ feeds, tabs }: Props) {
   const inBar = feeds.filter((f) => !f.shelved);
   const shelved = feeds.filter((f) => f.shelved);
 
-  const toggle = (feed: Feed) => {
-    if (feed.shelved) setMessage(tabs.showInBar(feed.name));
-    else {
-      tabs.shelve(feed.name);
-      setMessage(null);
-    }
-  };
+  const toggle = (feed: Feed) => setMessage(tabs.toggleShelved(feed));
   const group = (list: readonly Feed[]) => <TabCards feeds={list} onOpen={tabs.open} onToggle={toggle} />;
 
   return (
@@ -83,15 +77,17 @@ function TabCards({ feeds, onOpen, onToggle }: CardsProps) {
               </button>
             </h4>
             <p className="tab-card-desc">{describe(f)}</p>
-            <button
-              type="button"
-              className={f.shelved ? "tab-card-move primary" : "tab-card-move"}
-              aria-label={f.shelved ? `Add ${f.name} to the tab bar` : `Move ${f.name} to All tabs`}
-              onClick={() => onToggle(f)}
-            >
-              {f.shelved ? <IconArrowBarToUp size={14} aria-hidden="true" /> : <IconArrowBarToDown size={14} aria-hidden="true" />}
-              {f.shelved ? "Add to tab bar" : "Move to All tabs"}
-            </button>
+            {canShelve(f) && (
+              <button
+                type="button"
+                className={f.shelved ? "tab-card-move primary" : "tab-card-move"}
+                aria-label={f.shelved ? `Add ${f.name} to the tab bar` : `Move ${f.name} to All tabs`}
+                onClick={() => onToggle(f)}
+              >
+                {f.shelved ? <IconArrowBarToUp size={14} aria-hidden="true" /> : <IconArrowBarToDown size={14} aria-hidden="true" />}
+                {f.shelved ? "Add to tab bar" : "Move to All tabs"}
+              </button>
+            )}
           </li>
         );
       })}

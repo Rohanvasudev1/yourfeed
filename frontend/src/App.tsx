@@ -29,7 +29,8 @@ type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage }>;
 
 const reducer = makeReducer(DEMO_SEED);
 
-const restore = (storage: StateStorage) => restoreState(storage.load(), DEMO_SEED);
+/** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */
+const restore = (storage: StateStorage) => reducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" });
 
 export default function App({ loadCatalog, storage }: Props) {
   const [state, dispatch] = useReducer(reducer, storage, restore);
@@ -39,7 +40,8 @@ export default function App({ loadCatalog, storage }: Props) {
   const feed = currentFeedOf(state);
   const ready = catalog.status === "ready" ? catalog.catalog : null;
   const input = useMemo<ComposeInput | null>(
-    () => ready && { catalog: ready, feed, filters: state.filters, watched: state.watched, topMaxAgeHours: TOP_RANGE_HOURS[feed.topRange] },
+    () =>
+      ready && { catalog: ready, feed, filters: state.filters, watched: state.watched, topMaxAgeHours: TOP_RANGE_HOURS[feed.topRange] },
     [ready, feed, state.filters, state.watched],
   );
   const composition = useMemo(() => input && composeFeed(input), [input]);

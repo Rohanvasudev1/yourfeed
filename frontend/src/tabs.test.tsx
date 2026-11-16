@@ -61,6 +61,17 @@ describe("new feeds", () => {
     expect([...namesIn("In the tab bar"), ...namesIn("Only in All tabs")]).not.toContain("New feed");
   });
 
+  it("forgets an unnamed draft across a reload", async () => {
+    const storage = memoryStorage();
+    const { unmount } = renderApp({ storage });
+    await newFeed();
+    unmount();
+
+    renderApp({ storage });
+    expect(queryTab("New feed")).not.toBeInTheDocument();
+    expect(openFeedTitle()).toBe("Everything");
+  });
+
   it.each([
     ["news", '"news" is a built-in tab. Pick a different name.'],
     ["MOST VIEWED", '"MOST VIEWED" is a built-in tab. Pick a different name.'],
@@ -125,6 +136,16 @@ describe("the All tabs page", () => {
     expect(within(allTabsSection("In the tab bar")).getByText(/4 of 8 spaces/)).toBeInTheDocument();
     expect(namesIn("In the tab bar")).toEqual(["Everything", "Subscriptions", "Most viewed", "News", "Learn", "Sport"]);
     expect(namesIn("Only in All tabs")).toEqual(["Wind down", "Cooking"]);
+  });
+
+  it("keeps Home in the tab bar", async () => {
+    renderApp();
+    await openAllTabs();
+    expect(screen.queryByRole("button", { name: "Move Everything to All tabs" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Minimize All tabs" }));
+    const popup = await openTabOptions();
+    expect(within(popup).queryByRole("button", { name: "Move to All tabs" })).not.toBeInTheDocument();
   });
 
   it("moves a feed either way in one click", async () => {

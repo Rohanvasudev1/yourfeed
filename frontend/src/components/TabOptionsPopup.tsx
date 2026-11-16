@@ -1,10 +1,11 @@
 import { IconApps, IconArrowLeft, IconArrowRight, IconLayoutNavbar, IconTrash } from "@tabler/icons-react";
 import { useId, useState, type HTMLAttributes, type RefCallback } from "react";
 import { isBuiltIn } from "../domain/feed";
+import { canShelve } from "../domain/tabs";
 import type { Feed } from "../domain/types";
 import type { TabControls } from "../state/useTabs";
 
-export type TabOptions = Pick<TabControls, "shelve" | "showInBar" | "remove" | "move" | "neighbours">;
+export type TabOptions = Pick<TabControls, "toggleShelved" | "remove" | "move" | "neighbours">;
 
 type Props = Readonly<{
   feed: Feed;
@@ -19,23 +20,17 @@ export function TabOptionsPopup({ feed, options, popupProps }: Props) {
   const [message, setMessage] = useState("");
   const { left, right } = options.neighbours(feed.name);
 
-  const toggleShelved = () => {
-    if (feed.shelved) setMessage(options.showInBar(feed.name) ?? "");
-    else {
-      options.shelve(feed.name);
-      setMessage("");
-    }
-  };
-
   return (
     <div {...popupProps} className="popup tab-options" aria-labelledby={labelId}>
       <p className="popup-label" id={labelId}>
         Tab options
       </p>
-      <button type="button" className="popup-action" onClick={toggleShelved}>
-        {feed.shelved ? <IconLayoutNavbar size={16} aria-hidden="true" /> : <IconApps size={16} aria-hidden="true" />}
-        {feed.shelved ? "Show in tab bar" : "Move to All tabs"}
-      </button>
+      {canShelve(feed) && (
+        <button type="button" className="popup-action" onClick={() => setMessage(options.toggleShelved(feed) ?? "")}>
+          {feed.shelved ? <IconLayoutNavbar size={16} aria-hidden="true" /> : <IconApps size={16} aria-hidden="true" />}
+          {feed.shelved ? "Show in tab bar" : "Move to All tabs"}
+        </button>
+      )}
       {left && (
         <button type="button" className="popup-action" onClick={() => options.move(feed.name, left)}>
           <IconArrowLeft size={16} aria-hidden="true" />

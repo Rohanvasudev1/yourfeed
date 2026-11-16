@@ -1,11 +1,14 @@
 import { isBuiltIn, isInExplore, makeFeed } from "./feed";
-import type { Feed } from "./types";
+import type { Feed, Range } from "./types";
 
 /** Spaces in the tab bar: Home, the one Explore button and your own feeds. */
 export const MAX_BAR_SPACES = 8;
 export const MAX_NAME_LENGTH = 24;
 export const DRAFT_NAME = "New feed";
 export const BAR_FULL = "The tab bar is full. Move a tab to All tabs first.";
+/** A new feed's starting video length and session time, in minutes. */
+export const DRAFT_LENGTH: Range = [5, 60];
+export const DRAFT_SESSION: Range = [20, 90];
 
 /** The part of app state that tab management reads and changes. */
 export type Tabs = Readonly<{ feeds: readonly Feed[]; currentFeed: string }>;
@@ -25,6 +28,19 @@ export type TabAction =
   /** Moves one of your own feeds to where `to` (another of yours) is. */
   | Readonly<{ type: "move_feed"; feed: string; to: string }>;
 
+const TAB_ACTION_TYPES: ReadonlySet<string> = new Set<TabAction["type"]>([
+  "open_feed",
+  "leave_draft",
+  "new_feed",
+  "name_feed",
+  "set_shelved",
+  "close_tab",
+  "delete_feed",
+  "move_feed",
+]);
+
+export const isTabAction = (action: { type: string }): action is TabAction => TAB_ACTION_TYPES.has(action.type);
+
 const sameName = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 const byName = (feeds: readonly Feed[], name: string) => feeds.find((f) => f.name === name);
 const homeOf = (feeds: readonly Feed[]) => (feeds.find((f) => f.kind === "home") ?? feeds[0]).name;
@@ -42,6 +58,16 @@ export function fitsInBar(feeds: readonly Feed[], name: string): boolean {
 
 /** Your own feeds in the tab bar, in tab order. */
 export const ownTabs = (feeds: readonly Feed[]): readonly Feed[] => feeds.filter((f) => !f.shelved && !isBuiltIn(f));
+
+/** Your own tabs either side of `name` in the bar, for moving it left or right. */
+export function ownNeighbours(feeds: readonly Feed[], name: string): Readonly<{ left: string | null; right: string | null }> {
+  const own = ownTabs(feeds);
+  const i = own.findIndex((f) => f.name === name);
+  return i < 0 ? { left: null, right: null } : { left: own[i - 1]?.name ?? null, right: own[i + 1]?.name ?? null };
+}
+
+/** Home always stays in the tab bar; every other feed can move to All tabs. */
+export const canShelve = (feed: Feed): boolean => feed.kind !== "home";
 
 /** Why `name` can't name the feed `renaming`, or null when it can. Names are compared ignoring case. */
 export function feedNameProblem(feeds: readonly Feed[], name: string, renaming: string): string | null {
@@ -106,7 +132,13 @@ export function reduceTabs(tabs: Tabs, action: TabAction): Tabs {
       return dropDraft(tabs);
     case "new_feed": {
       const left = dropDraft(tabs).feeds;
-      const draft = makeFeed({ name: uniqueName(left, DRAFT_NAME), draft: true, color: left.length, length: [5, 60], session: [20, 90] });
+      const draft = makeFeed({
+        name: uniqueName(left, DRAFT_NAME),
+        draft: true,
+        color: left.length,
+        length: DRAFT_LENGTH,
+        session: DRAFT_SESSION,
+      });
       return { feeds: [...left, { ...draft, shelved: !fitsInBar([...left, draft], draft.name) }], currentFeed: draft.name };
     }
     case "name_feed": {
@@ -118,10 +150,10 @@ export function reduceTabs(tabs: Tabs, action: TabAction): Tabs {
       };
     }
     case "set_shelved":
-      if (!target || (!action.shelved && !fitsInBar(feeds, action.feed))) return tabs;
+      if (!target || !canShelve(target) || (!action.shelved && !fitsInBar(feeds, action.feed))) return tabs;
       return { ...tabs, feeds: setFeed(feeds, action.feed, { shelved: action.shelved }) };
     case "close_tab": {
-      if (!target || target.kind === "home") return tabs;
+      if (!target || !canShelve(target)) return tabs;
       if (target.draft) return withoutFeed(tabs, action.feed);
       const currentFeed = tabs.currentFeed === action.feed ? neighbourOf(feeds, action.feed) : tabs.currentFeed;
       return { feeds: setFeed(feeds, action.feed, { shelved: true }), currentFeed };
