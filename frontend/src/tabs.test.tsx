@@ -7,7 +7,8 @@ import { feedTitles, renderApp } from "./test/renderApp";
 const tabBar = () => screen.getByRole("navigation", { name: "Feeds" });
 const tab = (name: string) => within(tabBar()).getByRole("button", { name });
 const queryTab = (name: string) => within(tabBar()).queryByRole("button", { name });
-const openFeedTitle = () => screen.getByRole("heading", { level: 2 }).textContent;
+/** The open feed's title: the first level-2 heading, above the session and library sections. */
+const openFeedTitle = () => screen.getAllByRole("heading", { level: 2 })[0].textContent;
 
 /** Names of the tabs in the bar, in order, leaving out their close and pin buttons. */
 const tabNames = () =>
