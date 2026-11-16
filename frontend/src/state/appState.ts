@@ -1,3 +1,4 @@
+import type { FeedSet } from "../domain/refresh";
 import { finishCurrent, moveBackToUpNext, startWatching } from "../domain/session";
 import type { Feed, GlobalFilters, NewsCategory, TopRange } from "../domain/types";
 
@@ -30,8 +31,8 @@ export type Action =
   | Readonly<{ type: "watch_video"; feed: string; video: string }>
   | Readonly<{ type: "finish_current"; feed: string }>
   | Readonly<{ type: "move_back_to_up_next"; feed: string; video: string }>
-  /** Loads (or, for undo, restores) a feed's set: the shuffle seed and the skip list. */
-  | Readonly<{ type: "set_feed_set"; feed: string; seed: number; skipped: readonly string[] }>;
+  /** Loads (or, for undo, restores) a feed set. */
+  | Readonly<{ type: "set_feed_set"; set: FeedSet }>;
 
 const mapFeed = (state: AppState, name: string, change: (feed: Feed) => Feed): AppState => ({
   ...state,
@@ -62,7 +63,7 @@ export function makeReducer(seed: AppState) {
       case "move_back_to_up_next":
         return mapFeed(state, action.feed, (f) => moveBackToUpNext(f, action.video));
       case "set_feed_set":
-        return updateFeed(state, action.feed, { seed: action.seed, skipped: action.skipped });
+        return updateFeed(state, action.set.feed, { seed: action.set.seed, skipped: action.set.skipped });
     }
   };
 }

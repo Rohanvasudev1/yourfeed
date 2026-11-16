@@ -72,6 +72,22 @@ describe("finishing a video", () => {
     expect(finishedSection()).not.toBeInTheDocument();
   });
 
+  it("only turns Finished blue for the video you were watching when you came back", async () => {
+    renderApp();
+    await feedTitles();
+    await userEvent.click(screen.getByRole("button", { name: "Learn" }));
+    await playByTitle("Intro to transformers");
+    await userEvent.click(screen.getByRole("button", { name: "Everything (home)" }));
+    await playByTitle(FIRST);
+    returnToPage();
+    expect(await screen.findByRole("button", { name: "Finished" })).toHaveClass("primary");
+
+    await userEvent.click(screen.getByRole("button", { name: "Learn" }));
+
+    expect(within(watchingNow()).getByText("Intro to transformers")).toBeInTheDocument();
+    expect(finishedButton()).not.toHaveClass("primary");
+  });
+
   it("finishes the current video when you start another", async () => {
     renderApp();
     await playByTitle(FIRST);

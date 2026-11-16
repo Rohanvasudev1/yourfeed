@@ -16,12 +16,13 @@ type WatchingNowProps = Readonly<{
   filters: GlobalFilters;
   /** The visitor came back to the page while watching: Finished turns blue to ask if they're done. */
   nudge: boolean;
-  onPlay: () => void;
+  onPlay: (video: Video) => void;
   onFinish: () => void;
 }>;
 
 export function WatchingNow({ video, filters, nudge, onPlay, onFinish }: WatchingNowProps) {
   const title = displayTitle(video, filters);
+  const play = () => onPlay(video);
   return (
     <section className="session-section" aria-labelledby="watching-now">
       <h2 id="watching-now" className="section-label">
@@ -29,14 +30,12 @@ export function WatchingNow({ video, filters, nudge, onPlay, onFinish }: Watchin
         Watching now
       </h2>
       <div className="session-row current">
-        <PlayableThumbnail video={video} title={title} honest={filters.honestTitles} onPlay={onPlay} />
+        <PlayableThumbnail video={video} title={title} honest={filters.honestTitles} onPlay={play} />
         <div className="session-body">
-          <PlayableTitle title={title} onPlay={onPlay} />
-          <p className="card-meta">
-            {video.channel} · {video.minutes} min
-          </p>
+          <PlayableTitle title={title} onPlay={play} />
+          <SessionMeta video={video} />
           <div className="session-actions">
-            <button type="button" className="icon-button" aria-label="Open on YouTube again" title="Open on YouTube again" onClick={onPlay}>
+            <button type="button" className="icon-button" aria-label="Open on YouTube again" title="Open on YouTube again" onClick={play}>
               <IconBrandYoutube size={16} aria-hidden="true" />
             </button>
             <button type="button" className={nudge ? "text-button primary" : "text-button"} onClick={onFinish}>
@@ -83,9 +82,7 @@ export function FinishedSection({ videos, filters, onPlay, onMoveBack }: Finishe
                 <PlayableThumbnail video={video} title={title} honest={filters.honestTitles} onPlay={() => onPlay(video)} />
                 <div className="session-body">
                   <PlayableTitle title={title} onPlay={() => onPlay(video)} />
-                  <p className="card-meta">
-                    {video.channel} · {video.minutes} min
-                  </p>
+                  <SessionMeta video={video} />
                 </div>
                 <button
                   type="button"
@@ -102,5 +99,14 @@ export function FinishedSection({ videos, filters, onPlay, onMoveBack }: Finishe
         </ul>
       )}
     </section>
+  );
+}
+
+/** "Front Room Sessions · 74 min": session rows show the channel and length, not counts or age. */
+function SessionMeta({ video }: Readonly<{ video: Video }>) {
+  return (
+    <p className="card-meta">
+      {video.channel} · {video.minutes} min
+    </p>
   );
 }

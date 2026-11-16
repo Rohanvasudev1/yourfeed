@@ -2,8 +2,8 @@ import { IconAlertTriangle } from "@tabler/icons-react";
 import { minutesText, videoCount } from "../domain/format";
 import type { Composition, Feed } from "../domain/types";
 
-/** The few words after the minutes that say how this kind of feed orders Up next. */
-function orderNote(feed: Feed, hidden: number): string | null {
+/** The few words after the minutes: how this kind of feed orders Up next, or how much its rules hide. */
+function planNote(feed: Feed, hidden: number): string | null {
   switch (feed.kind) {
     case "home":
       return null;
@@ -19,10 +19,13 @@ function orderNote(feed: Feed, hidden: number): string | null {
   }
 }
 
-/** "Up next · 6 videos · 1h 30m session", and a warning when the plan falls short of the session minimum. */
+/**
+ * "Up next · 6 videos · 1h 30m session", and a warning when the plan falls short of the session minimum.
+ * Pinned videos have no cards yet; once they do, count them here too, as the mockup does.
+ */
 export function UpNextLine({ feed, composition }: Readonly<{ feed: Feed; composition: Composition }>) {
   const { upNext, hidden, usedMinutes } = composition;
-  const note = orderNote(feed, hidden);
+  const note = planNote(feed, hidden);
   const short = feed.session[0] - usedMinutes;
   return (
     <div className="up-next-line" role="note" aria-label="Session plan">

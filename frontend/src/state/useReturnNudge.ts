@@ -1,20 +1,22 @@
 import { useEffect, useState } from "react";
 
 /**
- * True once the visitor comes back to the page while a video is Watching now, so the Finished
- * button can ask whether they're done. Coming back never finishes the video by itself.
+ * True once the visitor comes back to the page while `watching` (a key naming the feed and its
+ * Watching now video) is on screen, so the Finished button can ask whether they're done. The
+ * nudge belongs to that key: another feed or another video starts un-nudged. Coming back never
+ * finishes the video by itself.
  */
-export function useReturnNudge(watching: boolean): readonly [boolean, () => void] {
-  const [nudge, setNudge] = useState(false);
+export function useReturnNudge(watching: string | null): boolean {
+  const [nudgedFor, setNudgedFor] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!watching) return;
+    if (watching === null) return;
     const onVisible = () => {
-      if (document.visibilityState === "visible") setNudge(true);
+      if (document.visibilityState === "visible") setNudgedFor(watching);
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [watching]);
 
-  return [nudge && watching, () => setNudge(false)] as const;
+  return watching !== null && nudgedFor === watching;
 }
