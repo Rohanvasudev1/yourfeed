@@ -13,12 +13,14 @@ import { SettingsLine } from "./components/SettingsLine";
 import { FinishedSection, WatchingNow } from "./components/Session";
 import { TabBar } from "./components/TabBar";
 import { UpNextLine } from "./components/UpNextLine";
+import { UndoRedo } from "./components/UndoRedo";
 import { ViewToggle } from "./components/ViewToggle";
 import { composeFeed } from "./domain/compose";
 import { TOP_RANGE_HOURS } from "./domain/feed";
 import type { ComposeInput } from "./domain/types";
 import type { CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
+import { startHistory, withHistory } from "./state/history";
 import { restoreState } from "./state/persistence";
 import { DEMO_SEED } from "./state/seed";
 import { useCatalog } from "./state/useCatalog";
@@ -30,13 +32,16 @@ import { useTabs } from "./state/useTabs";
 
 type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage }>;
 
-const reducer = makeReducer(DEMO_SEED);
+const baseReducer = makeReducer(DEMO_SEED);
+const reducer = withHistory(baseReducer);
 
 /** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */
-const restore = (storage: StateStorage) => reducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" });
+const restore = (storage: StateStorage) =>
+  startHistory(baseReducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" }));
 
 export default function App({ loadCatalog, storage }: Props) {
-  const [state, dispatch] = useReducer(reducer, storage, restore);
+  const [history, dispatch] = useReducer(reducer, storage, restore);
+  const state = history.present;
   usePersist(storage, state);
   const [catalog, retry] = useCatalog(loadCatalog);
 
@@ -67,7 +72,15 @@ export default function App({ loadCatalog, storage }: Props) {
           <>
             <div className="feed-toolbar">
               <h2 className="feed-title">{feed.name}</h2>
-              <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
+              <div className="toolbar-actions">
+                <UndoRedo
+                  undoCount={history.undo.length}
+                  redoCount={history.redo.length}
+                  onUndo={() => dispatch({ type: "undo" })}
+                  onRedo={() => dispatch({ type: "redo" })}
+                />
+                <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
+              </div>
             </div>
             {feed.draft ? (
               <NameFeed onName={tabs.name} />
