@@ -1,8 +1,8 @@
-import { screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { FEEDS_CATALOG } from "./test/feedsCatalog";
-import { feedTitles, renderApp } from "./test/renderApp";
+import { feedTitles, filtersButton, renderApp, toggleFilters } from "./test/renderApp";
 
 const renderFeeds = () => renderApp({ loadCatalog: async () => FEEDS_CATALOG });
 
@@ -136,6 +136,47 @@ describe("undo and redo", () => {
     expect(feedTitle("Learn")).toBeInTheDocument();
     expect(feedTitle("Everything")).not.toBeInTheDocument();
     expect(await feedTitles()).toContain("Fresh agent build");
+  });
+
+  it("undoes a length range typed into the popup", async () => {
+    renderFeeds();
+    await openTab("Learn");
+    await userEvent.click(within(settingsLine()).getByRole("button", { name: /^Video length/ }));
+    const popup = screen.getByRole("dialog", { name: "Video length" });
+    const longest = within(popup).getByRole("spinbutton", { name: "Longest video in minutes" });
+    await userEvent.clear(longest);
+    await userEvent.type(longest, "15{Enter}");
+    await userEvent.keyboard("{Escape}");
+    expect(await feedTitles()).toEqual([]);
+
+    await undo();
+    expect(await feedTitles()).toHaveLength(3);
+    expect(within(settingsLine()).getByRole("button", { name: /^Video length/ })).toHaveTextContent("10–60 min");
+  });
+
+  it("counts one slider drag as one step", async () => {
+    renderFeeds();
+    await openTab("Learn");
+    await userEvent.click(within(settingsLine()).getByRole("button", { name: /^Session time/ }));
+    const slider = within(screen.getByRole("dialog", { name: "Session time" })).getByRole("slider", { name: /^Maximum/ });
+    act(() => slider.focus());
+    for (const value of [85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35]) fireEvent.change(slider, { target: { value: String(value) } });
+    await userEvent.keyboard("{Escape}");
+    expect(undoButton()).toHaveAccessibleName("Undo last change");
+
+    await undo();
+    expect(within(settingsLine()).getByRole("button", { name: /^Session time/ })).toHaveTextContent("30–90 min");
+  });
+
+  it("undoes a filter change", async () => {
+    renderFeeds();
+    await openTab("Learn");
+    const before = filtersButton().textContent;
+    await toggleFilters("Hide clickbait");
+    expect(filtersButton().textContent).not.toBe(before);
+
+    await undo();
+    expect(filtersButton().textContent).toBe(before);
   });
 
   it("leaves tab switches out of the steps", async () => {
