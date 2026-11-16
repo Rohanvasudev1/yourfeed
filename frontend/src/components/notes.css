@@ -1,0 +1,33 @@
+/* Notes: the notes box under session videos and the Feed notes section (prototype .nb, .nbe, .badge) */
+.note-box { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; }
+.note-box textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 56px;
+  padding: 8px 10px;
+  resize: vertical;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  background: var(--surface-0);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+.note-box .recording, .note-box .recording:hover { background: var(--bg-danger); color: var(--text-danger); border-color: var(--border-danger); }
+.session-note { grid-column: 1 / -1; }
+
+.feed-notes { margin-top: 24px; border-top: 0.5px solid var(--border); padding-top: 8px; }
+.feed-notes .section-toggle { padding: 8px 4px; }
+.feed-notes-name { font-size: 15px; }
+.feed-notes-body { padding: 0 0 12px 22px; display: flex; flex-direction: column; gap: 8px; }
+.feed-notes-intro { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 4px; }
+.feed-note { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); }
+.feed-note-label { font-size: 12px; color: var(--text-muted); }
+.feed-notes-empty { padding: 6px 4px; }
+.feed-notes-entry { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 10px; padding: 10px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); }
+.feed-notes-entry .thumb { aspect-ratio: auto; height: 52px; }
+.feed-notes-title { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.feed-notes-title .card-title { font-size: 13px; }
+.badge { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--surface-1); color: var(--text-secondary); }
+.badge.now { background: var(--bg-danger); color: var(--text-danger); }

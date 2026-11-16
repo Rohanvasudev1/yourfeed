@@ -11,6 +11,9 @@ export function renderApp({ loadCatalog = async () => CATALOG, storage = memoryS
   return render(<App loadCatalog={loadCatalog} storage={storage} />);
 }
 
+/** The open page's title: its first h2. Session and Feed notes sections add more h2s below it. */
+export const openFeedTitle = () => screen.getAllByRole("heading", { level: 2 })[0].textContent;
+
 export const upNextList = () => screen.findByRole("list", { name: "Up next" });
 
 /** Titles of the cards in Up next, in order. */

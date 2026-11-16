@@ -1,6 +1,7 @@
 import { useMemo, useReducer } from "react";
 import { AllTabsPage } from "./components/AllTabsPage";
 import { CatalogError } from "./components/CatalogError";
+import { FeedNotes } from "./components/FeedNotes";
 import { FeedControls } from "./components/FeedControls";
 import { FeedView } from "./components/FeedView";
 import { Flash } from "./components/Flash";
@@ -13,30 +14,36 @@ import { SettingsLine } from "./components/SettingsLine";
 import { FinishedSection, WatchingNow } from "./components/Session";
 import { TabBar } from "./components/TabBar";
 import { UpNextLine } from "./components/UpNextLine";
+import { UndoRedo } from "./components/UndoRedo";
 import { ViewToggle } from "./components/ViewToggle";
 import { composeFeed } from "./domain/compose";
 import { TOP_RANGE_HOURS } from "./domain/feed";
 import type { ComposeInput } from "./domain/types";
 import type { CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
+import { startHistory, withHistory } from "./state/history";
 import { restoreState } from "./state/persistence";
 import { DEMO_SEED } from "./state/seed";
 import { useCatalog } from "./state/useCatalog";
 import { useLibrary } from "./state/useLibrary";
 import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
+import { useNotes } from "./state/useNotes";
 import { useSession } from "./state/useSession";
 import { useTabs } from "./state/useTabs";
 
 type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage }>;
 
-const reducer = makeReducer(DEMO_SEED);
+const baseReducer = makeReducer(DEMO_SEED);
+const reducer = withHistory(baseReducer);
 
 /** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */
-const restore = (storage: StateStorage) => reducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" });
+const restore = (storage: StateStorage) =>
+  startHistory(baseReducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" }));
 
 export default function App({ loadCatalog, storage }: Props) {
-  const [state, dispatch] = useReducer(reducer, storage, restore);
+  const [history, dispatch] = useReducer(reducer, storage, restore);
+  const state = history.present;
   usePersist(storage, state);
   const [catalog, retry] = useCatalog(loadCatalog);
 
@@ -50,6 +57,8 @@ export default function App({ loadCatalog, storage }: Props) {
   const composition = useMemo(() => input && composeFeed(input), [input]);
   const byId = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const session = useSession(feed, byId, dispatch);
+  const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
+  const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, dispatch, showFlash: session.showFlash });
   const library = useLibrary(state, feed, byId, dispatch);
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
@@ -67,7 +76,15 @@ export default function App({ loadCatalog, storage }: Props) {
           <>
             <div className="feed-toolbar">
               <h2 className="feed-title">{feed.name}</h2>
-              <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
+              <div className="toolbar-actions">
+                <UndoRedo
+                  undoCount={history.undo.length}
+                  redoCount={history.redo.length}
+                  onUndo={() => dispatch({ type: "undo" })}
+                  onRedo={() => dispatch({ type: "redo" })}
+                />
+                <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
+              </div>
             </div>
             {feed.draft ? (
               <NameFeed onName={tabs.name} />
@@ -100,13 +117,20 @@ export default function App({ loadCatalog, storage }: Props) {
                 {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
                 <Flash message={session.flash} />
                 {session.finished.length > 0 && (
-                  <FinishedSection videos={session.finished} filters={state.filters} onPlay={session.play} onMoveBack={session.moveBack} />
+                  <FinishedSection
+                    videos={session.finished}
+                    filters={state.filters}
+                    noteFor={notes.forVideo}
+                    onPlay={session.play}
+                    onMoveBack={session.moveBack}
+                  />
                 )}
                 {session.current && (
                   <WatchingNow
                     video={session.current}
                     filters={state.filters}
                     nudge={session.nudge}
+                    note={notes.forVideo(session.current.id)}
                     onPlay={session.play}
                     onFinish={session.finish}
                   />
@@ -125,6 +149,7 @@ export default function App({ loadCatalog, storage }: Props) {
                     saveActions={library.saveActions}
                   />
                 )}
+                <FeedNotes feed={feed} videos={sessionVideos} filters={state.filters} notes={notes} onPlay={session.play} />
                 <div className="library">
                   <SavedSection library={library} filters={state.filters} onPlay={session.play} />
                   <HistorySection library={library} filters={state.filters} onPlay={session.play} />

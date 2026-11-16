@@ -9,6 +9,8 @@ import {
 import { useState } from "react";
 import { displayTitle, minutesText, videoCount } from "../domain/format";
 import type { GlobalFilters, Video } from "../domain/types";
+import type { NoteBinding } from "../state/useNotes";
+import { NoteBox } from "./NoteBox";
 import { PlayableThumbnail, PlayableTitle } from "./Playable";
 
 type WatchingNowProps = Readonly<{
@@ -16,11 +18,12 @@ type WatchingNowProps = Readonly<{
   filters: GlobalFilters;
   /** The visitor came back to the page while watching: Finished turns blue to ask if they're done. */
   nudge: boolean;
+  note: NoteBinding;
   onPlay: (video: Video) => void;
   onFinish: () => void;
 }>;
 
-export function WatchingNow({ video, filters, nudge, onPlay, onFinish }: WatchingNowProps) {
+export function WatchingNow({ video, filters, nudge, note, onPlay, onFinish }: WatchingNowProps) {
   const title = displayTitle(video, filters);
   const play = () => onPlay(video);
   return (
@@ -44,6 +47,9 @@ export function WatchingNow({ video, filters, nudge, onPlay, onFinish }: Watchin
             </button>
           </div>
         </div>
+        <div className="session-note">
+          <NoteBox label={`Notes on ${title}`} placeholder="Notes while you watch" note={note} />
+        </div>
       </div>
     </section>
   );
@@ -52,12 +58,13 @@ export function WatchingNow({ video, filters, nudge, onPlay, onFinish }: Watchin
 type FinishedProps = Readonly<{
   videos: readonly Video[];
   filters: GlobalFilters;
+  noteFor: (id: string) => NoteBinding;
   onPlay: (video: Video) => void;
   onMoveBack: (video: Video) => void;
 }>;
 
 /** The session's Finished videos, open by default as in the mockup. */
-export function FinishedSection({ videos, filters, onPlay, onMoveBack }: FinishedProps) {
+export function FinishedSection({ videos, filters, noteFor, onPlay, onMoveBack }: FinishedProps) {
   const [open, setOpen] = useState(true);
   const Chevron = open ? IconChevronDown : IconChevronRight;
   const total = videos.reduce((sum, v) => sum + v.minutes, 0);
@@ -93,6 +100,9 @@ export function FinishedSection({ videos, filters, onPlay, onMoveBack }: Finishe
                 >
                   <IconArrowBackUp size={16} aria-hidden="true" />
                 </button>
+                <div className="session-note">
+                  <NoteBox label={`Notes on ${title}`} placeholder="Notes on this video" note={noteFor(video.id)} />
+                </div>
               </li>
             );
           })}
@@ -103,7 +113,7 @@ export function FinishedSection({ videos, filters, onPlay, onMoveBack }: Finishe
 }
 
 /** "Front Room Sessions · 74 min": session rows show the channel and length, not counts or age. */
-function SessionMeta({ video }: Readonly<{ video: Video }>) {
+export function SessionMeta({ video }: Readonly<{ video: Video }>) {
   return (
     <p className="card-meta">
       {video.channel} · {video.minutes} min

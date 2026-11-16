@@ -47,6 +47,8 @@ export type Feed = Readonly<{
   current: string | null;
   newsCategory: NewsCategory;
   seed: number;
+  /** The visitor's note on the whole feed, shown in Feed notes. */
+  note: string;
 }>;
 
 export const NEWS_CATEGORIES = ["All", "World", "Business", "Tech", "Science"] as const;

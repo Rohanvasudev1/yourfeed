@@ -27,6 +27,8 @@ const feedSchema = z.object({
   current: z.string().nullable(),
   newsCategory: z.enum(NEWS_CATEGORIES),
   seed: z.number().int(),
+  // Saved before feed notes existed: start with an empty note rather than discarding the save.
+  note: z.string().default(""),
 });
 
 const stateSchema = z

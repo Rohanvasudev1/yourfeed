@@ -2,13 +2,11 @@ import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { memoryStorage } from "./test/fixtures";
-import { feedTitles, renderApp } from "./test/renderApp";
+import { feedTitles, openFeedTitle, renderApp } from "./test/renderApp";
 
 const tabBar = () => screen.getByRole("navigation", { name: "Feeds" });
 const tab = (name: string) => within(tabBar()).getByRole("button", { name });
 const queryTab = (name: string) => within(tabBar()).queryByRole("button", { name });
-/** The open feed's title: the first level-2 heading, above the session and library sections. */
-const openFeedTitle = () => screen.getAllByRole("heading", { level: 2 })[0].textContent;
 
 /** Names of the tabs in the bar, in order, leaving out their close and pin buttons. */
 const tabNames = () =>

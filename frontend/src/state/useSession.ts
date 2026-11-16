@@ -22,5 +22,5 @@ export function useSession(feed: Feed, byId: ReadonlyMap<string, Video>, dispatc
   const finish = () => dispatch({ type: "finish_current", feed: feed.name });
   const moveBack = (video: Video) => dispatch({ type: "move_back_to_up_next", feed: feed.name, video: video.id });
 
-  return { current, finished, nudge, flash, play, finish, moveBack };
+  return { current, finished, nudge, flash, showFlash, play, finish, moveBack };
 }
