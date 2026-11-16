@@ -2,7 +2,7 @@ import { ago, compactCount, displayTitle } from "../domain/format";
 import type { GlobalFilters, Video } from "../domain/types";
 import type { View } from "../state/appState";
 import { GridDescriptionToggle, ListDescription } from "./Description";
-import { Thumbnail } from "./thumbnail/Thumbnail";
+import { PlayableThumbnail, PlayableTitle } from "./Playable";
 
 type Props = Readonly<{
   video: Video;
@@ -10,11 +10,12 @@ type Props = Readonly<{
   view: View;
   descriptionOpen: boolean;
   onToggleDescription: () => void;
+  onPlay: () => void;
   /** Position badge ("#1") on Most viewed; absent elsewhere. */
   rank?: number;
 }>;
 
-export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescription, rank }: Props) {
+export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescription, onPlay, rank }: Props) {
   const title = displayTitle(video, filters);
   const channelLine = [
     video.channel,
@@ -24,9 +25,9 @@ export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescr
   const Description = view === "grid" ? GridDescriptionToggle : ListDescription;
   return (
     <li className={descriptionOpen && view === "grid" ? "card selected" : "card"}>
-      <Thumbnail video={video} honest={filters.honestTitles} rank={rank} />
+      <PlayableThumbnail video={video} title={title} honest={filters.honestTitles} rank={rank} onPlay={onPlay} />
       <div className="card-body">
-        <h3 className={view === "grid" ? "card-title clamp" : "card-title"}>{title}</h3>
+        <PlayableTitle title={title} clamp={view === "grid"} onPlay={onPlay} />
         <p className="card-meta">{channelLine.join(" · ")}</p>
         <p className="card-meta">
           {video.topic} · {ago(video.ageHours)}
