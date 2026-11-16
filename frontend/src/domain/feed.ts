@@ -20,6 +20,7 @@ export const DEFAULT_FEED: Feed = {
   current: null,
   newsCategory: "All",
   seed: 0,
+  note: "",
 };
 
 export const makeFeed = (overrides: Partial<Feed> = {}): Feed => ({ ...DEFAULT_FEED, ...overrides });

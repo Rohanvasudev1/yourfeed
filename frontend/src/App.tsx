@@ -1,6 +1,7 @@
 import { useMemo, useReducer } from "react";
 import { AllTabsPage } from "./components/AllTabsPage";
 import { CatalogError } from "./components/CatalogError";
+import { FeedNotes } from "./components/FeedNotes";
 import { FeedControls } from "./components/FeedControls";
 import { FeedView } from "./components/FeedView";
 import { Flash } from "./components/Flash";
@@ -27,6 +28,7 @@ import { useCatalog } from "./state/useCatalog";
 import { useLibrary } from "./state/useLibrary";
 import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
+import { useNotes } from "./state/useNotes";
 import { useSession } from "./state/useSession";
 import { useTabs } from "./state/useTabs";
 
@@ -55,6 +57,8 @@ export default function App({ loadCatalog, storage }: Props) {
   const composition = useMemo(() => input && composeFeed(input), [input]);
   const byId = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const session = useSession(feed, byId, dispatch);
+  const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
+  const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, dispatch, showFlash: session.showFlash });
   const library = useLibrary(state, feed, byId, dispatch);
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
@@ -113,13 +117,20 @@ export default function App({ loadCatalog, storage }: Props) {
                 {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
                 <Flash message={session.flash} />
                 {session.finished.length > 0 && (
-                  <FinishedSection videos={session.finished} filters={state.filters} onPlay={session.play} onMoveBack={session.moveBack} />
+                  <FinishedSection
+                    videos={session.finished}
+                    filters={state.filters}
+                    noteFor={notes.forVideo}
+                    onPlay={session.play}
+                    onMoveBack={session.moveBack}
+                  />
                 )}
                 {session.current && (
                   <WatchingNow
                     video={session.current}
                     filters={state.filters}
                     nudge={session.nudge}
+                    note={notes.forVideo(session.current.id)}
                     onPlay={session.play}
                     onFinish={session.finish}
                   />
@@ -138,6 +149,7 @@ export default function App({ loadCatalog, storage }: Props) {
                     saveActions={library.saveActions}
                   />
                 )}
+                <FeedNotes feed={feed} videos={sessionVideos} filters={state.filters} notes={notes} onPlay={session.play} />
                 <div className="library">
                   <SavedSection library={library} filters={state.filters} onPlay={session.play} />
                   <HistorySection library={library} filters={state.filters} onPlay={session.play} />
