@@ -44,9 +44,7 @@ export function SettingsLine({ feed, filters, topicActions, rangeActions, onTogg
   const topics = !hasItemList(feed) ? (
     <b>{topicsPhrase(feed)}</b>
   ) : (
-    phrase("topics", topicsPhrase(feed), undefined, () => (
-      <TopicsPopup feed={feed} popupProps={popups.popup("topics")} {...topicActions} />
-    ))
+    phrase("topics", topicsPhrase(feed), undefined, () => <TopicsPopup feed={feed} popupProps={popups.popup("topics")} {...topicActions} />)
   );
   const length = phrase("length", rangeText(feed.length), `${LENGTH_SETTING.label}, ${rangeText(feed.length)}`, () => (
     <RangePopup setting={LENGTH_SETTING} value={feed.length} onChange={rangeActions.onLength} popupProps={popups.popup("length")} />
@@ -59,7 +57,8 @@ export function SettingsLine({ feed, filters, topicActions, rangeActions, onTogg
   ));
   return (
     <div className="settings-line" role="group" aria-label="Feed settings">
-      Showing {topics} · {length} videos · {session} sessions · {filtersButton} <span className="popup-anchor">
+      Showing {topics} · {length} videos · {session} sessions · {filtersButton}{" "}
+      <span className="popup-anchor">
         <button type="button" className="phrase phrase-icon" aria-label="Tab options" title="Tab options" {...popups.trigger("tab-options")}>
           <IconDots size={16} aria-hidden="true" />
         </button>
