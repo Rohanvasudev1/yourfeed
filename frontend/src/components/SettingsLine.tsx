@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { filtersPhrase, hasItemList, topicsPhrase } from "../domain/feedList";
 import type { Feed, GlobalFilters, Range } from "../domain/types";
+import { FiltersPopup } from "./FiltersPopup";
 import { usePopupController } from "./popup/usePopupController";
 import { RangePopup } from "./RangePopup";
 import { LENGTH_SETTING, SESSION_SETTING } from "./rangeSettings";
@@ -11,14 +12,20 @@ export type RangeActions = Readonly<{
   onSession: (range: Range) => void;
 }>;
 
-type Props = Readonly<{ feed: Feed; filters: GlobalFilters; topicActions: TopicsPopupActions; rangeActions: RangeActions }>;
+type Props = Readonly<{
+  feed: Feed;
+  filters: GlobalFilters;
+  topicActions: TopicsPopupActions;
+  rangeActions: RangeActions;
+  onToggleFilter: (filter: keyof GlobalFilters) => void;
+}>;
 
-type PopupKey = "topics" | "length" | "session";
+type PopupKey = "topics" | "length" | "session" | "filters";
 
 const rangeText = ([min, max]: Range) => `${min}–${max} min`;
 
 /** The sentence under the feed header that sums up the feed's settings; each phrase opens a popup that edits it. */
-export function SettingsLine({ feed, filters, topicActions, rangeActions }: Props) {
+export function SettingsLine({ feed, filters, topicActions, rangeActions, onToggleFilter }: Props) {
   const popups = usePopupController<PopupKey>();
 
   /** A phrase that opens `popup` (rendered only while open) under it. */
@@ -44,9 +51,12 @@ export function SettingsLine({ feed, filters, topicActions, rangeActions }: Prop
   const session = phrase("session", rangeText(feed.session), `${SESSION_SETTING.label}, ${rangeText(feed.session)}`, () => (
     <RangePopup setting={SESSION_SETTING} value={feed.session} onChange={rangeActions.onSession} popupProps={popups.popup("session")} />
   ));
+  const filtersButton = phrase("filters", filtersPhrase(filters), undefined, () => (
+    <FiltersPopup filters={filters} onToggle={onToggleFilter} popupProps={popups.popup("filters")} />
+  ));
   return (
     <div className="settings-line" role="group" aria-label="Feed settings">
-      Showing {topics} · {length} videos · {session} sessions · <b>{filtersPhrase(filters)}</b>
+      Showing {topics} · {length} videos · {session} sessions · {filtersButton}
     </div>
   );
 }

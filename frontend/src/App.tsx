@@ -67,6 +67,7 @@ export default function App({ loadCatalog, storage }: Props) {
             onLength: (range) => dispatch({ type: "set_length_range", feed: feed.name, range }),
             onSession: (range) => dispatch({ type: "set_session_range", feed: feed.name, range }),
           }}
+          onToggleFilter={(filter) => dispatch({ type: "toggle_filter", filter })}
         />
         <FeedControls
           feed={feed}
