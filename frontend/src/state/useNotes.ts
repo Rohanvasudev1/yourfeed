@@ -1,9 +1,7 @@
 import type { Dispatch } from "react";
-import { FLASH_MS } from "../components/Flash";
 import { notesMarkdown, type NoteTarget } from "../domain/notes";
 import type { Feed, Video } from "../domain/types";
 import type { Action } from "./appState";
-import { useTimedValue } from "./useTimedValue";
 import { useVoiceTyping } from "./useVoiceTyping";
 
 const COPIED = "Notes copied.";
@@ -24,11 +22,12 @@ type Input = Readonly<{
   videos: readonly Video[];
   notes: Readonly<Record<string, string>>;
   dispatch: Dispatch<Action>;
+  /** Shows a short message in the app's one flash, replacing whatever it showed. */
+  showFlash: (message: string) => void;
 }>;
 
 /** Notes on the open feed's videos and on the feed itself: typing, voice typing and copying. */
-export function useNotes({ feed, videos, notes, dispatch }: Input) {
-  const [flash, showFlash] = useTimedValue<string>(FLASH_MS);
+export function useNotes({ feed, videos, notes, dispatch, showFlash }: Input) {
   const voice = useVoiceTyping({
     onHeard: (target, heard) => dispatch({ type: "add_dictation", target, heard }),
     onMessage: showFlash,
@@ -53,7 +52,6 @@ export function useNotes({ feed, videos, notes, dispatch }: Input) {
   };
 
   return {
-    flash,
     forVideo: (id: string) => bind({ video: id }, notes[id] ?? ""),
     forFeed: bind({ feed: feed.name }, feed.note),
     copy,

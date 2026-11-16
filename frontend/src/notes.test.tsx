@@ -1,4 +1,4 @@
-import { act, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EVERYTHING_ORDER, memoryStorage } from "./test/fixtures";
@@ -148,6 +148,44 @@ describe("Feed notes", () => {
       ].join("\n"),
     );
   });
+  it("says so when copying fails", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(navigator.clipboard, "writeText").mockRejectedValue(new Error("denied"));
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    renderApp();
+    await feedTitles();
+    await openFeedNotes();
+
+    await user.click(within(feedNotes()).getByRole("button", { name: "Copy all notes as Markdown" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't copy the notes. Try again.");
+  });
+
+  it("asks you to copy by hand where the browser has no clipboard", async () => {
+    renderApp();
+    await feedTitles();
+    await openFeedNotes();
+    vi.stubGlobal("navigator", { ...navigator, clipboard: undefined });
+
+    fireEvent.click(within(feedNotes()).getByRole("button", { name: "Copy all notes as Markdown" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Copying isn't available here. Select the notes and copy them yourself.");
+  });
+
+  it("replaces an earlier message instead of hiding the newer one", async () => {
+    renderApp();
+    await playByTitle(FIRST);
+    await userEvent.click(within(watchingNow()).getByRole("button", { name: `Dictate notes on ${FIRST}` }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Voice typing isn't available in this browser.");
+
+    vi.stubGlobal(
+      "open",
+      vi.fn(() => null),
+    );
+    await playByTitle(SECOND);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Your browser blocked the YouTube tab.");
+  });
 });
 
 type ResultEvent = { resultIndex: number; results: { isFinal: boolean; 0: { transcript: string } }[] };
@@ -218,5 +256,21 @@ describe("voice typing", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("Microphone access is blocked. Allow it for this page to dictate notes.");
     expect(within(watchingNow()).getByRole("button", { name: `Dictate notes on ${FIRST}` })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("says so when it heard nothing, and stays quiet when stopped on purpose", async () => {
+    vi.stubGlobal("SpeechRecognition", FakeRecognition);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    renderApp();
+    await playByTitle(FIRST);
+    const mic = () => within(watchingNow()).getByRole("button", { name: /dictating|Dictate/ });
+    await userEvent.click(mic());
+
+    recognition().fail("aborted");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    await userEvent.click(mic());
+    recognition().fail("no-speech");
+    expect(screen.getByRole("alert")).toHaveTextContent("Didn't catch anything. Tap the mic and try again.");
   });
 });

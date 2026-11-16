@@ -18,6 +18,7 @@ type Recognition = {
 };
 type RecognitionClass = new () => Recognition;
 
+const FALLBACK_LANGUAGE = "en-US";
 const UNSUPPORTED = "Voice typing isn't available in this browser. Try Chrome, Edge or Safari.";
 const START_FAILED = "Couldn't start voice typing. Try again.";
 
@@ -34,12 +35,12 @@ function recognitionClass(): RecognitionClass | undefined {
 }
 
 function finalTranscript(event: SpeechResultEvent): string {
-  const heard: string[] = [];
-  for (let i = event.resultIndex; i < event.results.length; i++) {
-    const result = event.results[i];
-    if (result.isFinal) heard.push(result[0].transcript.trim());
-  }
-  return heard.filter(Boolean).join(" ");
+  return Array.from(event.results)
+    .slice(event.resultIndex)
+    .filter((result) => result.isFinal)
+    .map((result) => result[0].transcript.trim())
+    .filter(Boolean)
+    .join(" ");
 }
 
 type Handlers = Readonly<{
@@ -66,7 +67,7 @@ export function useVoiceTyping({ onHeard, onMessage }: Handlers) {
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = false;
-    recognition.lang = navigator.language || "en-US";
+    recognition.lang = navigator.language || FALLBACK_LANGUAGE;
     recognition.onresult = (event) => {
       const heard = finalTranscript(event);
       if (heard) onHeard(target, heard);
@@ -91,14 +92,14 @@ export function useVoiceTyping({ onHeard, onMessage }: Handlers) {
     setListening(target);
   };
 
+  const isListening = (target: NoteTarget) => listening !== null && noteKey(listening) === noteKey(target);
+
   const toggle = (target: NoteTarget) => {
-    const wasThisNote = listening !== null && noteKey(listening) === noteKey(target);
+    const wasThisNote = isListening(target);
     stopActive();
     setListening(null);
     if (!wasThisNote) start(target);
   };
-
-  const isListening = (target: NoteTarget) => listening !== null && noteKey(listening) === noteKey(target);
 
   return { isListening, toggle };
 }

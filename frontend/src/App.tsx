@@ -46,7 +46,7 @@ export default function App({ loadCatalog, storage }: Props) {
   const byId = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const session = useSession(feed, byId, dispatch);
   const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
-  const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, dispatch });
+  const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, dispatch, showFlash: session.showFlash });
   const { refresh, undo } = useRefresh(input, dispatch);
 
   return (
@@ -75,7 +75,7 @@ export default function App({ loadCatalog, storage }: Props) {
         />
         {catalog.status === "loading" && <p className="muted">Loading…</p>}
         {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
-        <Flash message={notes.flash ?? session.flash} />
+        <Flash message={session.flash} />
         {session.finished.length > 0 && (
           <FinishedSection videos={session.finished} filters={state.filters}
             noteFor={notes.forVideo}
