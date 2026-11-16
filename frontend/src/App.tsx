@@ -1,25 +1,28 @@
-import { useEffect, useReducer, useState } from "react";
+import { useMemo, useReducer } from "react";
 import { CatalogError } from "./components/CatalogError";
 import { FeedControls } from "./components/FeedControls";
 import { FeedView } from "./components/FeedView";
+import { Flash } from "./components/Flash";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { SettingsLine } from "./components/SettingsLine";
+import { FinishedSection, WatchingNow } from "./components/Session";
 import { TabBar } from "./components/TabBar";
+import { UpNextLine } from "./components/UpNextLine";
 import { ViewToggle } from "./components/ViewToggle";
-import type { Video } from "./domain/types";
+import { composeFeed } from "./domain/compose";
+import { TOP_RANGE_HOURS } from "./domain/feed";
+import type { ComposeInput } from "./domain/types";
 import type { CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
 import { restoreState } from "./state/persistence";
 import { DEMO_SEED } from "./state/seed";
+import { useCatalog } from "./state/useCatalog";
 import { usePersist } from "./state/usePersist";
+import { useRefresh } from "./state/useRefresh";
+import { useSession } from "./state/useSession";
 
 type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage }>;
-
-type CatalogState =
-  | Readonly<{ status: "loading" }>
-  | Readonly<{ status: "error"; message: string }>
-  | Readonly<{ status: "ready"; catalog: readonly Video[] }>;
 
 const reducer = makeReducer(DEMO_SEED);
 
@@ -28,28 +31,23 @@ const restore = (storage: StateStorage) => restoreState(storage.load(), DEMO_SEE
 export default function App({ loadCatalog, storage }: Props) {
   const [state, dispatch] = useReducer(reducer, storage, restore);
   usePersist(storage, state);
-  const [catalog, setCatalog] = useState<CatalogState>({ status: "loading" });
-
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    let live = true;
-    setCatalog({ status: "loading" });
-    loadCatalog()
-      .then((videos) => live && setCatalog({ status: "ready", catalog: videos }))
-      .catch((err: unknown) => {
-        console.error("Catalog failed to load", err);
-        if (live) setCatalog({ status: "error", message: errorMessage(err) });
-      });
-    return () => {
-      live = false;
-    };
-  }, [loadCatalog, attempt]);
+  const [catalog, retry] = useCatalog(loadCatalog);
 
   const feed = currentFeedOf(state);
+  const ready = catalog.status === "ready" ? catalog.catalog : null;
+  const input = useMemo<ComposeInput | null>(
+    () =>
+      ready && { catalog: ready, feed, filters: state.filters, watched: state.watched, topMaxAgeHours: TOP_RANGE_HOURS[feed.topRange] },
+    [ready, feed, state.filters, state.watched],
+  );
+  const composition = useMemo(() => input && composeFeed(input), [input]);
+  const byId = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
+  const session = useSession(feed, byId, dispatch);
+  const { refresh, undo } = useRefresh(input, dispatch);
+
   return (
     <div className="app">
-      <Header />
+      <Header onRefresh={refresh} onUndoRefresh={undo} />
       <TabBar feeds={state.feeds} current={feed} onOpen={(name) => dispatch({ type: "open_feed", feed: name })} />
       <main>
         <div className="feed-toolbar">
@@ -72,18 +70,24 @@ export default function App({ loadCatalog, storage }: Props) {
           onNewsCategory={(category) => dispatch({ type: "set_news_category", feed: feed.name, category })}
         />
         {catalog.status === "loading" && <p className="muted">Loading…</p>}
-        {catalog.status === "error" && (
-          <CatalogError message={catalog.message} onRetry={() => setAttempt((n) => n + 1)} />
+        {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
+        <Flash message={session.flash} />
+        {session.finished.length > 0 && (
+          <FinishedSection videos={session.finished} filters={state.filters} onPlay={session.play} onMoveBack={session.moveBack} />
         )}
-        {catalog.status === "ready" && (
+        {session.current && (
+          <WatchingNow video={session.current} filters={state.filters} nudge={session.nudge} onPlay={session.play} onFinish={session.finish} />
+        )}
+        {composition && <UpNextLine feed={feed} composition={composition} />}
+        {composition && (
           <FeedView
-            // Switching layouts starts with every description closed, as in the mockup.
-            key={state.view}
-            catalog={catalog.catalog}
-            feed={feed}
+            // Switching layouts or loading a new set starts with every description closed, as in the mockup.
+            key={`${state.view}-${feed.seed}`}
+            upNext={composition.upNext}
+            kind={feed.kind}
             filters={state.filters}
-            watched={state.watched}
             view={state.view}
+            onPlay={session.play}
           />
         )}
       </main>
@@ -91,5 +95,3 @@ export default function App({ loadCatalog, storage }: Props) {
     </div>
   );
 }
-
-const errorMessage = (err: unknown) => (err instanceof Error ? err.message : "Couldn't load videos.");

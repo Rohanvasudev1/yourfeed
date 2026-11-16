@@ -79,3 +79,8 @@ export const CARDS_CATALOG: readonly Video[] = [
   video({ id: "demo-36", title: "Live: storm update and travel disruption", topic: "News", minutes: 45, live: true, newsCategory: "World" }),
   video({ id: "demo-60", title: "Pruning roses in winter", minutes: 10 }),
 ];
+
+/** Twelve hour-long gardening videos: Everything's 240-minute session fits four at a time, so three sets use them all up. */
+export const BIG_CATALOG: readonly Video[] = Array.from({ length: 12 }, (_, i) =>
+  video({ id: `demo-${100 + i}`, title: `Garden walk ${i + 1}`, minutes: 60 }),
+);
