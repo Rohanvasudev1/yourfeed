@@ -9,6 +9,8 @@ type Props = Readonly<{
   honest: boolean;
   /** Position badge ("#1") on Most viewed; absent elsewhere. */
   rank?: number;
+  /** In watch history: a "Watched" label and a full red progress bar, as on YouTube. */
+  watched?: boolean;
 }>;
 
 const GENERIC_GRADIENT = ["#222", "#555"] as const;
@@ -24,12 +26,13 @@ const genericDesign = (video: Video): CaptionDesign => ({
  * A YouTube-style thumbnail: the video's designed art (or the generic topic design) plus its
  * duration or LIVE badge, and a rank badge on Most viewed. Sizes use container query units, so one design fits any card width.
  */
-export function Thumbnail({ video, honest, rank }: Props) {
+export function Thumbnail({ video, honest, rank, watched = false }: Props) {
   const design: ThumbnailDesign = THUMBNAIL_DESIGNS[video.id] ?? genericDesign(video);
   return (
-    <div className="thumb">
+    <div className={watched ? "thumb watched" : "thumb"}>
       {isVersus(design) ? <VersusArt design={design} /> : <CaptionArt design={design} honest={honest} />}
       {rank !== undefined && <span className="thumb-badge thumb-rank">#{rank}</span>}
+      {watched && <span className="thumb-badge thumb-watched">Watched</span>}
       {video.live ? (
         <span className="thumb-badge thumb-live">
           <IconBroadcast aria-hidden="true" />
@@ -38,6 +41,7 @@ export function Thumbnail({ video, honest, rank }: Props) {
       ) : (
         <span className="thumb-badge">{durationText(video)}</span>
       )}
+      {watched && <span className="thumb-progress" aria-hidden="true" />}
     </div>
   );
 }

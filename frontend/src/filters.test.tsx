@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import type { Video } from "./domain/types";
 import { CARDS_CATALOG, CATALOG } from "./test/fixtures";
-import { cardFor, feedTitles, filtersButton, filtersPopup, renderApp, toggleFilters } from "./test/renderApp";
+import { cardFor, feedTitles, filtersButton, filtersPopup, renderApp, toggleFilters, wholeLine } from "./test/renderApp";
 
 const filtersButtonText = () => filtersButton().textContent;
 
@@ -92,13 +92,13 @@ describe("each filter", () => {
   it("Hide view counts and Hide subscriber counts change the card details", async () => {
     const DATABASE = "Building a tiny database from scratch";
     renderApp({ loadCatalog: async () => CARDS_CATALOG });
-    expect(within(await cardFor(DATABASE)).getByText("Byte Garden · 88K subs")).toBeInTheDocument();
+    expect(within(await cardFor(DATABASE)).getByText(wholeLine("Byte Garden · 88K subs"))).toBeInTheDocument();
 
     await toggleFilters("Hide view counts");
-    expect(within(await cardFor(DATABASE)).getByText("Byte Garden · 88K subs · 1.9M views")).toBeInTheDocument();
+    expect(within(await cardFor(DATABASE)).getByText(wholeLine("Byte Garden · 88K subs · 1.9M views"))).toBeInTheDocument();
 
     await toggleFilters("Hide subscriber counts");
-    expect(within(await cardFor(DATABASE)).getByText("Byte Garden · 1.9M views")).toBeInTheDocument();
+    expect(within(await cardFor(DATABASE)).getByText(wholeLine("Byte Garden · 1.9M views"))).toBeInTheDocument();
   });
 
   it("Include Shorts lets in videos under two minutes", async () => {
