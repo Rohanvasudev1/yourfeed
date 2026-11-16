@@ -48,4 +48,7 @@ export function minutesText(minutes: number): string {
 }
 
 /** "1 video", "3 videos". */
-export const videoCount = (n: number): string => `${n} video${n === 1 ? "" : "s"}`;
+export const videoCount = (n: number): string => plural(n, "video");
+
+/** "1 folder", "3 folders". */
+export const folderCount = (n: number): string => plural(n, "folder");

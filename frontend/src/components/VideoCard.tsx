@@ -1,7 +1,9 @@
 import { ago, compactCount, displayTitle } from "../domain/format";
 import type { GlobalFilters, Video } from "../domain/types";
 import type { View } from "../state/appState";
+import type { SaveActions } from "../state/useLibrary";
 import { GridDescriptionToggle, ListDescription } from "./Description";
+import { SaveControl } from "./library/SaveControl";
 import { PlayableThumbnail, PlayableTitle } from "./Playable";
 
 type Props = Readonly<{
@@ -11,11 +13,12 @@ type Props = Readonly<{
   descriptionOpen: boolean;
   onToggleDescription: () => void;
   onPlay: () => void;
+  saveActions: SaveActions;
   /** Position badge ("#1") on Most viewed; absent elsewhere. */
   rank?: number;
 }>;
 
-export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescription, onPlay, rank }: Props) {
+export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescription, onPlay, saveActions, rank }: Props) {
   const title = displayTitle(video, filters);
   const channelLine = [
     video.channel,
@@ -33,6 +36,9 @@ export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescr
           {video.topic} · {ago(video.ageHours)}
         </p>
         <Description video={video} title={title} open={descriptionOpen} onToggle={onToggleDescription} />
+      </div>
+      <div className="card-actions">
+        <SaveControl video={video} title={title} saveActions={saveActions} />
       </div>
     </li>
   );

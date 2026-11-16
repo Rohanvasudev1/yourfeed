@@ -17,7 +17,9 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Session**: a feed's current sitting. It has **Finished** videos, at most one **Watching now** video, and **Up next**.
 - **Finished**: the user said they're done with the video. Returning to the page never marks a video Finished by itself.
 - **Feed set**: which videos a feed shows right now: its seed plus its skipped videos. Clicking the logo loads a new set that skips what was just shown, and starts over when nothing new is left; undo brings the previous set back for 5 seconds.
-- **Pinned**: videos the user added to this session by hand, which always count toward the session.
+- **Pinned**: videos the user added to this session by hand, which always count toward the session. They come first in Up next. The + on a saved or history video pins it.
+- **Saved folder**: a named list of videos the user saved (Watch later, Weekend, Learning, or their own). Saving a video twice to one folder changes nothing and says "Already in <folder>."
+- **Watch history**: every **watched** video, newest first. Playing a video adds it; moving a Finished video back to Up next takes it out again, since that undoes a mis-click. Everything ranks by it and hides what's in it.
 - **Composition**: the pure function that turns a catalog, a feed and global filters into Up next plus a hidden count. It's the heart of the app (`composeFeed`).
 - **Time range**: Most viewed's window: last 24 hours, last year or all time (`topRange`).
 - **Global filters**: Hide clickbait, Honest titles, Hide view counts, Hide subscriber counts, Boost small creators, Include Shorts.
@@ -32,5 +34,5 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 ## Avoid
 
 - "Algorithm" for a feed: say **feed**.
-- "Watched" to mean Finished: **watched** is the eye toggle ("I've seen this elsewhere"), while **Finished** is part of a session.
+- "Watched" to mean Finished: **watched** means in watch history (played here, or the eye toggle: "I've seen this elsewhere"), while **Finished** is part of a session.
 - "Playlist" for a feed or a saved folder: playlists are YouTube's. Ours are **feeds** and **saved folders**.

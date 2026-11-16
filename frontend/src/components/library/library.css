@@ -1,0 +1,48 @@
+/* Saved folders, Watch history and a card's Save to picker. Kept apart from index.css so parallel tickets don't collide. */
+
+/* A card's action bar and Save to picker */
+.card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: auto; }
+.feed-list .card-actions { grid-column: 1 / -1; }
+.icon-button.on { color: var(--text-accent); }
+.save-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; width: 100%; padding-top: 8px; border-top: 0.5px solid var(--border); }
+.folder-chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 999px; font-size: 12px; }
+.folder-chip:hover { background: var(--bg-accent-muted); }
+.save-message { width: 100%; margin: 0; color: var(--text-secondary); }
+
+/* New folder name box */
+.new-folder { width: 100%; padding: 0 4px 8px; }
+.new-folder-row { display: flex; gap: 6px; align-items: center; }
+.new-folder-row input { flex: 1; min-width: 0; font-size: 13px; }
+.field-error { margin: 4px 2px 0; font-size: 12px; color: var(--text-danger); }
+
+/* Saved and Watch history sections at the bottom of the page */
+.library { margin-top: 16px; }
+.library-section { border-top: 0.5px solid var(--border); padding-top: 4px; margin-top: 4px; }
+.library-section > .section-label { margin-bottom: 4px; }
+.library-section .section-toggle { font-size: 15px; padding: 8px 2px; }
+.library-body { padding: 0 0 8px 22px; }
+.library-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 4px 6px; min-height: 32px; }
+.library-empty { padding: 6px 4px; margin: 0; }
+.confirm { display: inline-flex; align-items: center; gap: 6px; }
+.text-button.danger { background: var(--bg-danger); color: var(--text-danger); border-color: var(--border-danger); }
+
+/* Folders */
+.folder-toggle { display: flex; align-items: center; gap: 8px; width: 100%; height: auto; padding: 8px 4px; border: none; background: transparent; font-weight: 500; text-align: left; }
+.folder-toggle:hover { background: var(--surface-1); }
+.folder-icon { color: var(--text-accent); }
+.chevron { transition: transform 0.12s ease-out; }
+.chevron.open { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .chevron { transition: none; } }
+.folder-list { padding: 4px 0 10px 28px; }
+
+/* One saved or history video */
+.library-row { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 12px; padding: 10px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); align-items: center; }
+.library-row .thumb { aspect-ratio: auto; height: 68px; }
+.library-actions { display: flex; align-items: center; gap: 4px; }
+.in-session { display: inline-flex; align-items: center; gap: 4px; color: var(--text-success); padding: 0 6px; }
+@media (max-width: 520px) {
+  .library-body { padding-left: 0; }
+  .folder-list { padding-left: 0; }
+  .library-row { grid-template-columns: 96px minmax(0, 1fr); }
+  .library-actions { grid-column: 1 / -1; justify-content: flex-end; }
+}
