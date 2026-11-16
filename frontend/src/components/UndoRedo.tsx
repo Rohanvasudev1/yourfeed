@@ -5,6 +5,9 @@ type Props = Readonly<{ undoCount: number; redoCount: number; onUndo: () => void
 
 type Which = "undo" | "redo";
 
+const UNDO_LABEL = "Undo last change";
+const REDO_LABEL = "Redo the change you undid";
+
 const withCount = (label: string, count: number) => (count > 1 ? `${label} (${count} steps)` : label);
 
 /**
@@ -22,7 +25,7 @@ export function UndoRedo({ undoCount, redoCount, onUndo, onRedo }: Props) {
     focusNext.current = null;
   });
 
-  const use = (count: number, other: Which, run: () => void) => () => {
+  const handOffFocusThen = (count: number, other: Which, run: () => void) => () => {
     if (count === 1) focusNext.current = other;
     run();
   };
@@ -33,21 +36,21 @@ export function UndoRedo({ undoCount, redoCount, onUndo, onRedo }: Props) {
       {undoCount > 0 && (
         <StepButton
           buttonRef={undoRef}
-          label={withCount("Undo last change", undoCount)}
-          title="Undo last change"
+          label={withCount(UNDO_LABEL, undoCount)}
+          title={UNDO_LABEL}
           count={undoCount}
           icon={IconArrowBackUp}
-          onClick={use(undoCount, "redo", onUndo)}
+          onClick={handOffFocusThen(undoCount, "redo", onUndo)}
         />
       )}
       {redoCount > 0 && (
         <StepButton
           buttonRef={redoRef}
-          label={withCount("Redo the change you undid", redoCount)}
-          title="Redo"
+          label={withCount(REDO_LABEL, redoCount)}
+          title={REDO_LABEL}
           count={redoCount}
           icon={IconArrowForwardUp}
-          onClick={use(redoCount, "undo", onRedo)}
+          onClick={handOffFocusThen(redoCount, "undo", onRedo)}
         />
       )}
     </div>

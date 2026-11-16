@@ -25,6 +25,7 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Settings line**: the sentence under the Claude bar ("Showing 4 topics · 10–60 min videos …"). Each phrase opens a popup that edits that setting. It replaces a settings sidebar.
 - **Claude bar**: the plain-language command box. Despite the name, any OpenAI-compatible model can run it (see ADR 0004). An **assistant** turns a request into **feed actions** the user can see and undo.
 - **Feed action**: one structured change to a feed: `set_topics`, `mute_topic`, `set_length_range`, `set_session_range`, `pin_video`, `ask_user`. Undo and redo work on these.
+- **Undo step**: the feed settings (topics, channels, mutes, length and session ranges) and global filters as they were before one change. Any change to those, by hand or by a feed action, adds one; undo and redo keep up to 10 each, a new change clears redo, and a reload or Reset demo starts with none. Sessions, feed sets and tabs are never undone.
 - **Notes**: free text per video (the same everywhere the video shows up), plus one note per feed. A line ending in `?` asks the assistant, and the answer is written into the note as `✱ answer`.
 - **Demo mode**: not signed in. Mock catalog, state kept in the browser, rate-limited AI.
 - **Signed-in mode**: signed in with Google. Real YouTube catalog, state kept in the database.

@@ -148,12 +148,7 @@ h2, h3, p { margin: 0; }
 .chip button:hover { background: var(--bg-accent-muted); }
 .topics-add { display: flex; gap: 6px; margin-top: 10px; }
 .topics-add input { flex: 1; min-width: 0; font-size: 13px; }
-.topics-add /* Undo and redo for feed settings, beside the layout toggle */
-.toolbar-actions { display: flex; align-items: center; gap: 8px; }
-.undo-redo { display: flex; gap: 4px; }
-.step-button { position: relative; width: 32px; height: 32px; padding: 0; border-radius: 8px; border: 0.5px solid var(--border-strong); background: transparent; color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; flex: none; }
-.step-button span { position: absolute; top: -5px; right: -5px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px; background: var(--fill-accent); color: var(--on-accent); font-size: 10px; display: flex; align-items: center; justify-content: center; }
-.icon-button { width: 36px; height: 36px; }
+.topics-add .icon-button { width: 36px; height: 36px; }
 .explore-item { height: auto; min-height: 44px; padding: 6px 8px; border: none; display: flex; align-items: center; gap: 10px; line-height: 1.3; text-align: left; }
 .explore-item[aria-current="page"] { background: var(--surface-1); }
 .explore-item-text { flex: 1; min-width: 0; }
@@ -168,6 +163,11 @@ h2, h3, p { margin: 0; }
 /* Feed toolbar: title and the layout toggle */
 .feed-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .feed-toolbar .feed-title { margin-bottom: 0; }
+/* Undo and redo for feed settings, beside the layout toggle */
+.toolbar-actions { display: flex; align-items: center; gap: 8px; }
+.undo-redo { display: flex; gap: 4px; }
+.step-button { position: relative; width: 32px; height: 32px; padding: 0; border-radius: 8px; border: 0.5px solid var(--border-strong); background: transparent; color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.step-button span { position: absolute; top: -5px; right: -5px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px; background: var(--fill-accent); color: var(--on-accent); font-size: 10px; display: flex; align-items: center; justify-content: center; }
 .seg { display: inline-flex; background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; flex: none; }
 .seg button { border: none; background: transparent; border-radius: 999px; height: auto; padding: 5px 12px; color: var(--text-secondary); display: flex; align-items: center; }
 .seg button:hover { background: var(--surface-1); }

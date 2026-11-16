@@ -28,7 +28,8 @@ const settingsOf = (state: AppState): Settings => ({
   filters: state.filters,
 });
 
-const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+/** Value equality for plain settings data (string lists, ranges, filter flags). */
+const sameValue = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 /**
  * The feed whose settings differ between `before` and `after`, the open feed when only the
@@ -38,9 +39,9 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 function changedFeed(before: Settings, after: Settings, current: string): string | null {
   for (const [name, settings] of after.feeds) {
     const old = before.feeds.get(name);
-    if (old && !same(old, settings)) return name;
+    if (old && !sameValue(old, settings)) return name;
   }
-  return same(before.filters, after.filters) ? null : current;
+  return sameValue(before.filters, after.filters) ? null : current;
 }
 
 function applySettings(state: AppState, { settings, feed }: Step): AppState {
@@ -56,7 +57,8 @@ function applySettings(state: AppState, { settings, feed }: Step): AppState {
   };
 }
 
-const push = (steps: readonly Step[], step: Step) => [...steps, step].slice(-UNDO_LIMIT);
+/** Adds a step, dropping the oldest past the limit. */
+const pushCapped = (steps: readonly Step[], step: Step) => [...steps, step].slice(-UNDO_LIMIT);
 
 /** Moves the newest step from `from` onto the state, recording the way back on `to`. */
 function travel(present: AppState, from: readonly Step[], to: readonly Step[]) {
@@ -65,7 +67,7 @@ function travel(present: AppState, from: readonly Step[], to: readonly Step[]) {
   return {
     present: applySettings(present, step),
     from: from.slice(0, -1),
-    to: push(to, { settings: settingsOf(present), feed: step.feed }),
+    to: pushCapped(to, { settings: settingsOf(present), feed: step.feed }),
   };
 }
 
@@ -89,7 +91,7 @@ export function withHistory(reduce: (state: AppState, action: Action) => AppStat
         const before = settingsOf(history.present);
         const feed = changedFeed(before, settingsOf(present), history.present.currentFeed);
         if (feed === null) return { ...history, present };
-        return { present, undo: push(history.undo, { settings: before, feed }), redo: [] };
+        return { present, undo: pushCapped(history.undo, { settings: before, feed }), redo: [] };
       }
     }
   };
