@@ -13,12 +13,12 @@ type Props = Readonly<{
   descriptionOpen: boolean;
   onToggleDescription: () => void;
   onPlay: () => void;
-  saving: SaveActions;
+  saveActions: SaveActions;
   /** Position badge ("#1") on Most viewed; absent elsewhere. */
   rank?: number;
 }>;
 
-export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescription, onPlay, saving, rank }: Props) {
+export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescription, onPlay, saveActions, rank }: Props) {
   const title = displayTitle(video, filters);
   const channelLine = [
     video.channel,
@@ -38,7 +38,7 @@ export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescr
         <Description video={video} title={title} open={descriptionOpen} onToggle={onToggleDescription} />
       </div>
       <div className="card-actions">
-        <SaveControl video={video} title={title} saving={saving} />
+        <SaveControl video={video} title={title} saveActions={saveActions} />
       </div>
     </li>
   );

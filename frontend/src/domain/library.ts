@@ -6,6 +6,9 @@ const without = (ids: readonly string[], id: string) => ids.filter((x) => x !== 
 
 const sameName = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
+/** The name a new folder gets from what the visitor typed. */
+export const folderNameFrom = (typed: string): string => typed.trim();
+
 export const findFolder = (folders: readonly SavedFolder[], name: string): SavedFolder | undefined =>
   folders.find((f) => f.name === name);
 
@@ -18,7 +21,7 @@ export const removeFromFolder = (folders: readonly SavedFolder[], name: string, 
 
 /** Why `name` can't be a new folder's name, or null when it can. */
 export function folderNameError(folders: readonly SavedFolder[], name: string): string | null {
-  const trimmed = name.trim();
+  const trimmed = folderNameFrom(name);
   if (!trimmed) return "Name the folder first";
   if (folders.some((f) => sameName(f.name, trimmed))) return "You already have a folder with that name";
   return null;
@@ -27,7 +30,7 @@ export function folderNameError(folders: readonly SavedFolder[], name: string): 
 /** Appends a folder named `name` (trimmed), optionally holding one video. An invalid name changes nothing. */
 export function createFolder(folders: readonly SavedFolder[], name: string, firstVideo?: string): readonly SavedFolder[] {
   if (folderNameError(folders, name)) return folders;
-  return [...folders, { name: name.trim(), videoIds: firstVideo === undefined ? [] : [firstVideo] }];
+  return [...folders, { name: folderNameFrom(name), videoIds: firstVideo === undefined ? [] : [firstVideo] }];
 }
 
 export const isSaved = (folders: readonly SavedFolder[], id: string): boolean => folders.some((f) => f.videoIds.includes(id));

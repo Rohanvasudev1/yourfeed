@@ -17,7 +17,7 @@ type Props = Readonly<{
   filters: GlobalFilters;
   view: View;
   onPlay: (video: Video) => void;
-  saving: SaveActions;
+  saveActions: SaveActions;
 }>;
 
 type Item = Readonly<{ kind: "card" | "panel"; video: Video }>;
@@ -31,7 +31,7 @@ function withRowPanel(videos: readonly Video[], openId: string | null): readonly
   return [...cards.slice(0, rowEnd), { kind: "panel", video: videos[open] }, ...cards.slice(rowEnd)];
 }
 
-export function FeedView({ pinned, upNext, kind, filters, view, onPlay, saving }: Props) {
+export function FeedView({ pinned, upNext, kind, filters, view, onPlay, saveActions }: Props) {
   const [openDescription, setOpenDescription] = useState<string | null>(null);
   const toggle = (id: string) => setOpenDescription((open) => (open === id ? null : id));
   const ranks = new Map(kind === "top" ? upNext.map((v, i) => [v.id, i + 1] as const) : []);
@@ -54,7 +54,7 @@ export function FeedView({ pinned, upNext, kind, filters, view, onPlay, saving }
             descriptionOpen={openDescription === video.id}
             onToggleDescription={() => toggle(video.id)}
             onPlay={() => onPlay(video)}
-            saving={saving}
+            saveActions={saveActions}
           />
         ),
       )}

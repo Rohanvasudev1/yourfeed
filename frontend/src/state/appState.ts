@@ -8,7 +8,6 @@ import { reduceLibrary, type LibraryAction } from "./library";
 export const VIEWS = ["grid", "list"] as const;
 export type View = (typeof VIEWS)[number];
 
-export type { SavedFolder };
 
 /** The whole app's state. Only `reduce` changes it, and only by returning a new object. */
 export type AppState = Readonly<{

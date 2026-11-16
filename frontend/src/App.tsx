@@ -94,7 +94,7 @@ export default function App({ loadCatalog, storage }: Props) {
             filters={state.filters}
             view={state.view}
             onPlay={session.play}
-            saving={library.saving}
+            saveActions={library.saveActions}
           />
         )}
         <div className="library">

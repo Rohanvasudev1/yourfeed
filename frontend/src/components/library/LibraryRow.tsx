@@ -1,21 +1,19 @@
-import { IconCheck, IconPlus } from "@tabler/icons-react";
-import type { ReactNode } from "react";
+import { IconCheck, IconPlus, IconX } from "@tabler/icons-react";
 import { displayTitle } from "../../domain/format";
-import type { GlobalFilters, Video } from "../../domain/types";
+import type { Video } from "../../domain/types";
 import { PlayableThumbnail, PlayableTitle } from "../Playable";
+import type { LibraryProps } from "./LibrarySection";
 
-type Props = Readonly<{
-  video: Video;
-  filters: GlobalFilters;
-  inSession: boolean;
-  onPlay: (video: Video) => void;
-  onAddToSession: (video: Video) => void;
-  /** The row's own action, such as removing it from its folder. Gets the title the row shows. */
-  action: (title: string) => ReactNode;
-}>;
+type Props = LibraryProps &
+  Readonly<{
+    video: Video;
+    /** Where the row's X takes the video out of, as in "Remove <title> from <removeFrom>". */
+    removeFrom: string;
+    onRemove: (video: Video) => void;
+  }>;
 
-/** A saved or history video: playable, with + to add it to the current session. */
-export function LibraryRow({ video, filters, inSession, onPlay, onAddToSession, action }: Props) {
+/** A saved or history video: playable, with + to add it to the current session and X to remove it. */
+export function LibraryRow({ video, library, filters, onPlay, removeFrom, onRemove }: Props) {
   const title = displayTitle(video, filters);
   const play = () => onPlay(video);
   return (
@@ -28,7 +26,7 @@ export function LibraryRow({ video, filters, inSession, onPlay, onAddToSession, 
         </p>
       </div>
       <div className="library-actions">
-        {inSession ? (
+        {library.inSession(video) ? (
           <span className="in-session small">
             <IconCheck size={14} aria-hidden="true" />
             In this session
@@ -39,12 +37,20 @@ export function LibraryRow({ video, filters, inSession, onPlay, onAddToSession, 
             className="icon-button"
             aria-label={`Add ${title} to this session`}
             title="Add to this session"
-            onClick={() => onAddToSession(video)}
+            onClick={() => library.pin(video)}
           >
             <IconPlus size={16} aria-hidden="true" />
           </button>
         )}
-        {action(title)}
+        <button
+          type="button"
+          className="icon-button"
+          aria-label={`Remove ${title} from ${removeFrom}`}
+          title={`Remove from ${removeFrom}`}
+          onClick={() => onRemove(video)}
+        >
+          <IconX size={16} aria-hidden="true" />
+        </button>
       </div>
     </li>
   );

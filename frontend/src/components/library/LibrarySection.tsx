@@ -1,6 +1,11 @@
 import { IconChevronDown, IconChevronRight, type Icon } from "@tabler/icons-react";
 import { useId, useState, type ReactNode } from "react";
+import type { GlobalFilters, Video } from "../../domain/types";
+import type { Library } from "../../state/useLibrary";
 import "./library.css";
+
+/** What the Saved and Watch history sections, and their rows, need from the app. */
+export type LibraryProps = Readonly<{ library: Library; filters: GlobalFilters; onPlay: (video: Video) => void }>;
 
 type Props = Readonly<{
   name: string;

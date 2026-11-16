@@ -36,9 +36,12 @@ async function openFolder(name: string) {
   return within(section).getByRole("list", { name });
 }
 
+/** "Save <title>", or "Save <title>, saved" once it is in a folder. */
+const saveButtonName = (title: string) => new RegExp(`^Save ${title}(, saved)?$`);
+
 async function saveTo(title: string, folder: string) {
   const card = await cardFor(title);
-  await userEvent.click(within(card).getByRole("button", { name: `Save ${title}` }));
+  await userEvent.click(within(card).getByRole("button", { name: saveButtonName(title) }));
   await userEvent.click(within(within(card).getByRole("group", { name: "Save to" })).getByRole("button", { name: folder }));
 }
 
@@ -66,6 +69,12 @@ describe("saving a video", () => {
     await saveTo(FIRST, "Weekend");
     expect(within(await cardFor(FIRST)).getByRole("status")).toHaveTextContent("Already in Weekend.");
     expect(titlesIn(await openFolder("Weekend"))).toEqual([FIRST]);
+  });
+
+  it("shows a saved video as saved", async () => {
+    renderApp();
+    await saveTo(FIRST, "Learning");
+    expect(within(await cardFor(FIRST)).getByRole("button", { name: `Save ${FIRST}, saved` })).toBeInTheDocument();
   });
 
   it("can go into a new folder made from the card", async () => {
@@ -147,6 +156,21 @@ describe("the Saved section", () => {
 });
 
 describe("Watch history", () => {
+  it("and new folders survive a reload", async () => {
+    const storage = memoryStorage();
+    const { unmount } = renderApp({ storage });
+    await userEvent.click(within(await cardFor(FIRST)).getByRole("button", { name: FIRST }));
+    const saved = await openSection("Saved");
+    await userEvent.click(within(saved).getByRole("button", { name: "New folder" }));
+    await userEvent.type(within(saved).getByRole("textbox", { name: "Folder name" }), "Someday{Enter}");
+
+    unmount();
+    renderApp({ storage });
+    await feedTitles();
+    expect(titlesIn(await openSection("Watch history"))).toEqual([FIRST, SEEDED]);
+    expect(titlesIn(await openFolder("Someday"))).toEqual([]);
+  });
+
   it("starts collapsed and lists watched videos, newest first", async () => {
     renderApp();
     await userEvent.click(within(await cardFor(FIRST)).getByRole("button", { name: FIRST }));

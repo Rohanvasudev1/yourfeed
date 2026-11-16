@@ -11,7 +11,8 @@ export type SaveActions = Readonly<{
   folderNames: readonly string[];
   isSaved: (video: Video) => boolean;
   save: (video: Video, folder: string) => string | null;
-  saveToNewFolder: (video: Video, name: string) => string | null;
+  /** Makes a folder named `name`, holding `video` when given. */
+  createFolder: (name: string, video?: Video) => string | null;
 }>;
 
 const resolve = (ids: readonly string[], byId: ReadonlyMap<string, Video>) => ids.flatMap((id) => byId.get(id) ?? []);
@@ -27,7 +28,7 @@ export function useLibrary(state: AppState, feed: Feed, byId: ReadonlyMap<string
     return error;
   };
 
-  const saving: SaveActions = {
+  const saveActions: SaveActions = {
     folderNames: state.folders.map((f) => f.name),
     isSaved: (video) => isSaved(state.folders, video.id),
     save: (video, folder) => {
@@ -35,16 +36,16 @@ export function useLibrary(state: AppState, feed: Feed, byId: ReadonlyMap<string
       dispatch({ type: "save_to_folder", folder, video: video.id });
       return null;
     },
-    saveToNewFolder: (video, name) => createFolder(name, video),
+    createFolder,
   };
 
   return {
     folders,
     history,
-    saving,
-    createFolder: (name: string) => createFolder(name),
+    saveActions,
+    createFolder,
     removeFromFolder: (folder: string, video: Video) => dispatch({ type: "remove_from_folder", folder, video: video.id }),
-    forget: (video: Video) => dispatch({ type: "forget_watch", video: video.id }),
+    forgetWatch: (video: Video) => dispatch({ type: "forget_watch", video: video.id }),
     clearHistory: () => dispatch({ type: "clear_history" }),
     pin: (video: Video) => dispatch({ type: "pin_video", feed: feed.name, video: video.id }),
     inSession: (video: Video) => isInSession(feed, video.id),
