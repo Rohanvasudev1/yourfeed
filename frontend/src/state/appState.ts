@@ -2,7 +2,7 @@ import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
 import { appendDictation, type NoteTarget } from "../domain/notes";
 import { forgetWatch, recordWatch, type SavedFolder } from "../domain/library";
-import { finishCurrent, moveBackToUpNext, pinVideo, startWatching } from "../domain/session";
+import { finishCurrent, moveBackToUpNext, pinVideo, removeFromSession, startWatching } from "../domain/session";
 import { isTabAction, reduceTabs, type TabAction } from "../domain/tabs";
 import type { Feed, GlobalFilters, NewsCategory, Range, TopRange } from "../domain/types";
 import { reduceLibrary, type LibraryAction } from "./library";
@@ -51,6 +51,10 @@ export type Action =
   | Readonly<{ type: "add_dictation"; target: NoteTarget; heard: string }>
   /** Adds a video to the session by hand, first in Up next. */
   | Readonly<{ type: "pin_video"; feed: string; video: string }>
+  /** Unpins a video and keeps it out of the feed's Up next. */
+  | Readonly<{ type: "remove_from_session"; feed: string; video: string }>
+  /** The eye toggle: the visitor has seen this video elsewhere, so it joins watch history. */
+  | Readonly<{ type: "mark_watched"; video: string }>
   | LibraryAction
   /** Loads (or, for undo, restores) a feed set. */
   | Readonly<{ type: "set_feed_set"; set: FeedSet }>;
@@ -116,6 +120,10 @@ export function makeReducer(seed: AppState) {
         return { ...mapFeed(state, action.feed, (f) => moveBackToUpNext(f, action.video)), watched: forgetWatch(state.watched, action.video) };
       case "pin_video":
         return mapFeed(state, action.feed, (f) => pinVideo(f, action.video));
+      case "remove_from_session":
+        return mapFeed(state, action.feed, (f) => removeFromSession(f, action.video));
+      case "mark_watched":
+        return { ...state, watched: recordWatch(state.watched, action.video) };
       case "set_note":
         return writeNote(state, action.target, () => action.text);
       case "add_dictation":

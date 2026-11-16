@@ -2,7 +2,7 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { CARDS_CATALOG, memoryStorage } from "./test/fixtures";
-import { cardFor, feedTitles, renderApp, toggleFilters, upNextList } from "./test/renderApp";
+import { cardFor, feedTitles, renderApp, toggleFilters, upNextList, wholeLine } from "./test/renderApp";
 
 const layoutButton = (name: "One per row" | "Three per row") => screen.getByRole("button", { name });
 
@@ -74,8 +74,8 @@ describe("card details", () => {
   it("show the channel, subscribers, topic and age, with view counts hidden in the starting example", async () => {
     renderApp({ loadCatalog: catalog });
     const card = await cardFor(DATABASE);
-    expect(within(card).getByText("Byte Garden · 88K subs")).toBeInTheDocument();
-    expect(within(card).getByText("Programming · 3 days ago")).toBeInTheDocument();
+    expect(within(card).getByText(wholeLine("Byte Garden · 88K subs"))).toBeInTheDocument();
+    expect(within(card).getByText(wholeLine("Programming · 3 days ago"))).toBeInTheDocument();
     expect(within(card).queryByText(/views/)).not.toBeInTheDocument();
   });
 
@@ -83,7 +83,7 @@ describe("card details", () => {
     renderApp({ loadCatalog: catalog });
     await feedTitles();
     await toggleFilters("Hide view counts");
-    expect(within(await cardFor(DATABASE)).getByText("Byte Garden · 88K subs · 1.9M views")).toBeInTheDocument();
+    expect(within(await cardFor(DATABASE)).getByText(wholeLine("Byte Garden · 88K subs · 1.9M views"))).toBeInTheDocument();
   });
 });
 

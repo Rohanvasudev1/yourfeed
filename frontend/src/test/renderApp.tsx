@@ -45,3 +45,9 @@ export async function toggleFilters(...names: readonly string[]): Promise<void> 
   for (const name of names) await userEvent.click(within(popup).getByRole("switch", { name }));
   await userEvent.keyboard("{Escape}");
 }
+
+/** Matches the element whose whole text is `text`, even when parts of it are buttons (a card's topic and channel). */
+export const wholeLine =
+  (text: string) =>
+  (_: string, element: Element | null): boolean =>
+    element?.textContent === text && [...element.children].every((child) => child.textContent !== text);

@@ -18,12 +18,13 @@ import { UndoRedo } from "./components/UndoRedo";
 import { ViewToggle } from "./components/ViewToggle";
 import { composeFeed } from "./domain/compose";
 import { TOP_RANGE_HOURS } from "./domain/feed";
-import type { ComposeInput } from "./domain/types";
+import type { ComposeInput, Video } from "./domain/types";
 import type { CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
 import { startHistory, withHistory } from "./state/history";
 import { restoreState } from "./state/persistence";
 import { DEMO_SEED } from "./state/seed";
+import { useCardActions } from "./state/useCardActions";
 import { useCatalog } from "./state/useCatalog";
 import { useLibrary } from "./state/useLibrary";
 import { usePersist } from "./state/usePersist";
@@ -35,6 +36,7 @@ import { useTabs } from "./state/useTabs";
 type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage }>;
 
 const baseReducer = makeReducer(DEMO_SEED);
+const NO_VIDEOS: readonly Video[] = [];
 const reducer = withHistory(baseReducer);
 
 /** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */
@@ -60,6 +62,7 @@ export default function App({ loadCatalog, storage }: Props) {
   const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
   const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, dispatch, showFlash: session.showFlash });
   const library = useLibrary(state, feed, byId, dispatch);
+  const cardActions = useCardActions(state, feed, ready ?? NO_VIDEOS, dispatch);
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);
@@ -147,6 +150,7 @@ export default function App({ loadCatalog, storage }: Props) {
                     view={state.view}
                     onPlay={session.play}
                     saveActions={library.saveActions}
+                    cardActions={cardActions}
                   />
                 )}
                 <FeedNotes feed={feed} videos={sessionVideos} filters={state.filters} notes={notes} onPlay={session.play} />

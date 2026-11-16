@@ -31,3 +31,10 @@ export const isInSession = (feed: Feed, id: string): boolean => inSessionIds(fee
 /** Adds `id` to the session first in Up next, and undoes an earlier removal. A video already in the session changes nothing. */
 export const pinVideo = (feed: Feed, id: string): Feed =>
   isInSession(feed, id) ? feed : { ...feed, pinned: [id, ...feed.pinned], removed: without(feed.removed, id) };
+
+/** Takes a video out of the session and keeps it out of Up next, pinned or not. Pinning it again brings it back. */
+export const removeFromSession = (feed: Feed, id: string): Feed => ({
+  ...feed,
+  pinned: without(feed.pinned, id),
+  removed: [...without(feed.removed, id), id],
+});

@@ -100,8 +100,16 @@ export function usePopupController<K extends string>() {
     onFocus: () => setOpen((o) => (o.key === key ? { key, pinned: true } : o)),
   });
 
-  return { openKey: open.key, trigger, popup: popupProps };
+  /** Closes the open popup and hands focus back to its trigger, for an action inside it that's done. */
+  const finish = () => {
+    if (open.key) triggers.current.get(open.key)?.focus();
+    close();
+  };
+
+  return { openKey: open.key, trigger, popup: popupProps, finish };
 }
+
+export type PopupController<K extends string> = ReturnType<typeof usePopupController<K>>;
 
 function isInside(target: EventTarget | null, popup: HTMLElement | null, triggers: ReadonlyMap<string, HTMLElement>): boolean {
   if (!(target instanceof Node)) return false;
