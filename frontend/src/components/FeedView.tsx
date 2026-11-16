@@ -1,8 +1,6 @@
-import { useMemo, useState } from "react";
-import { composeFeed } from "../domain/compose";
-import { TOP_RANGE_HOURS } from "../domain/feed";
+import { useState } from "react";
 import { displayTitle } from "../domain/format";
-import type { GlobalFilters, Feed, Video } from "../domain/types";
+import type { FeedKind, GlobalFilters, Video } from "../domain/types";
 import type { View } from "../state/appState";
 import { DescriptionPanel } from "./Description";
 import { VideoCard } from "./VideoCard";
@@ -11,11 +9,11 @@ import { VideoCard } from "./VideoCard";
 const GRID_COLUMNS = 3;
 
 type Props = Readonly<{
-  catalog: readonly Video[];
-  feed: Feed;
+  upNext: readonly Video[];
+  kind: FeedKind;
   filters: GlobalFilters;
-  watched: readonly string[];
   view: View;
+  onPlay: (video: Video) => void;
 }>;
 
 type Item = Readonly<{ kind: "card" | "panel"; video: Video }>;
@@ -29,14 +27,10 @@ function withRowPanel(videos: readonly Video[], openId: string | null): readonly
   return [...cards.slice(0, rowEnd), { kind: "panel", video: videos[open] }, ...cards.slice(rowEnd)];
 }
 
-export function FeedView({ catalog, feed, filters, watched, view }: Props) {
+export function FeedView({ upNext, kind, filters, view, onPlay }: Props) {
   const [openDescription, setOpenDescription] = useState<string | null>(null);
-  const { upNext } = useMemo(
-    () => composeFeed({ catalog, feed, filters, watched, topMaxAgeHours: TOP_RANGE_HOURS[feed.topRange] }),
-    [catalog, feed, filters, watched],
-  );
   const toggle = (id: string) => setOpenDescription((open) => (open === id ? null : id));
-  const ranks = new Map(feed.kind === "top" ? upNext.map((v, i) => [v.id, i + 1] as const) : []);
+  const ranks = new Map(kind === "top" ? upNext.map((v, i) => [v.id, i + 1] as const) : []);
   const items = withRowPanel(upNext, view === "grid" ? openDescription : null);
 
   return (
@@ -55,6 +49,7 @@ export function FeedView({ catalog, feed, filters, watched, view }: Props) {
             rank={ranks.get(video.id)}
             descriptionOpen={openDescription === video.id}
             onToggleDescription={() => toggle(video.id)}
+            onPlay={() => onPlay(video)}
           />
         ),
       )}

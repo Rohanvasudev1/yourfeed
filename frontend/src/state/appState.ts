@@ -1,3 +1,4 @@
+import { finishCurrent, moveBackToUpNext, startWatching } from "../domain/session";
 import type { Feed, GlobalFilters, NewsCategory, TopRange } from "../domain/types";
 
 export const VIEWS = ["grid", "list"] as const;
@@ -25,12 +26,20 @@ export type Action =
   | Readonly<{ type: "setView"; view: View }>
   | Readonly<{ type: "open_feed"; feed: string }>
   | Readonly<{ type: "set_top_range"; feed: string; range: TopRange }>
-  | Readonly<{ type: "set_news_category"; feed: string; category: NewsCategory }>;
+  | Readonly<{ type: "set_news_category"; feed: string; category: NewsCategory }>
+  | Readonly<{ type: "watch_video"; feed: string; video: string }>
+  | Readonly<{ type: "finish_current"; feed: string }>
+  | Readonly<{ type: "move_back_to_up_next"; feed: string; video: string }>
+  /** Loads (or, for undo, restores) a feed's set: the shuffle seed and the skip list. */
+  | Readonly<{ type: "set_feed_set"; feed: string; seed: number; skipped: readonly string[] }>;
 
-const updateFeed = (state: AppState, name: string, changes: Partial<Feed>): AppState => ({
+const mapFeed = (state: AppState, name: string, change: (feed: Feed) => Feed): AppState => ({
   ...state,
-  feeds: state.feeds.map((f) => (f.name === name ? { ...f, ...changes } : f)),
+  feeds: state.feeds.map((f) => (f.name === name ? change(f) : f)),
 });
+
+const updateFeed = (state: AppState, name: string, changes: Partial<Feed>): AppState =>
+  mapFeed(state, name, (f) => ({ ...f, ...changes }));
 
 /** Builds the app reducer; `reset` returns to `seed`. Actions naming a feed that doesn't exist change nothing. */
 export function makeReducer(seed: AppState) {
@@ -46,6 +55,14 @@ export function makeReducer(seed: AppState) {
         return updateFeed(state, action.feed, { topRange: action.range });
       case "set_news_category":
         return updateFeed(state, action.feed, { newsCategory: action.category });
+      case "watch_video":
+        return mapFeed(state, action.feed, (f) => startWatching(f, action.video));
+      case "finish_current":
+        return mapFeed(state, action.feed, finishCurrent);
+      case "move_back_to_up_next":
+        return mapFeed(state, action.feed, (f) => moveBackToUpNext(f, action.video));
+      case "set_feed_set":
+        return updateFeed(state, action.feed, { seed: action.seed, skipped: action.skipped });
     }
   };
 }

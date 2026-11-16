@@ -38,3 +38,14 @@ export function durationText(video: Video): string {
 /** The title a card shows: the honest one while Honest titles is on. */
 export const displayTitle = (video: Video, filters: Readonly<{ honestTitles: boolean }>): string =>
   filters.honestTitles ? video.honestTitle : video.title;
+
+/** Session lengths as the mockup writes them: "45m", "2h", "1h 30m". */
+export function minutesText(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+/** "1 video", "3 videos". */
+export const videoCount = (n: number): string => `${n} video${n === 1 ? "" : "s"}`;
