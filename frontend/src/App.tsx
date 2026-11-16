@@ -80,6 +80,11 @@ export default function App({ loadCatalog, storage }: Props) {
                     onMute: (topic) => dispatch({ type: "mute_topic", feed: feed.name, topic }),
                     onUnmute: (topic) => dispatch({ type: "unmute_topic", feed: feed.name, topic }),
                   }}
+                  rangeActions={{
+                    onLength: (range) => dispatch({ type: "set_length_range", feed: feed.name, range }),
+                    onSession: (range) => dispatch({ type: "set_session_range", feed: feed.name, range }),
+                  }}
+                  onToggleFilter={(filter) => dispatch({ type: "toggle_filter", filter })}
                 />
                 <FeedControls
                   feed={feed}
