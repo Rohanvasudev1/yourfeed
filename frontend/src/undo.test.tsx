@@ -10,7 +10,8 @@ const tabBar = () => screen.getByRole("navigation", { name: "Feeds" });
 const settingsLine = () => screen.getByRole("group", { name: "Feed settings" });
 const undoButton = () => screen.queryByRole("button", { name: /^Undo last change/ });
 const redoButton = () => screen.queryByRole("button", { name: /^Redo the change you undid/ });
-const heading = () => screen.getByRole("heading", { level: 2 }).textContent;
+/** The open feed's title. */
+const feedTitle = (name: string) => screen.queryByRole("heading", { level: 2, name });
 
 async function openTab(name: string) {
   await userEvent.click(within(tabBar()).getByRole("button", { name }));
@@ -129,10 +130,11 @@ describe("undo and redo", () => {
     await clickIn(popup, "Remove AI");
     await userEvent.keyboard("{Escape}");
     await openTab("Everything (home)");
-    expect(heading()).toBe("Everything");
+    expect(feedTitle("Everything")).toBeInTheDocument();
 
     await undo();
-    expect(heading()).toBe("Learn");
+    expect(feedTitle("Learn")).toBeInTheDocument();
+    expect(feedTitle("Everything")).not.toBeInTheDocument();
     expect(await feedTitles()).toContain("Fresh agent build");
   });
 
