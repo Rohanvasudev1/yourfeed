@@ -30,6 +30,22 @@ cd backend && uv run pytest
 cd frontend && npm test
 ```
 
+Frontend coverage, measured through the whole-app tests and the `composeFeed` unit tests. It fails if statements, branches, functions or lines drop below 80% (the gate is `COVERAGE_MIN` in `frontend/vite.config.ts`); the HTML report lands in `frontend/coverage/`:
+
+```bash
+cd frontend && npm run coverage
+```
+
+End-to-end smoke test with Playwright. It starts the real backend (port 8010) and the app (port 5183) itself, then loads the app, opens Most viewed from Explore, changes the video length range, reloads and checks the change was kept. It needs `uv` on your path; the first time, install the browser:
+
+```bash
+cd frontend && npx playwright install chromium
+```
+
+```bash
+cd frontend && npm run e2e
+```
+
 ## Layout
 
 - `backend/`: FastAPI. Catalogs (demo and YouTube), persistence, OAuth, AI.
