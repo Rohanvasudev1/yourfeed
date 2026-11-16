@@ -22,3 +22,12 @@ export const finishCurrent = (feed: Feed): Feed =>
 
 /** Takes a Finished video out of the session so composition can offer it in Up next again. */
 export const moveBackToUpNext = (feed: Feed, id: string): Feed => ({ ...feed, finished: without(feed.finished, id) });
+
+const inSessionIds = (feed: Feed): readonly string[] => [...feed.pinned, ...feed.finished, ...(feed.current === null ? [] : [feed.current])];
+
+/** Pinned, Finished or Watching now. */
+export const isInSession = (feed: Feed, id: string): boolean => inSessionIds(feed).includes(id);
+
+/** Adds `id` to the session first in Up next, and undoes an earlier removal. A video already in the session changes nothing. */
+export const pinVideo = (feed: Feed, id: string): Feed =>
+  isInSession(feed, id) ? feed : { ...feed, pinned: [id, ...feed.pinned], removed: without(feed.removed, id) };

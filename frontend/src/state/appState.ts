@@ -1,12 +1,14 @@
 import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
-import { finishCurrent, moveBackToUpNext, startWatching } from "../domain/session";
+import { forgetWatch, recordWatch, type SavedFolder } from "../domain/library";
+import { finishCurrent, moveBackToUpNext, pinVideo, startWatching } from "../domain/session";
 import type { Feed, GlobalFilters, NewsCategory, TopRange } from "../domain/types";
+import { reduceLibrary, type LibraryAction } from "./library";
 
 export const VIEWS = ["grid", "list"] as const;
 export type View = (typeof VIEWS)[number];
 
-export type SavedFolder = Readonly<{ name: string; videoIds: readonly string[] }>;
+export type { SavedFolder };
 
 /** The whole app's state. Only `reduce` changes it, and only by returning a new object. */
 export type AppState = Readonly<{
@@ -18,7 +20,7 @@ export type AppState = Readonly<{
   /** Free-text notes by video id. */
   notes: Readonly<Record<string, string>>;
   folders: readonly SavedFolder[];
-  /** Videos marked "Already watched" (the eye toggle). */
+  /** Watch history, oldest first: videos played here or marked "Already watched" (the eye toggle). */
   watched: readonly string[];
   view: View;
 }>;
@@ -38,6 +40,9 @@ export type Action =
   | Readonly<{ type: "watch_video"; feed: string; video: string }>
   | Readonly<{ type: "finish_current"; feed: string }>
   | Readonly<{ type: "move_back_to_up_next"; feed: string; video: string }>
+  /** Adds a video to the session by hand, first in Up next. */
+  | Readonly<{ type: "pin_video"; feed: string; video: string }>
+  | LibraryAction
   /** Loads (or, for undo, restores) a feed set. */
   | Readonly<{ type: "set_feed_set"; set: FeedSet }>;
 
@@ -81,13 +86,18 @@ export function makeReducer(seed: AppState) {
       case "unmute_topic":
         return mapFeed(state, action.feed, (f) => ({ ...f, muted: without(f.muted, action.topic) }));
       case "watch_video":
-        return mapFeed(state, action.feed, (f) => startWatching(f, action.video));
+        return { ...mapFeed(state, action.feed, (f) => startWatching(f, action.video)), watched: recordWatch(state.watched, action.video) };
       case "finish_current":
         return mapFeed(state, action.feed, finishCurrent);
       case "move_back_to_up_next":
-        return mapFeed(state, action.feed, (f) => moveBackToUpNext(f, action.video));
+        // Moving back undoes a mis-click, so the play leaves watch history too (Everything hides watched videos).
+        return { ...mapFeed(state, action.feed, (f) => moveBackToUpNext(f, action.video)), watched: forgetWatch(state.watched, action.video) };
+      case "pin_video":
+        return mapFeed(state, action.feed, (f) => pinVideo(f, action.video));
       case "set_feed_set":
         return updateFeed(state, action.set.feed, { seed: action.set.seed, skipped: action.set.skipped });
+      default:
+        return reduceLibrary(state, action);
     }
   };
 }

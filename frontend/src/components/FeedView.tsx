@@ -2,6 +2,7 @@ import { useState } from "react";
 import { displayTitle } from "../domain/format";
 import type { FeedKind, GlobalFilters, Video } from "../domain/types";
 import type { View } from "../state/appState";
+import type { SaveActions } from "../state/useLibrary";
 import { DescriptionPanel } from "./Description";
 import { VideoCard } from "./VideoCard";
 
@@ -9,11 +10,14 @@ import { VideoCard } from "./VideoCard";
 const GRID_COLUMNS = 3;
 
 type Props = Readonly<{
+  /** Videos added to the session by hand; they come first and carry no rank. */
+  pinned: readonly Video[];
   upNext: readonly Video[];
   kind: FeedKind;
   filters: GlobalFilters;
   view: View;
   onPlay: (video: Video) => void;
+  saving: SaveActions;
 }>;
 
 type Item = Readonly<{ kind: "card" | "panel"; video: Video }>;
@@ -27,11 +31,11 @@ function withRowPanel(videos: readonly Video[], openId: string | null): readonly
   return [...cards.slice(0, rowEnd), { kind: "panel", video: videos[open] }, ...cards.slice(rowEnd)];
 }
 
-export function FeedView({ upNext, kind, filters, view, onPlay }: Props) {
+export function FeedView({ pinned, upNext, kind, filters, view, onPlay, saving }: Props) {
   const [openDescription, setOpenDescription] = useState<string | null>(null);
   const toggle = (id: string) => setOpenDescription((open) => (open === id ? null : id));
   const ranks = new Map(kind === "top" ? upNext.map((v, i) => [v.id, i + 1] as const) : []);
-  const items = withRowPanel(upNext, view === "grid" ? openDescription : null);
+  const items = withRowPanel([...pinned, ...upNext], view === "grid" ? openDescription : null);
 
   return (
     <ul className={view === "grid" ? "feed-grid" : "feed-list"} aria-label="Up next">
@@ -50,6 +54,7 @@ export function FeedView({ upNext, kind, filters, view, onPlay }: Props) {
             descriptionOpen={openDescription === video.id}
             onToggleDescription={() => toggle(video.id)}
             onPlay={() => onPlay(video)}
+            saving={saving}
           />
         ),
       )}

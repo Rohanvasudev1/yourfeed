@@ -19,18 +19,20 @@ function planNote(feed: Feed, hidden: number): string | null {
   }
 }
 
+type Props = Readonly<{ feed: Feed; composition: Composition; pinnedCount: number }>;
+
 /**
- * "Up next · 6 videos · 1h 30m session", and a warning when the plan falls short of the session minimum.
- * Pinned videos have no cards yet; once they do, count them here too, as the mockup does.
+ * "Up next · 6 videos · 1h 30m session", counting pinned videos as the mockup does,
+ * and a warning when the plan falls short of the session minimum.
  */
-export function UpNextLine({ feed, composition }: Readonly<{ feed: Feed; composition: Composition }>) {
+export function UpNextLine({ feed, composition, pinnedCount }: Props) {
   const { upNext, hidden, usedMinutes } = composition;
   const note = planNote(feed, hidden);
   const short = feed.session[0] - usedMinutes;
   return (
     <div className="up-next-line" role="note" aria-label="Session plan">
       <span>
-        <b>Up next</b> · {videoCount(upNext.length)} · {minutesText(usedMinutes)} session{note && ` · ${note}`}
+        <b>Up next</b> · {videoCount(pinnedCount + upNext.length)} · {minutesText(usedMinutes)} session{note && ` · ${note}`}
       </span>
       {short > 0 && (
         <span className="chip warning">

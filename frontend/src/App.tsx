@@ -5,6 +5,8 @@ import { FeedView } from "./components/FeedView";
 import { Flash } from "./components/Flash";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
+import { HistorySection } from "./components/library/HistorySection";
+import { SavedSection } from "./components/library/SavedSection";
 import { SettingsLine } from "./components/SettingsLine";
 import { FinishedSection, WatchingNow } from "./components/Session";
 import { TabBar } from "./components/TabBar";
@@ -18,6 +20,7 @@ import { currentFeedOf, makeReducer } from "./state/appState";
 import { restoreState } from "./state/persistence";
 import { DEMO_SEED } from "./state/seed";
 import { useCatalog } from "./state/useCatalog";
+import { useLibrary } from "./state/useLibrary";
 import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
 import { useSession } from "./state/useSession";
@@ -43,6 +46,8 @@ export default function App({ loadCatalog, storage }: Props) {
   const composition = useMemo(() => input && composeFeed(input), [input]);
   const byId = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const session = useSession(feed, byId, dispatch);
+  const library = useLibrary(state, feed, byId, dispatch);
+  const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
 
   return (
@@ -78,18 +83,24 @@ export default function App({ loadCatalog, storage }: Props) {
         {session.current && (
           <WatchingNow video={session.current} filters={state.filters} nudge={session.nudge} onPlay={session.play} onFinish={session.finish} />
         )}
-        {composition && <UpNextLine feed={feed} composition={composition} />}
+        {composition && <UpNextLine feed={feed} composition={composition} pinnedCount={pinned.length} />}
         {composition && (
           <FeedView
             // Switching layouts or loading a new set starts with every description closed, as in the mockup.
             key={`${state.view}-${feed.seed}`}
+            pinned={pinned}
             upNext={composition.upNext}
             kind={feed.kind}
             filters={state.filters}
             view={state.view}
             onPlay={session.play}
+            saving={library.saving}
           />
         )}
+        <div className="library">
+          <SavedSection library={library} filters={state.filters} onPlay={session.play} />
+          <HistorySection library={library} filters={state.filters} onPlay={session.play} />
+        </div>
       </main>
       <Footer onReset={() => dispatch({ type: "reset" })} />
     </div>
