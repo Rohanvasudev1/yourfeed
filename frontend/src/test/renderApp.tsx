@@ -4,10 +4,10 @@ import type { CatalogLoader, StateStorage } from "../ports";
 import type { GlobalFilters } from "../domain/types";
 import { CATALOG, memoryStorage } from "./fixtures";
 
-export type Setup = { loadCatalog?: CatalogLoader; storage?: StateStorage };
+export type RenderAppOptions = { loadCatalog?: CatalogLoader; storage?: StateStorage };
 
 /** Renders the whole app the way production does, with a fixed catalog and in-memory storage by default. */
-export function renderApp({ loadCatalog = async () => CATALOG, storage = memoryStorage() }: Setup = {}) {
+export function renderApp({ loadCatalog = async () => CATALOG, storage = memoryStorage() }: RenderAppOptions = {}) {
   return render(<App loadCatalog={loadCatalog} storage={storage} />);
 }
 
@@ -16,7 +16,7 @@ export const upNextList = () => screen.findByRole("list", { name: "Up next" });
 /** Titles of the cards in Up next, in order. */
 export async function feedTitles(): Promise<string[]> {
   return within(await upNextList())
-    .getAllByRole("heading", { level: 3 })
+    .queryAllByRole("heading", { level: 3 })
     .map((h) => h.textContent ?? "");
 }
 

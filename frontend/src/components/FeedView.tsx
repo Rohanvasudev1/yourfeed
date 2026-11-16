@@ -36,6 +36,7 @@ export function FeedView({ catalog, feed, filters, watched, view }: Props) {
     [catalog, feed, filters, watched],
   );
   const toggle = (id: string) => setOpenDescription((open) => (open === id ? null : id));
+  const ranks = new Map(feed.kind === "top" ? upNext.map((v, i) => [v.id, i + 1] as const) : []);
   const items = withRowPanel(upNext, view === "grid" ? openDescription : null);
 
   return (
@@ -51,6 +52,7 @@ export function FeedView({ catalog, feed, filters, watched, view }: Props) {
             video={video}
             filters={filters}
             view={view}
+            rank={ranks.get(video.id)}
             descriptionOpen={openDescription === video.id}
             onToggleDescription={() => toggle(video.id)}
           />

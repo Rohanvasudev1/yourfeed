@@ -4,7 +4,12 @@ import { durationText } from "../../domain/format";
 import type { Video } from "../../domain/types";
 import { isVersus, THUMBNAIL_DESIGNS, type CaptionDesign, type ThumbnailDesign, type VersusDesign } from "./designs";
 
-type Props = Readonly<{ video: Video; honest: boolean }>;
+type Props = Readonly<{
+  video: Video;
+  honest: boolean;
+  /** Position badge ("#1") on Most viewed; absent elsewhere. */
+  rank?: number;
+}>;
 
 const GENERIC_GRADIENT = ["#222", "#555"] as const;
 const DEFAULT_ACCENT = "#ffd400";
@@ -17,13 +22,14 @@ const genericDesign = (video: Video): CaptionDesign => ({
 
 /**
  * A YouTube-style thumbnail: the video's designed art (or the generic topic design) plus its
- * duration or LIVE badge. Sizes use container query units, so one design fits any card width.
+ * duration or LIVE badge, and a rank badge on Most viewed. Sizes use container query units, so one design fits any card width.
  */
-export function Thumbnail({ video, honest }: Props) {
+export function Thumbnail({ video, honest, rank }: Props) {
   const design: ThumbnailDesign = THUMBNAIL_DESIGNS[video.id] ?? genericDesign(video);
   return (
     <div className="thumb">
       {isVersus(design) ? <VersusArt design={design} /> : <CaptionArt design={design} honest={honest} />}
+      {rank !== undefined && <span className="thumb-badge thumb-rank">#{rank}</span>}
       {video.live ? (
         <span className="thumb-badge thumb-live">
           <IconBroadcast aria-hidden="true" />

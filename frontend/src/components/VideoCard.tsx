@@ -10,9 +10,11 @@ type Props = Readonly<{
   view: View;
   descriptionOpen: boolean;
   onToggleDescription: () => void;
+  /** Position badge ("#1") on Most viewed; absent elsewhere. */
+  rank?: number;
 }>;
 
-export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescription }: Props) {
+export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescription, rank }: Props) {
   const title = displayTitle(video, filters);
   const channelLine = [
     video.channel,
@@ -22,7 +24,7 @@ export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescr
   const Description = view === "grid" ? GridDescriptionToggle : ListDescription;
   return (
     <li className={descriptionOpen && view === "grid" ? "card selected" : "card"}>
-      <Thumbnail video={video} honest={filters.honestTitles} />
+      <Thumbnail video={video} honest={filters.honestTitles} rank={rank} />
       <div className="card-body">
         <h3 className={view === "grid" ? "card-title clamp" : "card-title"}>{title}</h3>
         <p className="card-meta">{channelLine.join(" · ")}</p>
