@@ -2,6 +2,7 @@ import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
 import { forgetWatch, recordWatch, type SavedFolder } from "../domain/library";
 import { finishCurrent, moveBackToUpNext, pinVideo, startWatching } from "../domain/session";
+import { isTabAction, reduceTabs, type TabAction } from "../domain/tabs";
 import type { Feed, GlobalFilters, NewsCategory, Range, TopRange } from "../domain/types";
 import { reduceLibrary, type LibraryAction } from "./library";
 
@@ -25,10 +26,10 @@ export type AppState = Readonly<{
 }>;
 
 export type Action =
+  | TabAction
   | Readonly<{ type: "reset" }>
   | Readonly<{ type: "setView"; view: View }>
   | Readonly<{ type: "toggle_filter"; filter: keyof GlobalFilters }>
-  | Readonly<{ type: "open_feed"; feed: string }>
   | Readonly<{ type: "set_top_range"; feed: string; range: TopRange }>
   | Readonly<{ type: "set_news_category"; feed: string; category: NewsCategory }>
   /** Adds a topic (a channel on Subscriptions) to the feed's list, unmuting a topic that was muted. */
@@ -64,6 +65,10 @@ const withItem = (items: readonly string[], item: string) => (items.includes(ite
 /** Builds the app reducer; `reset` returns to `seed`. Actions naming a feed that doesn't exist change nothing. */
 export function makeReducer(seed: AppState) {
   return (state: AppState, action: Action): AppState => {
+    if (isTabAction(action)) {
+      const tabs = reduceTabs(state, action);
+      return tabs.feeds === state.feeds && tabs.currentFeed === state.currentFeed ? state : { ...state, ...tabs };
+    }
     switch (action.type) {
       case "reset":
         return seed;
@@ -71,8 +76,6 @@ export function makeReducer(seed: AppState) {
         return state.view === action.view ? state : { ...state, view: action.view };
       case "toggle_filter":
         return { ...state, filters: { ...state.filters, [action.filter]: !state.filters[action.filter] } };
-      case "open_feed":
-        return state.feeds.some((f) => f.name === action.feed) ? { ...state, currentFeed: action.feed } : state;
       case "set_top_range":
         return updateFeed(state, action.feed, { topRange: action.range });
       case "set_news_category":
