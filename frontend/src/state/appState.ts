@@ -1,3 +1,4 @@
+import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
 import { finishCurrent, moveBackToUpNext, startWatching } from "../domain/session";
 import type { Feed, GlobalFilters, NewsCategory, TopRange } from "../domain/types";
@@ -28,6 +29,12 @@ export type Action =
   | Readonly<{ type: "open_feed"; feed: string }>
   | Readonly<{ type: "set_top_range"; feed: string; range: TopRange }>
   | Readonly<{ type: "set_news_category"; feed: string; category: NewsCategory }>
+  /** Adds a topic (a channel on Subscriptions) to the feed's list, unmuting a topic that was muted. */
+  | Readonly<{ type: "add_to_feed"; feed: string; item: string }>
+  /** Removes a topic (a channel on Subscriptions) from the feed's list. */
+  | Readonly<{ type: "remove_from_feed"; feed: string; item: string }>
+  | Readonly<{ type: "mute_topic"; feed: string; topic: string }>
+  | Readonly<{ type: "unmute_topic"; feed: string; topic: string }>
   | Readonly<{ type: "watch_video"; feed: string; video: string }>
   | Readonly<{ type: "finish_current"; feed: string }>
   | Readonly<{ type: "move_back_to_up_next"; feed: string; video: string }>
@@ -41,6 +48,9 @@ const mapFeed = (state: AppState, name: string, change: (feed: Feed) => Feed): A
 
 const updateFeed = (state: AppState, name: string, changes: Partial<Feed>): AppState =>
   mapFeed(state, name, (f) => ({ ...f, ...changes }));
+
+const without = (items: readonly string[], item: string) => items.filter((x) => x !== item);
+const withItem = (items: readonly string[], item: string) => (items.includes(item) ? items : [...items, item]);
 
 /** Builds the app reducer; `reset` returns to `seed`. Actions naming a feed that doesn't exist change nothing. */
 export function makeReducer(seed: AppState) {
@@ -56,6 +66,20 @@ export function makeReducer(seed: AppState) {
         return updateFeed(state, action.feed, { topRange: action.range });
       case "set_news_category":
         return updateFeed(state, action.feed, { newsCategory: action.category });
+      case "add_to_feed":
+        return mapFeed(state, action.feed, (f) =>
+          listKeyOf(f) === "channels"
+            ? { ...f, channels: withItem(f.channels, action.item) }
+            : { ...f, topics: withItem(f.topics, action.item), muted: without(f.muted, action.item) },
+        );
+      case "remove_from_feed":
+        return mapFeed(state, action.feed, (f) =>
+          listKeyOf(f) === "channels" ? { ...f, channels: without(f.channels, action.item) } : { ...f, topics: without(f.topics, action.item) },
+        );
+      case "mute_topic":
+        return mapFeed(state, action.feed, (f) => ({ ...f, muted: withItem(f.muted, action.topic) }));
+      case "unmute_topic":
+        return mapFeed(state, action.feed, (f) => ({ ...f, muted: without(f.muted, action.topic) }));
       case "watch_video":
         return mapFeed(state, action.feed, (f) => startWatching(f, action.video));
       case "finish_current":

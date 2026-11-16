@@ -5,6 +5,7 @@ import { FeedView } from "./components/FeedView";
 import { Flash } from "./components/Flash";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
+import { SettingsLine } from "./components/SettingsLine";
 import { FinishedSection, WatchingNow } from "./components/Session";
 import { TabBar } from "./components/TabBar";
 import { UpNextLine } from "./components/UpNextLine";
@@ -53,6 +54,16 @@ export default function App({ loadCatalog, storage }: Props) {
           <h2 className="feed-title">{feed.name}</h2>
           <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
         </div>
+        <SettingsLine
+          feed={feed}
+          filters={state.filters}
+          topicActions={{
+            onAdd: (item) => dispatch({ type: "add_to_feed", feed: feed.name, item }),
+            onRemove: (item) => dispatch({ type: "remove_from_feed", feed: feed.name, item }),
+            onMute: (topic) => dispatch({ type: "mute_topic", feed: feed.name, topic }),
+            onUnmute: (topic) => dispatch({ type: "unmute_topic", feed: feed.name, topic }),
+          }}
+        />
         <FeedControls
           feed={feed}
           onTopRange={(range) => dispatch({ type: "set_top_range", feed: feed.name, range })}
