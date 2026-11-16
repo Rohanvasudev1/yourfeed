@@ -1,27 +1,35 @@
-import { ago, compactCount, durationText } from "../domain/format";
+import { ago, compactCount, displayTitle } from "../domain/format";
 import type { GlobalFilters, Video } from "../domain/types";
+import type { View } from "../state/appState";
+import { GridDescriptionToggle, ListDescription } from "./Description";
+import { Thumbnail } from "./thumbnail/Thumbnail";
 
-type Props = Readonly<{ video: Video; filters: GlobalFilters }>;
+type Props = Readonly<{
+  video: Video;
+  filters: GlobalFilters;
+  view: View;
+  descriptionOpen: boolean;
+  onToggleDescription: () => void;
+}>;
 
-export function VideoCard({ video, filters }: Props) {
-  const title = filters.honestTitles ? video.honestTitle : video.title;
+export function VideoCard({ video, filters, view, descriptionOpen, onToggleDescription }: Props) {
+  const title = displayTitle(video, filters);
   const channelLine = [
     video.channel,
     ...(filters.hideSubscriberCounts ? [] : [`${compactCount(video.channelSubscribers)} subs`]),
     ...(filters.hideViewCounts ? [] : [`${compactCount(video.views)} views`]),
   ];
+  const Description = view === "grid" ? GridDescriptionToggle : ListDescription;
   return (
-    <li className="card">
-      <div className="thumb" aria-hidden="true">
-        <span className="thumb-caption">{video.topic.toUpperCase()}</span>
-        <span className="thumb-duration">{video.live ? "LIVE" : durationText(video)}</span>
-      </div>
+    <li className={descriptionOpen && view === "grid" ? "card selected" : "card"}>
+      <Thumbnail video={video} honest={filters.honestTitles} />
       <div className="card-body">
-        <h3 className="card-title clamp">{title}</h3>
+        <h3 className={view === "grid" ? "card-title clamp" : "card-title"}>{title}</h3>
         <p className="card-meta">{channelLine.join(" · ")}</p>
         <p className="card-meta">
           {video.topic} · {ago(video.ageHours)}
         </p>
+        <Description video={video} title={title} open={descriptionOpen} onToggle={onToggleDescription} />
       </div>
     </li>
   );

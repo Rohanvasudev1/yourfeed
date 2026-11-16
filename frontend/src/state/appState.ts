@@ -20,14 +20,16 @@ export type AppState = Readonly<{
   view: View;
 }>;
 
-export type Action = Readonly<{ type: "reset" }>;
+export type Action = Readonly<{ type: "reset" }> | Readonly<{ type: "setView"; view: View }>;
 
 /** Builds the app reducer; `reset` returns to `seed`. */
 export function makeReducer(seed: AppState) {
-  return (_state: AppState, action: Action): AppState => {
+  return (state: AppState, action: Action): AppState => {
     switch (action.type) {
       case "reset":
         return seed;
+      case "setView":
+        return state.view === action.view ? state : { ...state, view: action.view };
     }
   };
 }
