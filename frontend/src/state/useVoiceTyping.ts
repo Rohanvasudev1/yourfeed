@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { noteKey, type NoteTarget } from "../domain/notes";
 
 /** The slice of the Web Speech API voice typing uses. TypeScript's DOM types don't include it. */
 type SpeechResultEvent = Readonly<{
@@ -19,14 +18,18 @@ type Recognition = {
 type RecognitionClass = new () => Recognition;
 
 const FALLBACK_LANGUAGE = "en-US";
-const UNSUPPORTED = "Voice typing isn't available in this browser. Try Chrome, Edge or Safari.";
-const START_FAILED = "Couldn't start voice typing. Try again.";
 
-function errorMessage(error: string): string | null {
+/** How messages name the feature: "Voice typing" to "dictate notes", "Voice search" to "search by voice". */
+export type VoiceWords = Readonly<{ name: string; purpose: string }>;
+
+const unsupported = ({ name }: VoiceWords) => `${name} isn't available in this browser. Try Chrome, Edge or Safari.`;
+const startFailed = ({ name }: VoiceWords) => `Couldn't start ${name.toLowerCase()}. Try again.`;
+
+function errorMessage(error: string, words: VoiceWords): string | null {
   if (error === "aborted") return null;
-  if (error === "not-allowed" || error === "service-not-allowed") return "Microphone access is blocked. Allow it for this page to dictate notes.";
+  if (error === "not-allowed" || error === "service-not-allowed") return `Microphone access is blocked. Allow it for this page to ${words.purpose}.`;
   if (error === "no-speech") return "Didn't catch anything. Tap the mic and try again.";
-  return "Voice typing stopped. Tap the mic to try again.";
+  return `${words.name} stopped. Tap the mic to try again.`;
 }
 
 function recognitionClass(): RecognitionClass | undefined {
@@ -43,14 +46,19 @@ function finalTranscript(event: SpeechResultEvent): string {
     .join(" ");
 }
 
-type Handlers = Readonly<{
-  onHeard: (target: NoteTarget, heard: string) => void;
+type Options<T> = Readonly<{
+  /** Tells targets apart: starting on one target stops another. */
+  keyOf: (target: T) => string;
+  /** Keep listening until stopped (dictation), or stop after one phrase (a search). */
+  continuous: boolean;
+  words: VoiceWords;
+  onHeard: (target: T, heard: string) => void;
   onMessage: (message: string) => void;
 }>;
 
-/** Voice typing into one note at a time. Starting it on another note stops the first. */
-export function useVoiceTyping({ onHeard, onMessage }: Handlers) {
-  const [listening, setListening] = useState<NoteTarget | null>(null);
+/** Voice input into one target at a time, such as a note or the search box. Starting it on another target stops the first. */
+export function useVoiceTyping<T>({ keyOf, continuous, words, onHeard, onMessage }: Options<T>) {
+  const [listening, setListening] = useState<T | null>(null);
   const active = useRef<Recognition | null>(null);
 
   // `active` is cleared before stopping, so the recognizer's onend leaves state alone.
@@ -61,11 +69,11 @@ export function useVoiceTyping({ onHeard, onMessage }: Handlers) {
   };
   useEffect(() => stopActive, []);
 
-  const start = (target: NoteTarget) => {
+  const start = (target: T) => {
     const SpeechRecognition = recognitionClass();
-    if (!SpeechRecognition) return onMessage(UNSUPPORTED);
+    if (!SpeechRecognition) return onMessage(unsupported(words));
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
+    recognition.continuous = continuous;
     recognition.interimResults = false;
     recognition.lang = navigator.language || FALLBACK_LANGUAGE;
     recognition.onresult = (event) => {
@@ -73,8 +81,8 @@ export function useVoiceTyping({ onHeard, onMessage }: Handlers) {
       if (heard) onHeard(target, heard);
     };
     recognition.onerror = (event) => {
-      console.warn("Voice typing error", event.error);
-      const message = errorMessage(event.error);
+      console.warn(`${words.name} error`, event.error);
+      const message = errorMessage(event.error, words);
       if (message) onMessage(message);
     };
     recognition.onend = () => {
@@ -85,16 +93,16 @@ export function useVoiceTyping({ onHeard, onMessage }: Handlers) {
     try {
       recognition.start();
     } catch (error) {
-      console.warn("Voice typing failed to start", error);
-      return onMessage(START_FAILED);
+      console.warn(`${words.name} failed to start`, error);
+      return onMessage(startFailed(words));
     }
     active.current = recognition;
     setListening(target);
   };
 
-  const isListening = (target: NoteTarget) => listening !== null && noteKey(listening) === noteKey(target);
+  const isListening = (target: T) => listening !== null && keyOf(listening) === keyOf(target);
 
-  const toggle = (target: NoteTarget) => {
+  const toggle = (target: T) => {
     const wasThisNote = isListening(target);
     stopActive();
     setListening(null);

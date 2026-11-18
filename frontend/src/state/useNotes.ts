@@ -1,5 +1,5 @@
 import type { Dispatch } from "react";
-import { notesMarkdown, type NoteTarget } from "../domain/notes";
+import { noteKey, notesMarkdown, type NoteTarget } from "../domain/notes";
 import type { Feed, Video } from "../domain/types";
 import type { Action } from "./appState";
 import { copyText, type CopyMessages } from "./copyText";
@@ -10,6 +10,7 @@ const COPY_MESSAGES: CopyMessages = {
   noClipboard: "Copying isn't available here. Select the notes and copy them yourself.",
   failed: "Couldn't copy the notes. Try again.",
 };
+const DICTATION = { name: "Voice typing", purpose: "dictate notes" } as const;
 
 /** One note's text and what a notes box can do with it. */
 export type NoteBinding = Readonly<{
@@ -31,7 +32,10 @@ type Input = Readonly<{
 
 /** Notes on the open feed's videos and on the feed itself: typing, voice typing and copying. */
 export function useNotes({ feed, videos, notes, dispatch, showFlash }: Input) {
-  const voice = useVoiceTyping({
+  const voice = useVoiceTyping<NoteTarget>({
+    keyOf: noteKey,
+    continuous: true,
+    words: DICTATION,
     onHeard: (target, heard) => dispatch({ type: "add_dictation", target, heard }),
     onMessage: showFlash,
   });

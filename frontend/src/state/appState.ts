@@ -6,6 +6,7 @@ import { finishCurrent, moveBackToUpNext, pinVideo, removeFromSession, startWatc
 import { isTabAction, reduceTabs, type TabAction } from "../domain/tabs";
 import type { Feed, GlobalFilters, NewsCategory, Range, TopRange } from "../domain/types";
 import { reduceLibrary, type LibraryAction } from "./library";
+import { isSearchAction, reduceSearch, type SearchAction } from "./search";
 
 export const VIEWS = ["grid", "list"] as const;
 export type View = (typeof VIEWS)[number];
@@ -24,6 +25,8 @@ export type AppState = Readonly<{
   /** Watch history, oldest first: videos played here or marked "Already watched" (the eye toggle). */
   watched: readonly string[];
   view: View;
+  /** The visitor's searches, newest first, normalized. */
+  recentSearches: readonly string[];
 }>;
 
 export type Action =
@@ -56,6 +59,7 @@ export type Action =
   /** The eye toggle: the visitor has seen this video elsewhere, so it joins watch history. */
   | Readonly<{ type: "mark_watched"; video: string }>
   | LibraryAction
+  | SearchAction
   /** Loads (or, for undo, restores) a feed set. */
   | Readonly<{ type: "set_feed_set"; set: FeedSet }>;
 
@@ -82,6 +86,7 @@ export function makeReducer(seed: AppState) {
       const tabs = reduceTabs(state, action);
       return tabs.feeds === state.feeds && tabs.currentFeed === state.currentFeed ? state : { ...state, ...tabs };
     }
+    if (isSearchAction(action)) return reduceSearch(state, action);
     switch (action.type) {
       case "reset":
         return seed;
