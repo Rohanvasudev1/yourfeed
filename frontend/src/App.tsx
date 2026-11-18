@@ -69,7 +69,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);
   const upNext = [...pinned, ...(composition?.upNext ?? [])];
-  const claudeBar = useClaudeBar({ assistant, feed, upNext, dispatch });
+  const claudeBar = useClaudeBar({ assistant, feeds: state.feeds, feed, upNext, dispatch });
 
   return (
     <div className="app">

@@ -37,6 +37,10 @@ def ask(text: str, **context_changes) -> dict:
         ("half an hour", [{"type": "set_session_range", "min": 20, "max": 30}]),
         ("put the MCP one first", [{"type": "pin_video", "id": "demo-22"}]),
         ("put the graphs video first", [{"type": "pin_video", "id": "demo-1"}]),
+        ("shorter videos first", [{"type": "set_length_range", "min": 1, "max": 15}]),
+        ("add cooking to the top", [{"type": "set_topics", "add": ["Cooking"], "remove": []}]),
+        ("add cooking to this tab", [{"type": "set_topics", "add": ["Cooking"], "remove": []}]),
+        ("videos under 10 minutes about travel", [{"type": "set_topics", "add": ["Travel"], "remove": []}]),
     ],
 )
 def test_requests_become_feed_actions(text, actions):
@@ -55,7 +59,7 @@ def test_requests_become_feed_actions(text, actions):
         ("save the first one", "I can change this feed's topics, video length and session time. Filters, tabs and saved videos are yours to change."),
         ("something to learn", "What do you want to learn about? Try naming one, like MCP or Product design."),
         ("asdfgh", "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."),
-        ("put the knitting one first", "I couldn't find that video in Up next."),
+        ("put the knitting one first", "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."),
     ],
 )
 def test_requests_that_only_get_a_reply(text, reply):

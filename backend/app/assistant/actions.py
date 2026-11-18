@@ -1,7 +1,7 @@
 """Feed actions: the only changes an assistant can make, and the checks every one passes before it reaches the browser (ADR 0007)."""
 
 import logging
-from typing import Annotated, Literal
+from typing import Annotated, Literal, NamedTuple
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 
@@ -9,8 +9,17 @@ from app.assistant.model import BarMode, FeedContext
 
 log = logging.getLogger("yourfeed")
 
-LENGTH_LIMITS = (1, 120, 1)
-SESSION_LIMITS = (10, 240, 10)
+
+class Limits(NamedTuple):
+    """The lowest and highest minutes a range allows, and one slider step (frontend/src/domain/range.ts)."""
+
+    lowest: int
+    highest: int
+    step: int
+
+
+LENGTH_LIMITS = Limits(lowest=1, highest=120, step=1)
+SESSION_LIMITS = Limits(lowest=10, highest=240, step=10)
 
 
 class _Action(BaseModel):
@@ -64,7 +73,7 @@ FeedAction = Annotated[
 _parse = TypeAdapter(FeedAction).validate_python
 
 
-def _clamp(limits: tuple[int, int, int], a: int, b: int) -> tuple[int, int]:
+def _clamp(limits: Limits, a: int, b: int) -> tuple[int, int]:
     """Clamps to the limits, swaps a reversed range and keeps an empty one a step wide, as typing a range by hand does."""
     lowest, highest, step = limits
     lo, hi = sorted(max(lowest, min(highest, n)) for n in (a, b))

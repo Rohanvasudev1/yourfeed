@@ -1,5 +1,7 @@
 """The Claude bar's API: one request in, checked feed actions out."""
 
+from functools import cache
+
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
@@ -21,6 +23,7 @@ class AssistantResult(BaseModel):
     notice: str | None = None
 
 
+@cache
 def catalog_topics() -> frozenset[str]:
     return frozenset(v.topic for v in load_catalog(Source.DEMO))
 

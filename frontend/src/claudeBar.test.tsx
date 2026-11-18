@@ -10,6 +10,7 @@ const LEARN_LINE = "Showing 4 topics · 10–60 min videos · 30–90 min sessio
 
 const bar = () => screen.getByRole("textbox", { name: "Tell Claude what to change" });
 const sendButton = () => screen.getByRole("button", { name: /^Send to Claude|Thinking…/ });
+const reply = () => screen.getByRole("status", { name: "Claude's reply" });
 const sentence = () => settingsLine().textContent?.trim();
 const undoButton = () => screen.getByRole("button", { name: /^Undo last change/ });
 const redoButton = () => screen.getByRole("button", { name: /^Redo the change you undid/ });
@@ -110,7 +111,7 @@ describe("the Claude bar on one of your feeds", () => {
     await openTab("Learn");
     await ask("why is this first?");
 
-    expect(await screen.findByRole("status")).toHaveTextContent('"Fresh agent build" matches AI in this feed.');
+    await waitFor(() => expect(reply()).toHaveTextContent('"Fresh agent build" matches AI in this feed.'));
     expect(sentence()).toBe(LEARN_LINE);
     expect(screen.queryByRole("button", { name: /^Undo last change/ })).not.toBeInTheDocument();
   });
@@ -120,7 +121,7 @@ describe("the Claude bar on one of your feeds", () => {
     await openTab("Learn");
     await ask("add AI");
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Already in this feed.");
+    await waitFor(() => expect(reply()).toHaveTextContent("Already in this feed."));
     expect(screen.queryByRole("button", { name: /^Undo last change/ })).not.toBeInTheDocument();
   });
 
@@ -154,6 +155,7 @@ describe("the Claude bar on one of your feeds", () => {
 
     expect(sendButton()).toBeDisabled();
     expect(sendButton()).toHaveAccessibleName("Thinking…");
+    expect(screen.getByText("Thinking…")).toBeVisible();
     await userEvent.type(bar(), "{Enter}");
     expect(assistant.calls).toHaveLength(1);
 
@@ -202,7 +204,7 @@ describe("the Claude bar on a built-in feed", () => {
     const before = sentence();
     await ask("add tennis");
 
-    expect(await screen.findByRole("status")).toHaveTextContent("This tab builds itself");
+    await waitFor(() => expect(reply()).toHaveTextContent("This tab builds itself"));
     expect(assistant.calls[0].mode).toBe("new");
     expect(assistant.calls[0].context.kind).toBe("home");
     expect(sentence()).toBe(before);

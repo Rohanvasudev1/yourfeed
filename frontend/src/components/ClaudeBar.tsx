@@ -25,11 +25,7 @@ export function ClaudeBar({ bar }: Readonly<{ bar: ClaudeBarState }>) {
           value={bar.text}
           onChange={(event) => bar.setText(event.target.value)}
         />
-        {bar.thinking && (
-          <span className="cbar-thinking" aria-hidden="true">
-            Thinking…
-          </span>
-        )}
+        {bar.thinking && <span className="cbar-thinking">Thinking…</span>}
         <button type="submit" className="cbar-send" aria-label={bar.thinking ? "Thinking…" : "Send to Claude"} title={bar.thinking ? "Thinking…" : "Send to Claude"} disabled={bar.thinking}>
           {bar.thinking ? <IconLoader2 className="cbar-spin" size={17} aria-hidden="true" /> : <IconArrowUp size={17} aria-hidden="true" />}
         </button>
@@ -39,12 +35,15 @@ export function ClaudeBar({ bar }: Readonly<{ bar: ClaudeBarState }>) {
           {bar.error}
         </p>
       )}
-      {bar.reply && (
-        <p className="cbar-reply" role="status">
-          <IconAsterisk className="cbar-mark" size={15} aria-hidden="true" />
-          {bar.reply}
-        </p>
-      )}
+      {/* Always rendered, so screen readers announce each reply as it arrives. */}
+      <div role="status" aria-label="Claude's reply">
+        {bar.reply && (
+          <p className="cbar-reply">
+            <IconAsterisk className="cbar-mark" size={15} aria-hidden="true" />
+            {bar.reply}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

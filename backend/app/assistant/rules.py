@@ -42,14 +42,13 @@ SHORT = re.compile(r"short|quick")
 LONG = re.compile(r"longer|deep dive")
 HALF_HOUR = re.compile(r"half an hour")
 AN_HOUR = re.compile(r"\ban hour\b")
-SOME_TIME = re.compile(r"(\d+)\s*(hours?|hrs?|minutes?|mins?)\b")
+SOME_TIME = re.compile(r"\b(?:got|have|only|for)\s+(?:about\s+)?(\d+)\s*(hours?|hrs?|minutes?|mins?)\b")
 PIN_FILLER = frozenset({"first", "top", "next", "video", "videos", "one", "the", "put", "pin", "please", "that", "this", "with", "about"})
 
 ALREADY = "Already in this feed."
 CANT_DO_REPLY = "I can change this feed's topics, video length and session time. Filters, tabs and saved videos are yours to change."
 BUILT_IN_REPLY = "This tab builds itself, so I can't change it. Try one of your own feeds."
 NO_MATCH_REPLY = "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."
-NO_VIDEO_REPLY = "I couldn't find that video in Up next."
 SHORT_LENGTH = (1, 15)
 LONG_LENGTH = (20, 120)
 SESSION_SLACK = 10
@@ -71,44 +70,44 @@ def _or_list(items: list[str]) -> str:
     return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} or {items[-1]}"
 
 
-def _why(text: str, c: FeedContext) -> Proposal | None:
+def _why(text: str, context: FeedContext) -> Proposal | None:
     if not WHY.search(text):
         return None
-    top = c.first_video()
+    top = context.first_video()
     if top is None:
         return _reply("Up next is empty, so nothing is first yet.")
-    if top.id in c.pinned:
+    if top.id in context.pinned:
         return _reply(f'"{top.title}" is first because you added it yourself.')
     reasons = {
         "home": f"is first because you've been watching {top.topic}.",
         "subs": f"is the newest upload from {top.channel}.",
         "top": "has the most views in this range.",
     }
-    return _reply(f'"{top.title}" {reasons.get(c.kind, f"matches {top.topic} in this feed.")}')
+    return _reply(f'"{top.title}" {reasons.get(context.kind, f"matches {top.topic} in this feed.")}')
 
 
-def _less(text: str, c: FeedContext) -> Proposal | None:
+def _less(text: str, context: FeedContext) -> Proposal | None:
     if not LESS.search(text):
         return None
     mentioned = _topics_in(text)
-    in_feed = [t for t in c.topics if t in mentioned or re.search(rf"\b{re.escape(t.lower())}\b", text)]
+    in_feed = [t for t in context.topics if t in mentioned or re.search(rf"\b{re.escape(t.lower())}\b", text)]
     if in_feed:
         return _act({"type": "set_topics", "add": [], "remove": in_feed[:1]})
     if mentioned:
-        return _reply(ALREADY) if mentioned[0] in c.muted else _act({"type": "mute_topic", "topic": mentioned[0]})
+        return _reply(ALREADY) if mentioned[0] in context.muted else _act({"type": "mute_topic", "topic": mentioned[0]})
     return None
 
 
-def _pin(text: str, c: FeedContext) -> Proposal | None:
+def _pin(text: str, context: FeedContext) -> Proposal | None:
     if not PIN.search(text):
         return None
     topics = _topics_in(text)
     words = {w for w in re.findall(r"[a-z0-9]{4,}", text) if w not in PIN_FILLER}
-    match = next(
-        (v for v in c.up_next if v.topic in topics or words & set(re.findall(r"[a-z0-9]+", v.title.lower()))),
+    found = next(
+        (v for v in context.up_next if v.topic in topics or words & set(re.findall(r"[a-z0-9]+", v.title.lower()))),
         None,
     )
-    return _act({"type": "pin_video", "id": match.id}) if match else _reply(NO_VIDEO_REPLY)
+    return _act({"type": "pin_video", "id": found.id}) if found else None
 
 
 def _length(text: str, _: FeedContext) -> Proposal | None:
@@ -139,36 +138,36 @@ def _session(text: str, _: FeedContext) -> Proposal | None:
     return _act({"type": "set_session_range", "min": minutes - SESSION_SLACK, "max": minutes})
 
 
-def _add(text: str, c: FeedContext) -> Proposal:
+def _add(text: str, context: FeedContext) -> Proposal:
     hits = _topics_in(text)
-    fresh = [t for t in hits if t not in c.topics]
+    fresh = [t for t in hits if t not in context.topics]
     if fresh:
         return _act({"type": "set_topics", "add": fresh, "remove": []})
     if hits:
         return _reply(ALREADY)
+    if CANT_DO.search(text):
+        return _reply(CANT_DO_REPLY)
     for rx, question, options in BROAD:
-        left = [o for o in options if o not in c.topics]
+        left = [o for o in options if o not in context.topics]
         if rx.search(text) and left:
             return _reply(f"{question} Try naming one, like {_or_list(left[:3])}.")
     return _reply(NO_MATCH_REPLY)
 
 
 Rule = Callable[[str, FeedContext], Proposal | None]
-EDIT_RULES: tuple[Rule, ...] = (_less, _pin, _length, _session)
+EDIT_RULES: tuple[Rule, ...] = (_less, _length, _session, _pin)
 
 
 class KeywordRules:
     answered_by: AnsweredBy = "rules"
 
     def handle(self, text: str, mode: BarMode, context: FeedContext) -> Proposal:
-        t = text.lower()
-        if answer := _why(t, context):
+        lowered = text.lower()
+        if answer := _why(lowered, context):
             return answer
-        if CANT_DO.search(t):
-            return _reply(CANT_DO_REPLY)
         if mode == "new" or context.kind != "topics":
             return _reply(BUILT_IN_REPLY)
         for rule in EDIT_RULES:
-            if answer := rule(t, context):
+            if answer := rule(lowered, context):
                 return answer
-        return _add(t, context)
+        return _add(lowered, context)

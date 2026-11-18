@@ -1,4 +1,4 @@
-import { useState, type Dispatch } from "react";
+import { useEffect, useRef, useState, type Dispatch } from "react";
 import { barModeFor, changesFeed, feedContext, MAX_REQUEST_CHARS, type AssistantResult } from "../domain/assistant";
 import type { Feed, Video } from "../domain/types";
 import type { AssistantPort } from "../ports";
@@ -6,25 +6,38 @@ import type { Action } from "./appState";
 import { useTimedValue } from "./useTimedValue";
 
 const REPLY_MS = 5000;
-export const EMPTY_REQUEST = "Type something first";
-export const TOO_LONG = `Keep requests under ${MAX_REQUEST_CHARS} characters`;
-export const UNREACHABLE = "Couldn't reach Claude. Try again.";
-export const ALREADY = "Already in this feed.";
+const EMPTY_REQUEST = "Type something first";
+const TOO_LONG = `Keep requests under ${MAX_REQUEST_CHARS} characters`;
+const UNREACHABLE = "Couldn't reach Claude. Try again.";
+const ALREADY = "Already in this feed.";
 
-type Input = Readonly<{ assistant: AssistantPort; feed: Feed; upNext: readonly Video[]; dispatch: Dispatch<Action> }>;
+type Input = Readonly<{
+  assistant: AssistantPort;
+  /** Every feed, so an answer is checked against the asking feed as it is when the answer lands. */
+  feeds: readonly Feed[];
+  feed: Feed;
+  upNext: readonly Video[];
+  dispatch: Dispatch<Action>;
+}>;
 
 /** The Claude bar: what's typed, whether the assistant is thinking, and its last reply or error. */
-export function useClaudeBar({ assistant, feed, upNext, dispatch }: Input) {
+export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
   const [reply, showReply] = useTimedValue<string>(REPLY_MS);
+  const latestFeeds = useRef(feeds);
+  useEffect(() => {
+    latestFeeds.current = feeds;
+  }, [feeds]);
 
-  /** Applies the answer to the feed that asked, which may no longer be open. */
-  const settle = (asked: Feed, result: AssistantResult) => {
-    const edits = barModeFor(asked) === "edit" && changesFeed(asked, result.actions);
-    if (edits) dispatch({ type: "apply_request", feed: asked.name, actions: result.actions });
-    const message = result.reply ?? (edits ? null : ALREADY);
+  /** Applies the answer to the feed that asked, which may no longer be open and may have changed meanwhile. */
+  const settle = (askedName: string, result: AssistantResult) => {
+    const asked = latestFeeds.current.find((f) => f.name === askedName);
+    if (!asked) return;
+    const shouldApply = barModeFor(asked) === "edit" && changesFeed(asked, result.actions);
+    if (shouldApply) dispatch({ type: "apply_request", feed: asked.name, actions: result.actions });
+    const message = result.reply ?? (shouldApply ? null : ALREADY);
     if (message) showReply(message);
   };
 
@@ -37,7 +50,7 @@ export function useClaudeBar({ assistant, feed, upNext, dispatch }: Input) {
     setThinking(true);
     const asked = feed;
     try {
-      settle(asked, await assistant.request(request, barModeFor(asked), feedContext(asked, upNext)));
+      settle(asked.name, await assistant.request(request, barModeFor(asked), feedContext(asked, upNext)));
       setText("");
     } catch (err) {
       console.error("Claude bar request failed", err);
