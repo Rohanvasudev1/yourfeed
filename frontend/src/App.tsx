@@ -6,6 +6,7 @@ import { FeedNotes } from "./components/FeedNotes";
 import { FeedControls } from "./components/FeedControls";
 import { FeedView } from "./components/FeedView";
 import { Flash } from "./components/Flash";
+import { EditBar } from "./components/EditBar";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { HistorySection } from "./components/library/HistorySection";
@@ -28,6 +29,7 @@ import { DEMO_SEED } from "./state/seed";
 import { useCardActions } from "./state/useCardActions";
 import { useCatalog } from "./state/useCatalog";
 import { useClaudeBar } from "./state/useClaudeBar";
+import { useEditMode } from "./state/useEditMode";
 import { useLibrary } from "./state/useLibrary";
 import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
@@ -70,15 +72,23 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   const tabs = useTabs(state, feed, dispatch);
   const upNext = [...pinned, ...(composition?.upNext ?? [])];
   const claudeBar = useClaudeBar({ assistant, feeds: state.feeds, feed, upNext, dispatch });
+  const edit = useEditMode(state.feeds, dispatch);
 
   return (
     <div className="app">
-      <Header onRefresh={refresh} onUndoRefresh={undo} />
-      <TabBar feeds={state.feeds} current={feed} tabs={tabs} />
+      <Header
+        onRefresh={() => {
+          edit.stop();
+          refresh();
+        }}
+        onUndoRefresh={undo}
+      />
+      <TabBar feeds={state.feeds} current={feed} tabs={tabs} edit={edit} />
+      {edit.editing && <EditBar edit={edit} onAllTabs={tabs.page === "all"} />}
       <Flash message={tabs.flash} />
       <main>
         {tabs.page === "all" ? (
-          <AllTabsPage feeds={state.feeds} tabs={tabs} />
+          <AllTabsPage feeds={state.feeds} tabs={tabs} edit={edit} />
         ) : (
           <>
             <div className="feed-toolbar">
