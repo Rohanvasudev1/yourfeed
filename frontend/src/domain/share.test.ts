@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeShare, encodeShare, readShareFragment, SHARE_LIMITS, shareUrl, type Share } from "./share";
+import { decodeShare, encodeShare, readShareFragment, SHARE_LIMITS, shareStartingVideos, shareUrl, type Share } from "./share";
 
 const SHARE: Share = {
   title: "Everything",
@@ -54,6 +54,7 @@ describe("encoding a share over the limits", () => {
 
   it.each([
     ["no videos", { title: "Feed", videos: [] }, "Pick at least one video to share."],
+    ["a blank title", { title: "  ", videos: ids(1) }, "Name the feed before sharing it."],
     ["too many videos", { title: "Feed", videos: ids(SHARE_LIMITS.videos + 1) }, "Share 50 videos at most. Untick some first."],
     ["a long title", { title: "x".repeat(SHARE_LIMITS.title + 1), videos: ids(1) }, "Feed names in a link are 60 characters at most."],
     ["a long message", { title: "Feed", videos: ids(1), message: "x".repeat(SHARE_LIMITS.message + 1) }, "Messages are 280 characters at most."],
@@ -94,5 +95,12 @@ describe("decoding an untrusted link", () => {
     ["a link far longer than any real share", "A".repeat(100_000)],
   ])("rejects %s", (_, fragment) => {
     expect(decodeShare(fragment)).toBeNull();
+  });
+});
+
+describe("what a share starts with", () => {
+  it("keeps each video once, first place wins", () => {
+    const v = (id: string) => ({ id });
+    expect(shareStartingVideos([v("a"), v("b")], [v("b"), v("c")], [v("a"), v("d")])).toEqual([v("a"), v("b"), v("c"), v("d")]);
   });
 });

@@ -29,3 +29,5 @@
 .share-notes label { display: flex; align-items: center; gap: 8px; }
 .share-notes p { margin: 4px 0 0 24px; }
 .share-demo { margin: 12px 0 0; font-size: 11px; }
+.share-panel button:disabled { opacity: 0.45; cursor: not-allowed; }
+.share-panel button.primary:disabled:hover { background: var(--fill-accent); }

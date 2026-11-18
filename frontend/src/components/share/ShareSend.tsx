@@ -1,15 +1,6 @@
 import { IconCheck, IconSend } from "@tabler/icons-react";
 import { useState, type FormEvent } from "react";
-
-const USERNAME = /^[a-z0-9_.]{3,20}$/i;
-
-/** Why a username can't be sent to, or null when it can. */
-function usernameProblem(name: string, sent: readonly string[]): string | null {
-  if (!name) return "Type a username first";
-  if (!USERNAME.test(name)) return "Usernames are 3–20 letters, numbers, dots or underscores";
-  if (sent.some((s) => s.toLowerCase() === name.toLowerCase())) return `Already sent to @${name}`;
-  return null;
-}
+import { cleanUsername, usernameProblem } from "../../domain/username";
 
 /** "Send to someone on Yourfeed": checks the username and lists who it went to. Demo only: nothing leaves the browser. */
 export function ShareSend({ disabled }: Readonly<{ disabled: boolean }>) {
@@ -20,7 +11,7 @@ export function ShareSend({ disabled }: Readonly<{ disabled: boolean }>) {
   const send = (event: FormEvent) => {
     event.preventDefault();
     if (disabled) return;
-    const username = name.trim().replace(/^@/, "");
+    const username = cleanUsername(name);
     const problem = usernameProblem(username, sent);
     setError(problem);
     if (problem) return;

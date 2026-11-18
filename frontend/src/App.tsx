@@ -20,6 +20,7 @@ import { UndoRedo } from "./components/UndoRedo";
 import { ViewToggle } from "./components/ViewToggle";
 import { composeFeed } from "./domain/compose";
 import { TOP_RANGE_HOURS } from "./domain/feed";
+import { shareStartingVideos } from "./domain/share";
 import type { ComposeInput, Video } from "./domain/types";
 import type { CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
@@ -70,9 +71,10 @@ export default function App({ loadCatalog, storage }: Props) {
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);
-  const share = useShareToggle(feed.name);
-  // A share starts with the whole session: Finished and Watching now, then pinned videos, then Up next.
-  const shareVideos = [...new Map([...sessionVideos, ...pinned, ...(composition?.upNext ?? [])].map((v) => [v.id, v])).values()];
+  const shareToggle = useShareToggle(feed.name);
+  const shareVideos = shareStartingVideos(sessionVideos, pinned, composition?.upNext ?? NO_VIDEOS);
+  // With nothing to share the panel has nothing to show, so the button never claims it's open.
+  const share = { ...shareToggle, open: shareToggle.open && shareVideos.length > 0 };
 
   return (
     <div className="app">
@@ -153,7 +155,7 @@ export default function App({ loadCatalog, storage }: Props) {
                     actions={<ShareButton toggle={share} panelId={SHARE_PANEL_ID} />}
                   />
                 )}
-                {share.open && shareVideos.length > 0 && (
+                {share.open && (
                   <SharePanel
                     id={SHARE_PANEL_ID}
                     feedName={feed.name}

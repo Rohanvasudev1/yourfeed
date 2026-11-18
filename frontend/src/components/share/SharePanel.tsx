@@ -1,18 +1,20 @@
 import { IconCopy, IconShare, IconX } from "@tabler/icons-react";
 import { useId, useState } from "react";
-import { displayTitle, minutesText, videoCount } from "../../domain/format";
+import { minutesText, videoCount } from "../../domain/format";
 import { encodeShare, shareUrl, type Share } from "../../domain/share";
 import type { GlobalFilters, Video } from "../../domain/types";
-import { useTimedValue } from "../../state/useTimedValue";
+import { copyText, type CopyMessages } from "../../state/copyText";
+import { FLASH_MS, useTimedValue } from "../../state/useTimedValue";
 import { Flash } from "../Flash";
-import { Thumbnail } from "../thumbnail/Thumbnail";
+import { SharePicker } from "./SharePicker";
 import { ShareSend } from "./ShareSend";
 import "./share.css";
 
-const FLASH_MS = 5000;
-const COPIED = "Link copied.";
-const NO_CLIPBOARD = "Copying isn't available here. Select the link and copy it yourself.";
-const COPY_FAILED = "Couldn't copy the link. Try again.";
+const COPY_MESSAGES: CopyMessages = {
+  copied: "Link copied.",
+  noClipboard: "Copying isn't available here. Select the link and copy it yourself.",
+  failed: "Couldn't copy the link. Try again.",
+};
 
 type Props = Readonly<{
   id: string;
@@ -45,23 +47,8 @@ export function SharePanel({ id, feedName, videos, notes, filters, onClose }: Pr
   };
   const encoded = encodeShare(share);
   const link = encoded.ok ? shareUrl(window.location.href, encoded.encoded) : "";
-  const allPicked = picked.length === videos.length;
 
-  const toggle = (id: string) => {
-    const next = new Set(unticked);
-    if (!next.delete(id)) next.add(id);
-    setUnticked(next);
-  };
-  const copy = () => {
-    if (!navigator.clipboard) return showFlash(NO_CLIPBOARD);
-    navigator.clipboard.writeText(link).then(
-      () => showFlash(COPIED),
-      (error: unknown) => {
-        console.warn("Copying the share link failed", error);
-        showFlash(COPY_FAILED);
-      },
-    );
-  };
+  const copy = () => copyText(link, COPY_MESSAGES, showFlash);
 
   return (
     <section id={id} className="share-panel" aria-labelledby={headingId}>
@@ -79,32 +66,7 @@ export function SharePanel({ id, feedName, videos, notes, filters, onClose }: Pr
         </button>
       </div>
 
-      <div className="share-list-head">
-        <span className="share-label">
-          Videos · {picked.length} of {videos.length} selected
-        </span>
-        <button type="button" className="link-button" onClick={() => setUnticked(allPicked ? new Set(videos.map((v) => v.id)) : new Set())}>
-          {allPicked ? "Clear all" : "Select all"}
-        </button>
-      </div>
-      <ul className="share-list">
-        {videos.map((video) => {
-          const title = displayTitle(video, filters);
-          const on = !unticked.has(video.id);
-          return (
-            <li key={video.id}>
-              <label className={on ? "share-pick" : "share-pick off"}>
-                <input type="checkbox" checked={on} aria-label={`Include ${title}`} onChange={() => toggle(video.id)} />
-                <span className="share-thumb" aria-hidden="true">
-                  <Thumbnail video={video} honest={filters.honestTitles} />
-                </span>
-                <span className="share-title">{title}</span>
-                <span className="muted small">{video.minutes}m</span>
-              </label>
-            </li>
-          );
-        })}
-      </ul>
+      <SharePicker videos={videos} unticked={unticked} filters={filters} onChange={setUnticked} />
       {!encoded.ok && (
         <p className="field-error share-problem" aria-live="polite">
           {encoded.problem}
@@ -129,7 +91,7 @@ export function SharePanel({ id, feedName, videos, notes, filters, onClose }: Pr
             <input type="checkbox" checked={includeNotes} onChange={(e) => setIncludeNotes(e.target.checked)} />
             Include my notes ({videoCount(notedCount)})
           </label>
-          {includeNotes && <p className="muted small">Anyone with the link can read these notes.</p>}
+          <p className="muted small">Anyone with the link can read notes you include.</p>
         </div>
       )}
       <p className="share-demo muted">Demo only: nothing is actually sent to anyone.</p>

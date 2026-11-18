@@ -13,6 +13,8 @@ const FRAGMENT_PREFIX = "#share=";
 /** Longer than any share within the limits can encode to; anything longer is refused unread. */
 const MAX_ENCODED_LENGTH = 40_000;
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
+/** Catalog ids are short ("demo-12"); anything this long isn't one. */
+const MAX_VIDEO_ID_LENGTH = 100;
 
 /** A shared feed: its name, its videos in order, and optionally a message and the sender's notes by video id. */
 export type Share = Readonly<{
@@ -28,7 +30,7 @@ const shareSchema = z
   .strictObject({
     v: z.literal(FORMAT_VERSION),
     title: z.string().max(SHARE_LIMITS.title).refine((t) => t.trim().length > 0, "the title is empty"),
-    videos: z.array(z.string().min(1).max(100)).min(1).max(SHARE_LIMITS.videos),
+    videos: z.array(z.string().min(1).max(MAX_VIDEO_ID_LENGTH)).min(1).max(SHARE_LIMITS.videos),
     message: z.string().max(SHARE_LIMITS.message).optional(),
     notes: z.record(z.string(), z.string().min(1)).optional(),
   })
@@ -39,6 +41,7 @@ const shareSchema = z
 /** What's wrong with a share the visitor is about to send, in their words, or null when it fits. */
 function shareProblem(share: Share): string | null {
   if (share.videos.length === 0) return "Pick at least one video to share.";
+  if (!share.title.trim()) return "Name the feed before sharing it.";
   if (share.videos.length > SHARE_LIMITS.videos) return `Share ${SHARE_LIMITS.videos} videos at most. Untick some first.`;
   if (share.title.length > SHARE_LIMITS.title) return `Feed names in a link are ${SHARE_LIMITS.title} characters at most.`;
   if ((share.message ?? "").length > SHARE_LIMITS.message) return `Messages are ${SHARE_LIMITS.message} characters at most.`;
@@ -81,6 +84,11 @@ export function decodeShare(encoded: string): Share | null {
   if (!result.success) return null;
   const { title, videos, message, notes } = result.data;
   return { title, videos, ...(message === undefined ? {} : { message }), ...(notes === undefined ? {} : { notes }) };
+}
+
+/** What a share starts with: each video once, in the order of `groups` (the session, pinned videos, then Up next). */
+export function shareStartingVideos<T extends Readonly<{ id: string }>>(...groups: readonly (readonly T[])[]): T[] {
+  return [...new Map(groups.flat().map((video) => [video.id, video])).values()];
 }
 
 /** The link to a share: `base` (the app's address) with the share in its fragment. */

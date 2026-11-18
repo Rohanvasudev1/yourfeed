@@ -173,10 +173,9 @@ describe("including my notes", () => {
 
     const include = inPanel().getByRole("checkbox", { name: "Include my notes (1 video)" });
     expect(include).not.toBeChecked();
-    expect(panel()).not.toHaveTextContent("Anyone with the link can read these notes.");
+    expect(panel()).toHaveTextContent("Anyone with the link can read notes you include.");
 
     await userEvent.click(include);
-    expect(panel()).toHaveTextContent("Anyone with the link can read these notes.");
     await userEvent.click(inPanel().getByRole("button", { name: "Copy link" }));
 
     expect(await copiedShare()).toEqual({
