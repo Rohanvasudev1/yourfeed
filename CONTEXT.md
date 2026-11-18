@@ -28,10 +28,33 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Global filters**: Hide clickbait, Honest titles, Hide view counts, Hide subscriber counts, Boost small creators, Include Shorts.
 - **Honest title**: a plain, non-clickbait version of a title. With Honest titles on, it replaces the title and the thumbnail caption.
 - **Settings line**: the sentence under the Claude bar ("Showing 4 topics · 10–60 min videos …"). Each phrase opens a popup that edits that setting. It replaces a settings sidebar.
-- **Claude bar**: the plain-language command box. Despite the name, any OpenAI-compatible model can run it (see ADR 0004). An **assistant** turns a request into **feed actions** the user can see and undo.
-- **Feed action**: one structured change to a feed: `set_topics`, `mute_topic`, `set_length_range`, `set_session_range`, `pin_video`, `ask_user`. Undo and redo work on these.
-- **Undo step**: the feed settings (topics, channels, mutes, length and session ranges) and global filters as they were before one change. Any change to those, by hand or by a feed action, adds one; undo and redo keep up to 10 each, a new change clears redo, and moving the same range on the same feed again (say, dragging its slider) extends the newest step instead of adding one. A reload or Reset demo starts with none. Sessions, feed sets and tabs are never undone.
+- **Claude bar**: the plain-language command box ("Tell Claude what you want to watch"). Despite the name, any OpenAI-compatible model can run it (see ADRs 0004 and 0006). An **assistant** turns a **request** into **feed actions** the user can see and undo.
+- **Assistant**: whatever answers Claude bar requests and note questions: a **model** (OpenAI-compatible, on the backend), the **keyword rules** (the mockup's matching, used when no model is set up, it fails, it times out or a limit is reached), or a **scripted fake** in tests. The **account menu** names which one is answering.
+- **Request**: one thing the user sent from the Claude bar, at most 300 characters. A request becomes zero or more feed actions plus an optional **reply**, and adds at most one undo step.
+- **Bar mode**: **edit** (change the current feed) or **new** (start a new feed from the request). Built-in feeds can't be edited, so on them the bar is always in new mode; on a draft it's edit mode, since the draft is the new feed.
+- **Feed action**: one structured change the assistant makes, always to the current feed: `set_topics`, `mute_topic`, `set_length_range`, `set_session_range`, `pin_video`, `ask_user` (shows a **question card**) and `create_feed` (new mode only). Topics must be in the catalog and pinned videos must be ones the assistant was shown; the backend drops any action that breaks a rule. The assistant never changes global filters, tabs, saved folders or other feeds.
+- **Reply**: a short text answer from the assistant, such as why a video is first. Shown as a toast; it changes nothing.
+- **Question card**: the assistant asking before it acts. **Chips** (pick topics), **videos** (pick the ones you're feeling, and their topics are added) or **feedback** (thumbs up keeps the added topics, thumbs down removes them).
+- **Undo step**: the feed settings (topics, channels, mutes, length and session ranges) and global filters as they were before one change. Any change to those by hand adds one, and so does each request, however many feed actions it ran. There is one history; the Claude bar's undo and redo use it too; undo and redo keep up to 10 each, a new change clears redo, and moving the same range on the same feed again (say, dragging its slider) extends the newest step instead of adding one. A reload or Reset demo starts with none. Sessions, feed sets and tabs are never undone, with one exception: undoing a request that ran `create_feed` removes that feed, and redo brings it back.
 - **Notes**: free text per video (the same everywhere the video shows up), plus one note per feed. A line ending in `?` asks the assistant, and the answer is written into the note as `✱ answer`.
+- **Ask in notes**: a note line of 3–300 characters ending in `?` is a **question**; pressing Enter after it (or the ✱ button) asks the assistant about that video. The assistant only knows the video's details and description, never a transcript, and answers in at most two sentences on the next line, starting with ✱.
+- **Provider notice**: the line saying requests and note questions are sent to the named provider. Nothing is sent until the user presses send or asks a question.
+- **AI limits**: per visitor, about 10 requests a minute and 100 a day, plus one daily cap for the whole site. Past a limit the keyword rules answer instead.
+
+## Search and sharing
+
+- **Search**: matches the query against title, honest title, channel and topic in the catalog, in the frontend. **Suggestions** come from titles, channels and topics weighted by views, with **recent searches** (kept in the browser, removable) first. The **search page** lists results; + pins one to the current feed ("Adding to: <feed>").
+- **Share**: sending a feed's videos to someone. The user unticks what to leave out, may include their notes, then copies a **share link** or sends it to a **username**.
+- **Share link**: a link whose URL fragment carries the shared feed itself (title, video ids, optional message and notes), so it works with no account and no server storage. Opening one adds it to Shared with you once. A link that's broken, too big or names unknown videos "doesn't work".
+- **Shared with you**: the inbox of feeds others sent (`shared` kind). Each **shared feed** shows who sent it, its videos and their notes; it can be opened and watched like a feed, saved as your own feed, or removed. Unread ones show a dot.
+- **Blend**: a feed mixing your topics with someone else's (`blend` kind). You invite a **username**; once they approve, the blend shows a **match score** and mixes topics you share, then yours, then theirs.
+- **Simulated**: in demo mode there are no other users, so sending to a username, Blend's other person and their approval, and the From Claude connection are made up and labelled "Demo only". Share links are real.
+- **From Claude**: the `claude` feed. **Connecting** it reads a summary of the user's recent Claude work and turns it into topics (simulated in demo mode with a fixed summary).
+
+## Account and tabs
+
+- **Account menu**: the avatar menu: who you are ("demo account" in demo mode), jumps to All your feeds, Saved, Watch history, Feed notes, Shared with you and Blends with their counts, the From Claude connection, and which assistant answers.
+- **Edit mode**: selecting several tabs at once to move them to All tabs, show them in the tab bar or delete them. Built-in feeds can't be deleted, and at least one feed always stays.
 - **Demo mode**: not signed in. Mock catalog, state kept in the browser, rate-limited AI.
 - **Signed-in mode**: signed in with Google. Real YouTube catalog, state kept in the database.
 
@@ -39,4 +62,5 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 
 - "Algorithm" for a feed: say **feed**.
 - "Watched" to mean Finished: **watched** means in watch history (played here, or the eye toggle: "I've seen this elsewhere"), while **Finished** is part of a session.
+- "Chat" for the Claude bar: it takes **requests** and makes feed changes; it isn't a conversation and keeps no history beyond undo.
 - "Playlist" for a feed or a saved folder: playlists are YouTube's. Ours are **feeds** and **saved folders**.

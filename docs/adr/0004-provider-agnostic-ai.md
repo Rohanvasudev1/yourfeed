@@ -1,6 +1,6 @@
 # 4. Provider-agnostic AI, free by default, with a keyword fallback
 
-Date: 2026-11-15 · Status: accepted
+Date: 2026-11-15 · Status: accepted, default model and limits amended by [ADR 0006](0006-free-models-groq-and-ollama.md)
 
 ## Context
 The owner wants free AI. As of Nov 2026, DeepSeek's API is prepaid (cheap but not free). Groq and OpenRouter have free tiers that support tool calling. Gemini's free tier only covers Flash models since April 2026. The limits change often.
