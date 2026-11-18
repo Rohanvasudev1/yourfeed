@@ -1,23 +1,36 @@
-import { IconAlignJustified, IconApps, IconArrowBarToDown, IconArrowBarToUp, IconArrowsMinimize, IconLayoutNavbar } from "@tabler/icons-react";
+import {
+  IconAlignJustified,
+  IconApps,
+  IconArrowBarToDown,
+  IconArrowBarToUp,
+  IconArrowsMinimize,
+  IconCircle,
+  IconCircleCheck,
+  IconLayoutNavbar,
+} from "@tabler/icons-react";
 import { useId, useState, type ReactNode } from "react";
 import { barSpaces, canShelve, MAX_BAR_SPACES } from "../domain/tabs";
 import type { Feed } from "../domain/types";
+import type { EditControls } from "../state/useEditMode";
 import type { TabControls } from "../state/useTabs";
 import { kindInfo } from "./feedKindInfo";
 
-type Props = Readonly<{ feeds: readonly Feed[]; tabs: TabControls }>;
+type Props = Readonly<{ feeds: readonly Feed[]; tabs: TabControls; edit: EditControls }>;
 
 const TOPICS_SHOWN = 2;
 
-/** Every feed, split into the ones in the tab bar and the ones only here, each one click from the other side. */
-export function AllTabsPage({ feeds, tabs }: Props) {
+/**
+ * Every feed, split into the ones in the tab bar and the ones only here, each one click from the other side.
+ * In edit mode each card's name selects it instead.
+ */
+export function AllTabsPage({ feeds, tabs, edit }: Props) {
   const titleId = useId();
   const [message, setMessage] = useState<string | null>(null);
   const inBar = feeds.filter((f) => !f.shelved);
   const shelved = feeds.filter((f) => f.shelved);
 
   const toggle = (feed: Feed) => setMessage(tabs.toggleShelved(feed));
-  const group = (list: readonly Feed[]) => <TabCards feeds={list} onOpen={tabs.open} onToggle={toggle} />;
+  const group = (list: readonly Feed[]) => <TabCards feeds={list} onOpen={tabs.open} onToggle={toggle} edit={edit} />;
 
   return (
     <section className="all-tabs" aria-labelledby={titleId}>
@@ -61,23 +74,37 @@ function TabGroup({ icon, title, note, children }: Readonly<{ icon: ReactNode; t
   );
 }
 
-type CardsProps = Readonly<{ feeds: readonly Feed[]; onOpen: (name: string) => void; onToggle: (feed: Feed) => void }>;
+type CardsProps = Readonly<{
+  feeds: readonly Feed[];
+  onOpen: (name: string) => void;
+  onToggle: (feed: Feed) => void;
+  edit: EditControls;
+}>;
 
-function TabCards({ feeds, onOpen, onToggle }: CardsProps) {
+function TabCards({ feeds, onOpen, onToggle, edit }: CardsProps) {
   return (
     <ul className="tab-cards">
       {feeds.map((f) => {
         const Icon = kindInfo(f.kind)?.icon ?? IconAlignJustified;
+        const selected = edit.selected.includes(f.name);
+        const Check = selected ? IconCircleCheck : IconCircle;
         return (
-          <li key={f.name} className="tab-card">
+          <li key={f.name} className={selected ? "tab-card selected" : "tab-card"}>
             <Icon size={22} className="muted" aria-hidden="true" />
+            {edit.editing && <Check size={20} className="tab-card-check" aria-hidden="true" />}
             <h4>
-              <button type="button" className="tab-card-open" onClick={() => onOpen(f.name)}>
-                {f.name}
-              </button>
+              {edit.editing ? (
+                <button type="button" className="tab-card-open" aria-pressed={selected} onClick={() => edit.toggle(f.name)}>
+                  {f.name}
+                </button>
+              ) : (
+                <button type="button" className="tab-card-open" onClick={() => onOpen(f.name)}>
+                  {f.name}
+                </button>
+              )}
             </h4>
             <p className="tab-card-desc">{describe(f)}</p>
-            {canShelve(f) && (
+            {!edit.editing && canShelve(f) && (
               <button
                 type="button"
                 className={f.shelved ? "tab-card-move primary" : "tab-card-move"}

@@ -1,0 +1,16 @@
+/* Edit mode: the Edit button, selectable tabs and All tabs cards, and the edit bar. */
+.tab-edit { height: 32px; padding: 0 12px; font-size: 13px; }
+.tab[aria-pressed="true"] { background: var(--bg-accent); color: var(--text-accent); border-color: var(--border-accent); }
+.tab[aria-pressed][draggable="true"] { cursor: grab; }
+
+.edit-bar { margin-bottom: 12px; padding: 12px 16px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.edit-bar button { height: 30px; font-size: 13px; display: inline-flex; align-items: center; gap: 4px; }
+.edit-bar-count { flex: 1; color: var(--text-secondary); }
+.edit-bar-message { flex-basis: 100%; font-size: 12px; color: var(--text-danger); }
+
+.tab-card { position: relative; }
+.tab-card.selected { border: 2px solid var(--border-accent); padding: 10.5px; }
+.tab-card-check { position: absolute; top: 10px; right: 10px; color: var(--text-muted); }
+.tab-card.selected .tab-card-check { color: var(--text-accent); }
+/* The whole card selects in edit mode, as in the mockup: the name's button covers it. */
+.tab-card-open[aria-pressed]::after { content: ""; position: absolute; inset: 0; }
