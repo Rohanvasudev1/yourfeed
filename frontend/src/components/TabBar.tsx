@@ -1,20 +1,27 @@
 import { IconApps, IconHome, IconPin, IconPlus, IconSparkles, IconX } from "@tabler/icons-react";
-import { useRef, type DragEvent } from "react";
 import { isInExplore } from "../domain/feed";
 import { ownTabs } from "../domain/tabs";
 import type { Feed } from "../domain/types";
+import type { EditControls } from "../state/useEditMode";
 import type { TabControls } from "../state/useTabs";
+import { EditableTabs } from "./EditableTabs";
 import { ExploreMenu } from "./ExploreMenu";
 import { kindInfo } from "./feedKindInfo";
+import { useTabDrag } from "./useTabDrag";
 import "./tabs.css";
 
-type Props = Readonly<{ feeds: readonly Feed[]; current: Feed; tabs: TabControls }>;
+type Props = Readonly<{
+  feeds: readonly Feed[];
+  current: Feed;
+  tabs: TabControls;
+  edit: EditControls;
+}>;
 
 /**
  * Home, the Explore button, then your own feeds (each with a × that shelves it, and draggable to
- * reorder). A shelved feed you open shows at the end with a pin. New feed and All tabs sit beside the bar.
+ * reorder). A shelved feed you open shows at the end with a pin. New feed, All tabs and Edit sit beside the bar.
  */
-export function TabBar({ feeds, current, tabs }: Props) {
+export function TabBar({ feeds, current, tabs, edit }: Props) {
   const onFeedPage = tabs.page === "feed";
   const inBar = feeds.filter((f) => !f.shelved);
   const home = inBar.find((f) => f.kind === "home");
@@ -22,59 +29,60 @@ export function TabBar({ feeds, current, tabs }: Props) {
   const temporary = onFeedPage && current.shelved ? current : null;
   const shelvedCount = feeds.filter((f) => f.shelved).length;
   const currentPage = (f: Feed) => (onFeedPage && f.name === current.name ? "page" : undefined);
-  const dragged = useRef<string | null>(null);
-
-  const dragProps = (f: Feed) => ({
-    draggable: true,
-    onDragStart: (e: DragEvent) => {
-      dragged.current = f.name;
-      e.dataTransfer.setData("text/plain", f.name);
-      e.dataTransfer.effectAllowed = "move";
-    },
-    onDragOver: (e: DragEvent) => {
-      if (dragged.current) e.preventDefault();
-    },
-    onDrop: (e: DragEvent) => {
-      e.preventDefault();
-      if (dragged.current) tabs.move(dragged.current, f.name);
-      dragged.current = null;
-    },
-    onDragEnd: () => {
-      dragged.current = null;
-    },
-  });
+  const drag = useTabDrag(tabs.move);
 
   return (
     <div className="tab-row">
       <nav className="tab-bar" aria-label="Feeds">
-        {home && (
-          <button
-            type="button"
-            className="tab tab-home"
-            aria-label={`${home.name} (home)`}
-            title={home.name}
-            aria-current={currentPage(home)}
-            onClick={() => tabs.open(home.name)}
-          >
-            <IconHome size={17} aria-hidden="true" />
-          </button>
+        {edit.editing ? (
+          <EditableTabs feeds={feeds} temporary={temporary} edit={edit} onMove={tabs.move} />
+        ) : (
+          <>
+            {home && (
+              <button
+                type="button"
+                className="tab tab-home"
+                aria-label={`${home.name} (home)`}
+                title={home.name}
+                aria-current={currentPage(home)}
+                onClick={() => tabs.open(home.name)}
+              >
+                <IconHome size={17} aria-hidden="true" />
+              </button>
+            )}
+            {explore.length > 0 && <ExploreMenu feeds={explore} current={current} onOpen={tabs.open} />}
+            {ownTabs(feeds).map((f) => (
+              <span key={f.name} className="tab-chip" {...drag(f.name)}>
+                <button type="button" className="tab" aria-current={currentPage(f)} onClick={() => tabs.open(f.name)}>
+                  {f.draft && <IconSparkles size={14} aria-hidden="true" />}
+                  {f.name}
+                </button>
+                <button
+                  type="button"
+                  className="tab-close"
+                  aria-label={`Close ${f.name}`}
+                  title="Close tab"
+                  onClick={() => tabs.close(f.name)}
+                >
+                  <IconX size={13} aria-hidden="true" />
+                </button>
+              </span>
+            ))}
+            {temporary && <TemporaryTab feed={temporary} onPin={() => tabs.pin(temporary.name)} />}
+          </>
         )}
-        {explore.length > 0 && <ExploreMenu feeds={explore} current={current} onOpen={tabs.open} />}
-        {ownTabs(feeds).map((f) => (
-          <span key={f.name} className="tab-chip" {...dragProps(f)}>
-            <button type="button" className="tab" aria-current={currentPage(f)} onClick={() => tabs.open(f.name)}>
-              {f.draft && <IconSparkles size={14} aria-hidden="true" />}
-              {f.name}
-            </button>
-            <button type="button" className="tab-close" aria-label={`Close ${f.name}`} title="Close tab" onClick={() => tabs.close(f.name)}>
-              <IconX size={13} aria-hidden="true" />
-            </button>
-          </span>
-        ))}
-        {temporary && <TemporaryTab feed={temporary} onPin={() => tabs.pin(temporary.name)} />}
       </nav>
       <div className="tab-tools">
-        <button type="button" className="icon-button" aria-label="New feed" title="New feed" onClick={tabs.newFeed}>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="New feed"
+          title="New feed"
+          onClick={() => {
+            edit.stop();
+            tabs.newFeed();
+          }}
+        >
           <IconPlus size={17} aria-hidden="true" />
         </button>
         <button
@@ -87,6 +95,9 @@ export function TabBar({ feeds, current, tabs }: Props) {
         >
           <IconApps size={17} aria-hidden="true" />
           {shelvedCount > 0 && <span aria-hidden="true">{shelvedCount}</span>}
+        </button>
+        <button type="button" className="tab-edit" onClick={edit.toggleEditing}>
+          {edit.editing ? "Done" : "Edit"}
         </button>
       </div>
     </div>
