@@ -1,13 +1,16 @@
 import { IconAdjustmentsHorizontal, IconArrowBackUp } from "@tabler/icons-react";
+import type { ReactNode } from "react";
 
 type Props = Readonly<{
   onRefresh: () => void;
   /** Present for a few seconds after a refresh. */
   onUndoRefresh: (() => void) | null;
+  /** The search box, which sits right after the refresh undo. */
+  search: ReactNode;
 }>;
 
-/** The logo loads a new set for the open feed; the round undo button sits in a fixed slot so nothing shifts. */
-export function Header({ onRefresh, onUndoRefresh }: Props) {
+/** The logo loads a new set for the open feed; the round undo button sits in a fixed slot by the search box so nothing shifts. */
+export function Header({ onRefresh, onUndoRefresh, search }: Props) {
   return (
     <header className="app-header">
       <button
@@ -33,6 +36,7 @@ export function Header({ onRefresh, onUndoRefresh }: Props) {
           </button>
         )}
       </div>
+      {search}
     </header>
   );
 }

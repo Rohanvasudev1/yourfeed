@@ -10,6 +10,8 @@ import { Header } from "./components/Header";
 import { HistorySection } from "./components/library/HistorySection";
 import { SavedSection } from "./components/library/SavedSection";
 import { NameFeed } from "./components/NameFeed";
+import { SearchBox } from "./components/search/SearchBox";
+import { SearchPage } from "./components/search/SearchPage";
 import { SettingsLine } from "./components/SettingsLine";
 import { FinishedSection, WatchingNow } from "./components/Session";
 import { TabBar } from "./components/TabBar";
@@ -29,6 +31,7 @@ import { useCatalog } from "./state/useCatalog";
 import { useLibrary } from "./state/useLibrary";
 import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
+import { useSearch } from "./state/useSearch";
 import { useNotes } from "./state/useNotes";
 import { useSession } from "./state/useSession";
 import { useTabs } from "./state/useTabs";
@@ -66,15 +69,46 @@ export default function App({ loadCatalog, storage }: Props) {
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);
+  const search = useSearch({
+    catalog: ready ?? NO_VIDEOS,
+    recent: state.recentSearches,
+    filters: state.filters,
+    dispatch,
+    openPage: tabs.openSearch,
+  });
 
   return (
     <div className="app">
-      <Header onRefresh={refresh} onUndoRefresh={undo} />
+      <Header
+        onRefresh={refresh}
+        onUndoRefresh={undo}
+        search={
+          <SearchBox
+            corpus={search.corpus}
+            recent={search.recent}
+            onSearch={search.search}
+            onForget={search.forget}
+            onMessage={search.showFlash}
+          />
+        }
+      />
       <TabBar feeds={state.feeds} current={feed} tabs={tabs} />
-      <Flash message={tabs.flash} />
+      <Flash message={tabs.flash ?? search.flash} />
       <main>
         {tabs.page === "all" ? (
           <AllTabsPage feeds={state.feeds} tabs={tabs} />
+        ) : tabs.page === "search" ? (
+          <SearchPage
+            query={search.query}
+            results={search.results}
+            feedName={feed.name}
+            filters={state.filters}
+            inSession={library.inSession}
+            onPin={library.pin}
+            onPlay={session.play}
+            onBack={tabs.closeSearch}
+            flash={session.flash}
+          />
         ) : (
           <>
             <div className="feed-toolbar">

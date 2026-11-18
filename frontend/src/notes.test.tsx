@@ -1,6 +1,7 @@
-import { act, fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { FakeRecognition, recognition } from "./test/fakeRecognition";
 import { EVERYTHING_ORDER, memoryStorage } from "./test/fixtures";
 import { cardFor, feedTitles, renderApp } from "./test/renderApp";
 
@@ -187,39 +188,6 @@ describe("Feed notes", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Your browser blocked the YouTube tab.");
   });
 });
-
-type ResultEvent = { resultIndex: number; results: { isFinal: boolean; 0: { transcript: string } }[] };
-
-class FakeRecognition {
-  static last: FakeRecognition | undefined;
-  continuous = false;
-  interimResults = true;
-  lang = "";
-  onresult: ((event: ResultEvent) => void) | null = null;
-  onerror: ((event: { error: string }) => void) | null = null;
-  onend: (() => void) | null = null;
-  constructor() {
-    FakeRecognition.last = this;
-  }
-  start() {}
-  stop() {
-    this.onend?.();
-  }
-  hear(transcript: string) {
-    act(() => this.onresult?.({ resultIndex: 0, results: [{ isFinal: true, 0: { transcript } }] }));
-  }
-  fail(error: string) {
-    act(() => {
-      this.onerror?.({ error });
-      this.onend?.();
-    });
-  }
-}
-
-const recognition = () => {
-  if (!FakeRecognition.last) throw new Error("Voice typing never started");
-  return FakeRecognition.last;
-};
 
 describe("voice typing", () => {
   it("explains why it can't start when the browser has no speech recognition", async () => {
