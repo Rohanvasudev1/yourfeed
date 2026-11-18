@@ -13,6 +13,9 @@ type Box = Readonly<{
 
 const CLOSED: Box = { text: "", typed: "", open: false, active: -1 };
 
+/** Steps through `count` suggestions and the typed text (-1), wrapping at both ends. */
+const wrap = (active: number, step: 1 | -1, count: number) => ((active + step + 1 + count + 1) % (count + 1)) - 1;
+
 /** The search box's text and its suggestion list, as a Google-style combobox. */
 export function useSuggestions(corpus: SuggestionCorpus, recent: readonly string[]) {
   const [box, setBox] = useState<Box>(CLOSED);
@@ -23,7 +26,7 @@ export function useSuggestions(corpus: SuggestionCorpus, recent: readonly string
   /** Arrows wrap through the list and back to what was typed, filling the box as they go. */
   const move = (step: 1 | -1) => {
     if (items.length === 0) return setBox((b) => ({ ...b, open: true, typed: b.text, active: -1 }));
-    const next = active + step < -1 ? items.length - 1 : active + step >= items.length ? -1 : active + step;
+    const next = wrap(active, step, items.length);
     setBox((b) => ({ ...b, active: next, text: next < 0 ? b.typed : items[next].phrase }));
   };
 

@@ -85,6 +85,13 @@ describe("suggestFor", () => {
     expect(suggestFor(suggestionCorpus(CATALOG), ["tennis"], "tenn")[0]).toEqual({ phrase: "tennis", recent: true });
   });
 
+  it("still suggests a recent search that matches on a later word, as an ordinary suggestion", () => {
+    expect(suggestFor(suggestionCorpus(CATALOG), ["green fingers"], "fing")).toEqual([
+      { phrase: "green fingers", recent: false },
+      { phrase: "gardening green fingers", recent: false },
+    ]);
+  });
+
   it("matches case and spacing loosely but keeps a trailing space, so a filled-in phrase suggests what follows", () => {
     expect(phrases("TENNIS  S")).toEqual(["tennis serve drills"]);
     expect(phrases("tennis ")).toEqual(["tennis serve drills", "tennis court replay"]);

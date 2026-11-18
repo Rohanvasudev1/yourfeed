@@ -35,6 +35,6 @@ export class FakeRecognition {
 
 /** The recognizer the app started last. */
 export const recognition = () => {
-  if (!FakeRecognition.last) throw new Error("Voice typing never started");
+  if (!FakeRecognition.last) throw new Error("Speech recognition never started");
   return FakeRecognition.last;
 };

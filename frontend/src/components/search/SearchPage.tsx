@@ -1,7 +1,9 @@
 import { IconArrowLeft, IconCheck, IconPlus } from "@tabler/icons-react";
 import { displayTitle } from "../../domain/format";
 import type { GlobalFilters, Video } from "../../domain/types";
+import type { SaveActions } from "../../state/useLibrary";
 import { Flash } from "../Flash";
+import { SaveControl } from "../library/SaveControl";
 import { PlayableThumbnail, PlayableTitle } from "../Playable";
 import "../library/library.css";
 import "./search.css";
@@ -15,6 +17,7 @@ type Props = Readonly<{
   inSession: (video: Video) => boolean;
   onPin: (video: Video) => void;
   onPlay: (video: Video) => void;
+  saveActions: SaveActions;
   onBack: () => void;
   /** Messages from playing a result, such as a blocked pop-up. */
   flash: string | null;
@@ -23,7 +26,7 @@ type Props = Readonly<{
 const resultCount = (n: number) => `${n} result${n === 1 ? "" : "s"}`;
 
 /** "<n> results for <query>": every matching video, each playable and with + to pin it to the open feed. */
-export function SearchPage({ query, results, feedName, filters, inSession, onPin, onPlay, onBack, flash }: Props) {
+export function SearchPage({ query, results, feedName, filters, inSession, onPin, onPlay, saveActions, onBack, flash }: Props) {
   return (
     <section className="search-page" aria-label="Search results">
       <div className="search-page-header">
@@ -41,7 +44,15 @@ export function SearchPage({ query, results, feedName, filters, inSession, onPin
       ) : (
         <ul className="session-list" aria-label="Results">
           {results.map((video) => (
-            <SearchResult key={video.id} video={video} filters={filters} inSession={inSession(video)} onPin={onPin} onPlay={onPlay} />
+            <SearchResult
+              key={video.id}
+              video={video}
+              filters={filters}
+              inSession={inSession(video)}
+              onPin={onPin}
+              onPlay={onPlay}
+              saveActions={saveActions}
+            />
           ))}
         </ul>
       )}
@@ -55,9 +66,11 @@ type ResultProps = Readonly<{
   inSession: boolean;
   onPin: (video: Video) => void;
   onPlay: (video: Video) => void;
+  saveActions: SaveActions;
 }>;
 
-function SearchResult({ video, filters, inSession, onPin, onPlay }: ResultProps) {
+/** A result row; Save's folder picker opens below it. */
+function SearchResult({ video, filters, inSession, onPin, onPlay, saveActions }: ResultProps) {
   const title = displayTitle(video, filters);
   const play = () => onPlay(video);
   return (
@@ -70,6 +83,7 @@ function SearchResult({ video, filters, inSession, onPin, onPlay }: ResultProps)
         </p>
       </div>
       <div className="library-actions">
+        <SaveControl video={video} title={title} saveActions={saveActions} />
         {inSession ? (
           <span className="in-session small">
             <IconCheck size={14} aria-hidden="true" />

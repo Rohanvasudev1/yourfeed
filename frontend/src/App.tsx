@@ -84,6 +84,8 @@ export default function App({ loadCatalog, storage }: Props) {
         onUndoRefresh={undo}
         search={
           <SearchBox
+            // Opening another feed clears the box, as in the mockup.
+            key={feed.name}
             corpus={search.corpus}
             recent={search.recent}
             onSearch={search.search}
@@ -106,6 +108,7 @@ export default function App({ loadCatalog, storage }: Props) {
             inSession={library.inSession}
             onPin={library.pin}
             onPlay={session.play}
+            saveActions={library.saveActions}
             onBack={tabs.closeSearch}
             flash={session.flash}
           />

@@ -75,10 +75,7 @@ export function useTabs(state: AppState, current: Feed, dispatch: Dispatch<Actio
       setPage("all");
     },
     closeAllTabs: () => setPage("feed"),
-    openSearch: () => {
-      dispatch({ type: "leave_draft" });
-      setPage("search");
-    },
+    openSearch: () => setPage("search"),
     closeSearch: () => setPage("feed"),
     neighbours: (name) => ownNeighbours(state.feeds, name),
   };

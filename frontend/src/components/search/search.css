@@ -34,3 +34,6 @@
   .search { flex-basis: 100%; order: 3; }
   .search:focus-within { flex-basis: 100%; }
 }
+/* Save's folder picker gets the whole row under the result. */
+.search-page .library-actions:has(.save-picker) { grid-column: 1 / -1; flex-wrap: wrap; justify-content: flex-end; }
+.search-page .library-actions .save-picker { order: 1; }

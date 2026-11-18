@@ -213,7 +213,7 @@ describe("the search page", () => {
     expect(screen.getByText("No videos match that search. Try a channel name or topic.")).toBeInTheDocument();
   });
 
-  it("is left when you switch tabs", async () => {
+  it("is left, and the box cleared, when you switch tabs", async () => {
     renderApp();
     await feedTitles();
     await searchFor("ai");
@@ -222,6 +222,27 @@ describe("the search page", () => {
 
     expect(screen.queryByRole("region", { name: "Search results" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Learn" })).toBeInTheDocument();
+    expect(box()).toHaveValue("");
+  });
+
+  it("keeps a new feed you haven't named open, so results are added to it", async () => {
+    renderApp();
+    await feedTitles();
+    await userEvent.click(screen.getByRole("button", { name: "New feed" }));
+    await searchFor("ai");
+
+    expect(within(resultsPage()).getByText("Adding to: New feed")).toBeInTheDocument();
+  });
+
+  it("saves a result to a folder", async () => {
+    renderApp();
+    await feedTitles();
+    await searchFor("transformers");
+
+    await userEvent.click(within(resultsPage()).getByRole("button", { name: "Save Intro to transformers" }));
+    await userEvent.click(within(within(resultsPage()).getByRole("group", { name: "Save to" })).getByRole("button", { name: "Weekend" }));
+
+    expect(within(resultsPage()).getByRole("button", { name: "Save Intro to transformers, saved" })).toBeInTheDocument();
   });
 });
 

@@ -81,7 +81,7 @@ export function useVoiceTyping<T>({ keyOf, continuous, words, onHeard, onMessage
       if (heard) onHeard(target, heard);
     };
     recognition.onerror = (event) => {
-      console.warn("Voice typing error", event.error);
+      console.warn(`${words.name} error`, event.error);
       const message = errorMessage(event.error, words);
       if (message) onMessage(message);
     };
@@ -93,7 +93,7 @@ export function useVoiceTyping<T>({ keyOf, continuous, words, onHeard, onMessage
     try {
       recognition.start();
     } catch (error) {
-      console.warn("Voice typing failed to start", error);
+      console.warn(`${words.name} failed to start`, error);
       return onMessage(startFailed(words));
     }
     active.current = recognition;

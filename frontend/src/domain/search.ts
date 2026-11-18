@@ -60,7 +60,7 @@ export function suggestFor(corpus: SuggestionCorpus, recent: readonly string[], 
   const q = collapse(typed).trimStart();
   const recentHits = recent.filter((r) => r.startsWith(q)).map((phrase) => ({ phrase, recent: true }));
   if (!q) return recentHits.slice(0, SUGGESTION_LIMIT);
-  const seen = new Set(recent);
+  const seen = new Set(recentHits.map((r) => r.phrase));
   const fresh = corpus.filter((x) => !seen.has(x.phrase));
   const starts = fresh.filter((x) => x.phrase.startsWith(q)).sort(byScore);
   const later = fresh.filter((x) => !x.phrase.startsWith(q) && laterWordStarts(x.phrase, q)).sort(byScore);
