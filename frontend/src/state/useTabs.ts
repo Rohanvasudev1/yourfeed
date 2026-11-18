@@ -6,7 +6,7 @@ import { useTimedValue } from "./useTimedValue";
 
 const FLASH_MS = 5000;
 
-export type Page = "feed" | "all";
+export type Page = "feed" | "all" | "search";
 
 /** What the visitor can do with tabs. Calls that can be refused return the message to show, or null. */
 export type TabControls = Readonly<{
@@ -24,6 +24,9 @@ export type TabControls = Readonly<{
   move: (name: string, to: string) => void;
   openAllTabs: () => void;
   closeAllTabs: () => void;
+  /** Shows search results; opening any feed or All tabs leaves them. */
+  openSearch: () => void;
+  closeSearch: () => void;
   /** Your own tabs either side of `name` in the bar, for moving it left or right. */
   neighbours: (name: string) => Readonly<{ left: string | null; right: string | null }>;
 }>;
@@ -72,6 +75,8 @@ export function useTabs(state: AppState, current: Feed, dispatch: Dispatch<Actio
       setPage("all");
     },
     closeAllTabs: () => setPage("feed"),
+    openSearch: () => setPage("search"),
+    closeSearch: () => setPage("feed"),
     neighbours: (name) => ownNeighbours(state.feeds, name),
   };
 }
