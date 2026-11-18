@@ -9,7 +9,7 @@
 .edit-bar-message { flex-basis: 100%; font-size: 12px; color: var(--text-danger); }
 
 .tab-card { position: relative; }
-.tab-card.selected { border: 2px solid var(--border-accent); padding: 10.5px; }
+.tab-card.selected { border-color: var(--border-accent); box-shadow: inset 0 0 0 1.5px var(--border-accent); }
 .tab-card-check { position: absolute; top: 10px; right: 10px; color: var(--text-muted); }
 .tab-card.selected .tab-card-check { color: var(--text-accent); }
 /* The whole card selects in edit mode, as in the mockup: the name's button covers it. */

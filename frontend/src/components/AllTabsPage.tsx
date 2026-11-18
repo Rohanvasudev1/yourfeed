@@ -13,7 +13,9 @@ import { barSpaces, canShelve, MAX_BAR_SPACES } from "../domain/tabs";
 import type { Feed } from "../domain/types";
 import type { EditControls } from "../state/useEditMode";
 import type { TabControls } from "../state/useTabs";
+import { isBuiltIn } from "../domain/feed";
 import { kindInfo } from "./feedKindInfo";
+import { useTabDrag } from "./useTabDrag";
 
 type Props = Readonly<{ feeds: readonly Feed[]; tabs: TabControls; edit: EditControls }>;
 
@@ -30,7 +32,7 @@ export function AllTabsPage({ feeds, tabs, edit }: Props) {
   const shelved = feeds.filter((f) => f.shelved);
 
   const toggle = (feed: Feed) => setMessage(tabs.toggleShelved(feed));
-  const group = (list: readonly Feed[]) => <TabCards feeds={list} onOpen={tabs.open} onToggle={toggle} edit={edit} />;
+  const group = (list: readonly Feed[]) => <TabCards feeds={list} onOpen={tabs.open} onToggle={toggle} onMove={tabs.move} edit={edit} />;
 
   return (
     <section className="all-tabs" aria-labelledby={titleId}>
@@ -78,10 +80,12 @@ type CardsProps = Readonly<{
   feeds: readonly Feed[];
   onOpen: (name: string) => void;
   onToggle: (feed: Feed) => void;
+  onMove: (name: string, to: string) => void;
   edit: EditControls;
 }>;
 
-function TabCards({ feeds, onOpen, onToggle, edit }: CardsProps) {
+function TabCards({ feeds, onOpen, onToggle, onMove, edit }: CardsProps) {
+  const drag = useTabDrag(onMove);
   return (
     <ul className="tab-cards">
       {feeds.map((f) => {
@@ -89,19 +93,18 @@ function TabCards({ feeds, onOpen, onToggle, edit }: CardsProps) {
         const selected = edit.selected.includes(f.name);
         const Check = selected ? IconCircleCheck : IconCircle;
         return (
-          <li key={f.name} className={selected ? "tab-card selected" : "tab-card"}>
+          <li key={f.name} className={selected ? "tab-card selected" : "tab-card"} {...(edit.editing && !isBuiltIn(f) ? drag(f.name) : {})}>
             <Icon size={22} className="muted" aria-hidden="true" />
             {edit.editing && <Check size={20} className="tab-card-check" aria-hidden="true" />}
             <h4>
-              {edit.editing ? (
-                <button type="button" className="tab-card-open" aria-pressed={selected} onClick={() => edit.toggle(f.name)}>
-                  {f.name}
-                </button>
-              ) : (
-                <button type="button" className="tab-card-open" onClick={() => onOpen(f.name)}>
-                  {f.name}
-                </button>
-              )}
+              <button
+                type="button"
+                className="tab-card-open"
+                aria-pressed={edit.editing ? selected : undefined}
+                onClick={() => (edit.editing ? edit.toggle(f.name) : onOpen(f.name))}
+              >
+                {f.name}
+              </button>
             </h4>
             <p className="tab-card-desc">{describe(f)}</p>
             {!edit.editing && canShelve(f) && (

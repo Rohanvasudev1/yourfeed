@@ -72,7 +72,13 @@ export default function App({ loadCatalog, storage }: Props) {
 
   return (
     <div className="app">
-      <Header onRefresh={refresh} onUndoRefresh={undo} />
+      <Header
+        onRefresh={() => {
+          edit.stop();
+          refresh();
+        }}
+        onUndoRefresh={undo}
+      />
       <TabBar feeds={state.feeds} current={feed} tabs={tabs} edit={edit} />
       {edit.editing && <EditBar edit={edit} onAllTabs={tabs.page === "all"} />}
       <Flash message={tabs.flash} />

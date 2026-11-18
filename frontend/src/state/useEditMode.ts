@@ -36,7 +36,9 @@ const OFF: EditState = {
 const ON: EditState = { ...OFF, editing: true };
 
 export function useEditMode(feeds: readonly Feed[], dispatch: Dispatch<Action>): EditControls {
-  const [edit, setEdit] = useState<EditState>(OFF);
+  const [stored, setEdit] = useState<EditState>(OFF);
+  // A selected feed can disappear (a dropped draft), so the selection only names feeds that still exist.
+  const edit = { ...stored, selected: stored.selected.filter((name) => feeds.some((f) => f.name === name)) };
 
   const run = (action: BulkAction) => {
     bulkTabActions(edit.selected, action).forEach(dispatch);

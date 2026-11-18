@@ -145,6 +145,38 @@ describe("edit mode", () => {
     expect(own.slice(-3)).toEqual(["Gardening", "Learn", "Sport"]);
   });
 
+  it("drag to reorder works on All tabs cards too", async () => {
+    renderApp();
+    await newFeed("Gardening");
+    await openAllTabs();
+    await startEditing();
+    const dataTransfer = { setData: () => {}, effectAllowed: "", dropEffect: "" };
+
+    fireEvent.dragStart(allTabsCard("Gardening"), { dataTransfer });
+    fireEvent.dragOver(allTabsCard("Learn"), { dataTransfer });
+    fireEvent.drop(allTabsCard("Learn"), { dataTransfer });
+
+    expect(namesIn("In the tab bar").slice(-3)).toEqual(["Gardening", "Learn", "Sport"]);
+  });
+
+  it("loading a new set from the logo leaves edit mode", async () => {
+    renderApp();
+    await startEditing();
+    await userEvent.click(screen.getByRole("button", { name: "Yourfeed: load a new set of videos for this feed" }));
+
+    expect(screen.queryByRole("region", { name: "Edit tabs" })).not.toBeInTheDocument();
+  });
+
+  it("forgets a selected draft once it's dropped", async () => {
+    renderApp();
+    await userEvent.click(screen.getByRole("button", { name: "New feed" }));
+    await startEditing();
+    await select("New feed");
+    await openAllTabs();
+
+    expect(editBar()).toHaveTextContent("Select tabs, or drag them to reorder");
+  });
+
   it("New feed leaves edit mode", async () => {
     renderApp();
     await startEditing();
@@ -164,6 +196,7 @@ describe("bulk delete", () => {
 
     await userEvent.click(editButton("Delete"));
     expect(editBar()).toHaveTextContent("Delete 2 tabs? This can't be undone.");
+    expect(editButton("Cancel")).toHaveFocus();
     await userEvent.click(editButton("Cancel"));
     expect(tab("Learn")).toBeInTheDocument();
 
