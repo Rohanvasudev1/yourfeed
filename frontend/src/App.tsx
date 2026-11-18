@@ -15,6 +15,8 @@ import { NameFeed } from "./components/NameFeed";
 import { SearchBox } from "./components/search/SearchBox";
 import { SearchPage } from "./components/search/SearchPage";
 import { SettingsLine } from "./components/SettingsLine";
+import { ShareButton } from "./components/share/ShareButton";
+import { SharePanel } from "./components/share/SharePanel";
 import { FinishedSection, WatchingNow } from "./components/Session";
 import { TabBar } from "./components/TabBar";
 import { UpNextLine } from "./components/UpNextLine";
@@ -22,6 +24,7 @@ import { UndoRedo } from "./components/UndoRedo";
 import { ViewToggle } from "./components/ViewToggle";
 import { composeFeed } from "./domain/compose";
 import { TOP_RANGE_HOURS } from "./domain/feed";
+import { shareStartingVideos } from "./domain/share";
 import type { ComposeInput, Video } from "./domain/types";
 import type { AssistantPort, CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
@@ -38,12 +41,14 @@ import { useRefresh } from "./state/useRefresh";
 import { useSearch } from "./state/useSearch";
 import { useNotes } from "./state/useNotes";
 import { useSession } from "./state/useSession";
+import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
 
 type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage; assistant: AssistantPort }>;
 
 const baseReducer = makeReducer(DEMO_SEED);
 const NO_VIDEOS: readonly Video[] = [];
+const SHARE_PANEL_ID = "share-panel";
 const reducer = withHistory(baseReducer);
 
 /** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */
@@ -73,6 +78,10 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);
+  const shareToggle = useShareToggle(feed.name);
+  const shareVideos = shareStartingVideos(sessionVideos, pinned, composition?.upNext ?? NO_VIDEOS);
+  // With nothing to share the panel has nothing to show, so the button never claims it's open.
+  const share = { ...shareToggle, open: shareToggle.open && shareVideos.length > 0 };
   const upNext = [...pinned, ...(composition?.upNext ?? [])];
   const claudeBar = useClaudeBar({ assistant, feeds: state.feeds, feed, upNext, dispatch });
   const edit = useEditMode(state.feeds, dispatch);
@@ -190,7 +199,24 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                     onFinish={session.finish}
                   />
                 )}
-                {composition && <UpNextLine feed={feed} composition={composition} pinnedCount={pinned.length} />}
+                {composition && (
+                  <UpNextLine
+                    feed={feed}
+                    composition={composition}
+                    pinnedCount={pinned.length}
+                    actions={<ShareButton toggle={share} panelId={SHARE_PANEL_ID} />}
+                  />
+                )}
+                {share.open && (
+                  <SharePanel
+                    id={SHARE_PANEL_ID}
+                    feedName={feed.name}
+                    videos={shareVideos}
+                    notes={state.notes}
+                    filters={state.filters}
+                    onClose={share.close}
+                  />
+                )}
                 {composition && (
                   <FeedView
                     // Switching layouts or loading a new set starts with every description closed, as in the mockup.

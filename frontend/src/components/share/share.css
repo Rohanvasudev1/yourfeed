@@ -1,0 +1,33 @@
+/* The Share button on the Up next line, and the Share panel after the mockup's #share block. */
+.up-next-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.up-next-actions .text-button { height: 30px; }
+.share-panel { margin-bottom: 12px; padding: 14px; border-radius: 12px; background: var(--surface-0); border: 0.5px solid var(--border-strong); }
+.share-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; color: var(--text-secondary); }
+.share-head-text { flex: 1; min-width: 0; }
+.share-head h3 { margin: 0; font-size: 15px; font-weight: 500; color: var(--text-primary); }
+.share-head p { margin: 2px 0 0; }
+.share-label { margin: 0 0 6px; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.share-list-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.share-list-head .share-label { margin: 0; }
+.share-list { list-style: none; display: flex; flex-direction: column; gap: 2px; max-height: 232px; overflow-y: auto; margin: 0 0 12px; padding: 4px; border-radius: 10px; background: var(--surface-1); border: 0.5px solid var(--border); }
+.share-pick { display: flex; gap: 8px; align-items: center; min-width: 0; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
+.share-pick:hover { background: var(--surface-2); }
+.share-pick input { flex: none; margin: 0; width: 16px; height: 16px; accent-color: var(--fill-accent); }
+.share-thumb { width: 40px; flex: none; }
+.share-thumb .thumb { border-radius: 4px; }
+.share-thumb .thumb-badge { display: none; }
+.share-title { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.share-pick.off .share-title, .share-pick.off span { opacity: 0.45; }
+.share-pick.off .share-title { text-decoration: line-through; }
+.share-problem { margin: -6px 2px 10px; }
+.share-row { display: flex; gap: 6px; }
+.share-row input { flex: 1; min-width: 0; font-size: 13px; }
+.share-row input[readonly] { color: var(--text-secondary); }
+.share-send { margin-top: 14px; }
+.share-sent { display: flex; align-items: center; gap: 4px; margin: 6px 2px 0; font-size: 12px; color: var(--text-success); }
+.share-notes { margin-top: 12px; font-size: 13px; }
+.share-notes label { display: flex; align-items: center; gap: 8px; }
+.share-notes p { margin: 4px 0 0 24px; }
+.share-demo { margin: 12px 0 0; font-size: 11px; }
+.share-panel button:disabled { opacity: 0.45; cursor: not-allowed; }
+.share-panel button.primary:disabled:hover { background: var(--fill-accent); }

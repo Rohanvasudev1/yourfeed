@@ -2,11 +2,14 @@ import type { Dispatch } from "react";
 import { noteKey, notesMarkdown, type NoteTarget } from "../domain/notes";
 import type { Feed, Video } from "../domain/types";
 import type { Action } from "./appState";
+import { copyText, type CopyMessages } from "./copyText";
 import { useVoiceTyping } from "./useVoiceTyping";
 
-const COPIED = "Notes copied.";
-const NO_CLIPBOARD = "Copying isn't available here. Select the notes and copy them yourself.";
-const COPY_FAILED = "Couldn't copy the notes. Try again.";
+const COPY_MESSAGES: CopyMessages = {
+  copied: "Notes copied.",
+  noClipboard: "Copying isn't available here. Select the notes and copy them yourself.",
+  failed: "Couldn't copy the notes. Try again.",
+};
 const DICTATION = { name: "Voice typing", purpose: "dictate notes" } as const;
 
 /** One note's text and what a notes box can do with it. */
@@ -44,16 +47,7 @@ export function useNotes({ feed, videos, notes, dispatch, showFlash }: Input) {
     onToggleVoice: () => voice.toggle(target),
   });
 
-  const copy = () => {
-    if (!navigator.clipboard) return showFlash(NO_CLIPBOARD);
-    navigator.clipboard.writeText(notesMarkdown({ feed, videos, notes })).then(
-      () => showFlash(COPIED),
-      (error: unknown) => {
-        console.warn("Copying notes failed", error);
-        showFlash(COPY_FAILED);
-      },
-    );
-  };
+  const copy = () => copyText(notesMarkdown({ feed, videos, notes }), COPY_MESSAGES, showFlash);
 
   return {
     forVideo: (id: string) => bind({ video: id }, notes[id] ?? ""),
