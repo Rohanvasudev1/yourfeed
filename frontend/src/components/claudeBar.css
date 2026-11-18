@@ -1,0 +1,13 @@
+.claude { margin-bottom: 10px; }
+.cbar { display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 7px 0 14px; border-radius: 14px; background: var(--surface-2); border: 0.5px solid var(--border-strong); min-width: 0; }
+.cbar:focus-within { border-color: var(--border-accent); box-shadow: 0 0 0 3px var(--bg-accent); }
+.cbar input { flex: 1; min-width: 0; height: 100%; padding: 0; border: none; outline: none; background: transparent; box-shadow: none; font-size: 14px; color: var(--text-primary); }
+.cbar-mark { flex: none; color: var(--fill-brand); }
+.cbar-thinking { flex: none; font-size: 13px; color: var(--text-secondary); }
+.cbar-send { flex: none; width: 32px; height: 32px; padding: 0; border-radius: 10px; border: none; display: inline-flex; align-items: center; justify-content: center; background: var(--fill-brand); color: #fff; }
+.cbar-send:disabled { opacity: 0.6; cursor: default; }
+.cbar-spin { animation: cbar-spin 1s linear infinite; }
+@keyframes cbar-spin { to { transform: rotate(360deg); } }
+.cbar-error { margin: 4px 0 0 14px; font-size: 12px; color: var(--text-danger); }
+.cbar-reply { display: flex; align-items: center; gap: 10px; margin: 8px 0 0; padding: 9px 14px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); font-family: var(--font-voice); font-size: 14px; line-height: 1.45; }
+@media (prefers-reduced-motion: reduce) { .cbar-spin { animation: none; } }

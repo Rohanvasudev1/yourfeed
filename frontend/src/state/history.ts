@@ -68,6 +68,10 @@ const extendsNewestStep = (history: History, change: Change) => {
   return history.redo.length === 0 && change.range !== undefined && newest?.feed === change.feed && newest.range === change.range;
 };
 
+/** A Claude bar request is always a step of its own: it never extends a slider's step, and a slider never extends it. */
+const asOwnStep = (action: Action, change: Change | null): Change | null =>
+  change && action.type === "apply_request" ? { feed: change.feed } : change;
+
 function applySettings(state: AppState, { settings, feed }: Step): AppState {
   const feeds = state.feeds.map((f) => {
     const saved = settings.feeds.get(f.name);
@@ -113,7 +117,7 @@ export function withHistory(reduce: (state: AppState, action: Action) => AppStat
         const present = reduce(history.present, action);
         if (present === history.present) return history;
         const before = settingsOf(history.present);
-        const change = changeBetween(before, settingsOf(present), history.present.currentFeed);
+        const change = asOwnStep(action, changeBetween(before, settingsOf(present), history.present.currentFeed));
         if (change === null || extendsNewestStep(history, change)) return { ...history, present };
         return { present, undo: pushCapped(history.undo, { settings: before, ...change }), redo: [] };
       }

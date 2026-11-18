@@ -3,6 +3,9 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 
+from app.assistant.model import Assistant
+from app.assistant.router import assistant_router
+from app.assistant.rules import KeywordRules
 from app.catalog import SignInRequired, Source, Video, load_catalog
 from app.envelope import Envelope, fail, ok
 
@@ -13,7 +16,8 @@ def _describe(exc: RequestValidationError) -> str:
     return "; ".join(f"{'.'.join(str(p) for p in e['loc'][1:])}: {e['msg']}" for e in exc.errors())
 
 
-def create_app() -> FastAPI:
+def create_app(assistant: Assistant | None = None) -> FastAPI:
+    """Builds the API; `assistant` answers Claude bar requests (the keyword rules by default)."""
     app = FastAPI(title="Yourfeed API")
 
     @app.exception_handler(RequestValidationError)
@@ -32,6 +36,7 @@ def create_app() -> FastAPI:
     def catalog(source: Source = Source.DEMO):
         return ok(list(load_catalog(source)))
 
+    app.include_router(assistant_router(assistant or KeywordRules()))
     return app
 
 
