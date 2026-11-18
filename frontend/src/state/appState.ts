@@ -1,3 +1,4 @@
+import { applyFeedActions, type FeedAction } from "../domain/assistant";
 import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
 import { appendDictation, type NoteTarget } from "../domain/notes";
@@ -61,7 +62,9 @@ export type Action =
   | LibraryAction
   | SearchAction
   /** Loads (or, for undo, restores) a feed set. */
-  | Readonly<{ type: "set_feed_set"; set: FeedSet }>;
+  | Readonly<{ type: "set_feed_set"; set: FeedSet }>
+  /** Every feed action of one Claude bar request, applied together so they make one undo step. */
+  | Readonly<{ type: "apply_request"; feed: string; actions: readonly FeedAction[] }>;
 
 const mapFeed = (state: AppState, name: string, change: (feed: Feed) => Feed): AppState => ({
   ...state,
@@ -135,6 +138,8 @@ export function makeReducer(seed: AppState) {
         return writeNote(state, action.target, (note) => appendDictation(note, action.heard));
       case "set_feed_set":
         return updateFeed(state, action.set.feed, { seed: action.set.seed, skipped: action.set.skipped });
+      case "apply_request":
+        return mapFeed(state, action.feed, (f) => applyFeedActions(f, action.actions));
       default:
         return reduceLibrary(state, action);
     }
