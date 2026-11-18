@@ -234,6 +234,15 @@ describe("the search page", () => {
     expect(within(resultsPage()).getByText("Adding to: New feed")).toBeInTheDocument();
   });
 
+  it("leaves edit mode", async () => {
+    renderApp();
+    await feedTitles();
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await searchFor("ai");
+
+    expect(screen.queryByRole("region", { name: "Edit tabs" })).not.toBeInTheDocument();
+  });
+
   it("saves a result to a folder", async () => {
     renderApp();
     await feedTitles();
