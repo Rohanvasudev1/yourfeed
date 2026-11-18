@@ -11,6 +11,8 @@ import { Header } from "./components/Header";
 import { HistorySection } from "./components/library/HistorySection";
 import { SavedSection } from "./components/library/SavedSection";
 import { NameFeed } from "./components/NameFeed";
+import { SearchBox } from "./components/search/SearchBox";
+import { SearchPage } from "./components/search/SearchPage";
 import { SettingsLine } from "./components/SettingsLine";
 import { FinishedSection, WatchingNow } from "./components/Session";
 import { TabBar } from "./components/TabBar";
@@ -31,6 +33,7 @@ import { useEditMode } from "./state/useEditMode";
 import { useLibrary } from "./state/useLibrary";
 import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
+import { useSearch } from "./state/useSearch";
 import { useNotes } from "./state/useNotes";
 import { useSession } from "./state/useSession";
 import { useTabs } from "./state/useTabs";
@@ -69,6 +72,16 @@ export default function App({ loadCatalog, storage }: Props) {
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);
   const edit = useEditMode(state.feeds, dispatch);
+  const search = useSearch({
+    catalog: ready ?? NO_VIDEOS,
+    recent: state.recentSearches,
+    filters: state.filters,
+    dispatch,
+    openPage: () => {
+      edit.stop();
+      tabs.openSearch();
+    },
+  });
 
   return (
     <div className="app">
@@ -78,13 +91,37 @@ export default function App({ loadCatalog, storage }: Props) {
           refresh();
         }}
         onUndoRefresh={undo}
+        search={
+          <SearchBox
+            // Opening another feed clears the box, as in the mockup.
+            key={feed.name}
+            corpus={search.corpus}
+            recent={search.recent}
+            onSearch={search.search}
+            onForget={search.forget}
+            onMessage={search.showFlash}
+          />
+        }
       />
       <TabBar feeds={state.feeds} current={feed} tabs={tabs} edit={edit} />
       {edit.editing && <EditBar edit={edit} onAllTabs={tabs.page === "all"} />}
-      <Flash message={tabs.flash} />
+      <Flash message={tabs.flash ?? search.flash} />
       <main>
         {tabs.page === "all" ? (
           <AllTabsPage feeds={state.feeds} tabs={tabs} edit={edit} />
+        ) : tabs.page === "search" ? (
+          <SearchPage
+            query={search.query}
+            results={search.results}
+            feedName={feed.name}
+            filters={state.filters}
+            inSession={library.inSession}
+            onPin={library.pin}
+            onPlay={session.play}
+            saveActions={library.saveActions}
+            onBack={tabs.closeSearch}
+            flash={session.flash}
+          />
         ) : (
           <>
             <div className="feed-toolbar">

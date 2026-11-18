@@ -1,0 +1,39 @@
+/* The header search box and its suggestions, as in the mockup. */
+.search { display: flex; align-items: center; gap: 8px; flex: 0 1 330px; min-width: 0; transition: flex-basis 0.2s ease; }
+.search:focus-within { flex-basis: 470px; }
+@media (prefers-reduced-motion: reduce) { .search { transition: none; } }
+.search-box { position: relative; flex: 1; min-width: 160px; }
+.search-bar { display: flex; height: 36px; border: 1px solid var(--border-strong); border-radius: 999px; overflow: hidden; background: var(--surface-2); }
+.search-bar:focus-within { border-color: var(--border-accent); }
+.search-box.open .search-bar { border-radius: 20px 20px 0 0; border-bottom-color: transparent; }
+.search-bar input { flex: 1; min-width: 0; height: 100%; border: none; border-radius: 0; background: transparent; padding: 0 14px; font-size: 14px; color: var(--text-primary); box-shadow: none; outline: none; }
+.search-go { width: 46px; height: 100%; padding: 0; border: none; border-left: 1px solid var(--border-strong); border-radius: 0; background: var(--surface-1); display: flex; align-items: center; justify-content: center; color: var(--text-primary); }
+.search-mic { width: 36px; height: 36px; padding: 0; flex: none; border: none; border-radius: 50%; background: var(--surface-1); display: flex; align-items: center; justify-content: center; color: var(--text-primary); }
+.search-mic.on { background: var(--bg-danger); color: var(--text-danger); }
+
+.suggestions { position: absolute; top: 35px; left: 0; right: 0; z-index: 30; margin: 0; padding: 0 0 10px; list-style: none; background: var(--surface-2); border: 1px solid var(--border-accent); border-top: none; border-radius: 0 0 20px 20px; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28); }
+.suggestions::before { content: ""; display: block; height: 1px; margin: 0 16px 8px; background: var(--border); }
+.suggestion { display: flex; align-items: center; gap: 12px; height: 34px; padding: 0 6px 0 18px; cursor: pointer; font-size: 15px; color: var(--text-primary); }
+.suggestion > svg { flex: none; color: var(--text-muted); }
+.suggestion.active, .suggestion:hover { background: var(--surface-1); }
+.suggestion-text { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.suggestion-text b { font-weight: 600; }
+.suggestion.recent .suggestion-text { color: var(--text-accent); }
+.suggestion-button { width: 28px; height: 28px; min-height: 0; padding: 0; flex: none; display: flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: transparent; color: var(--text-muted); }
+.suggestion-button:hover { background: var(--surface-2); color: var(--text-primary); }
+
+/* The search results page. */
+.search-page-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.search-page-title { margin: 0; font-size: 14px; font-weight: 400; }
+.search-page-title b { font-weight: 500; }
+.search-page-target { margin-left: auto; }
+.search-empty { padding: 24px; text-align: center; font-size: 13px; color: var(--text-secondary); border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); }
+
+@media (max-width: 600px) {
+  .app-header { flex-wrap: wrap; }
+  .search { flex-basis: 100%; order: 3; }
+  .search:focus-within { flex-basis: 100%; }
+}
+/* Save's folder picker gets the whole row under the result. */
+.search-page .library-actions:has(.save-picker) { grid-column: 1 / -1; flex-wrap: wrap; justify-content: flex-end; }
+.search-page .library-actions .save-picker { order: 1; }
