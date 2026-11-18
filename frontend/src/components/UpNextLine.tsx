@@ -1,4 +1,5 @@
 import { IconAlertTriangle } from "@tabler/icons-react";
+import type { ReactNode } from "react";
 import { minutesText, videoCount } from "../domain/format";
 import type { Composition, Feed } from "../domain/types";
 
@@ -19,13 +20,19 @@ function planNote(feed: Feed, hidden: number): string | null {
   }
 }
 
-type Props = Readonly<{ feed: Feed; composition: Composition; pinnedCount: number }>;
+type Props = Readonly<{
+  feed: Feed;
+  composition: Composition;
+  pinnedCount: number;
+  /** Buttons at the end of the line, such as Share. */
+  actions?: ReactNode;
+}>;
 
 /**
  * "Up next · 6 videos · 1h 30m session", counting pinned videos as the mockup does,
- * and a warning when the plan falls short of the session minimum.
+ * a warning when the plan falls short of the session minimum, and any actions (Share).
  */
-export function UpNextLine({ feed, composition, pinnedCount }: Props) {
+export function UpNextLine({ feed, composition, pinnedCount, actions }: Props) {
   const { upNext, hidden, usedMinutes } = composition;
   const note = planNote(feed, hidden);
   const short = feed.session[0] - usedMinutes;
@@ -34,12 +41,15 @@ export function UpNextLine({ feed, composition, pinnedCount }: Props) {
       <span>
         <b>Up next</b> · {videoCount(pinnedCount + upNext.length)} · {minutesText(usedMinutes)} session{note && ` · ${note}`}
       </span>
-      {short > 0 && (
-        <span className="chip warning">
-          <IconAlertTriangle size={14} aria-hidden="true" />
-          {minutesText(short)} short of your minimum
-        </span>
-      )}
+      <span className="up-next-actions">
+        {short > 0 && (
+          <span className="chip warning">
+            <IconAlertTriangle size={14} aria-hidden="true" />
+            {minutesText(short)} short of your minimum
+          </span>
+        )}
+        {actions}
+      </span>
     </div>
   );
 }

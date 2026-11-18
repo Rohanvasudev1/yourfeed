@@ -11,6 +11,8 @@ import { HistorySection } from "./components/library/HistorySection";
 import { SavedSection } from "./components/library/SavedSection";
 import { NameFeed } from "./components/NameFeed";
 import { SettingsLine } from "./components/SettingsLine";
+import { ShareButton } from "./components/share/ShareButton";
+import { SharePanel } from "./components/share/SharePanel";
 import { FinishedSection, WatchingNow } from "./components/Session";
 import { TabBar } from "./components/TabBar";
 import { UpNextLine } from "./components/UpNextLine";
@@ -31,12 +33,14 @@ import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
 import { useNotes } from "./state/useNotes";
 import { useSession } from "./state/useSession";
+import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
 
 type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage }>;
 
 const baseReducer = makeReducer(DEMO_SEED);
 const NO_VIDEOS: readonly Video[] = [];
+const SHARE_PANEL_ID = "share-panel";
 const reducer = withHistory(baseReducer);
 
 /** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */
@@ -66,6 +70,9 @@ export default function App({ loadCatalog, storage }: Props) {
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);
+  const share = useShareToggle(feed.name);
+  // A share starts with the whole session: Finished and Watching now, then pinned videos, then Up next.
+  const shareVideos = [...new Map([...sessionVideos, ...pinned, ...(composition?.upNext ?? [])].map((v) => [v.id, v])).values()];
 
   return (
     <div className="app">
@@ -138,7 +145,24 @@ export default function App({ loadCatalog, storage }: Props) {
                     onFinish={session.finish}
                   />
                 )}
-                {composition && <UpNextLine feed={feed} composition={composition} pinnedCount={pinned.length} />}
+                {composition && (
+                  <UpNextLine
+                    feed={feed}
+                    composition={composition}
+                    pinnedCount={pinned.length}
+                    actions={<ShareButton toggle={share} panelId={SHARE_PANEL_ID} />}
+                  />
+                )}
+                {share.open && shareVideos.length > 0 && (
+                  <SharePanel
+                    id={SHARE_PANEL_ID}
+                    feedName={feed.name}
+                    videos={shareVideos}
+                    notes={state.notes}
+                    filters={state.filters}
+                    onClose={share.close}
+                  />
+                )}
                 {composition && (
                   <FeedView
                     // Switching layouts or loading a new set starts with every description closed, as in the mockup.
