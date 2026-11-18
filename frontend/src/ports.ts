@@ -1,3 +1,4 @@
+import type { AssistantResult, BarMode, FeedContext } from "./domain/assistant";
 import type { Video } from "./domain/types";
 
 /** Loads the catalog the feeds are built from. Production calls the backend; tests pass a fixed list. */
@@ -7,4 +8,9 @@ export type CatalogLoader = () => Promise<readonly Video[]>;
 export type StateStorage = Readonly<{
   load: () => unknown;
   save: (value: unknown) => void;
+}>;
+
+/** Answers Claude bar requests. Production calls the backend; tests pass a scripted fake. */
+export type AssistantPort = Readonly<{
+  request: (text: string, mode: BarMode, context: FeedContext) => Promise<AssistantResult>;
 }>;

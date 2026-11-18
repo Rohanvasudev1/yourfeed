@@ -1,6 +1,7 @@
 import { useMemo, useReducer } from "react";
 import { AllTabsPage } from "./components/AllTabsPage";
 import { CatalogError } from "./components/CatalogError";
+import { ClaudeBar } from "./components/ClaudeBar";
 import { FeedNotes } from "./components/FeedNotes";
 import { FeedControls } from "./components/FeedControls";
 import { FeedView } from "./components/FeedView";
@@ -19,13 +20,14 @@ import { ViewToggle } from "./components/ViewToggle";
 import { composeFeed } from "./domain/compose";
 import { TOP_RANGE_HOURS } from "./domain/feed";
 import type { ComposeInput, Video } from "./domain/types";
-import type { CatalogLoader, StateStorage } from "./ports";
+import type { AssistantPort, CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
 import { startHistory, withHistory } from "./state/history";
 import { restoreState } from "./state/persistence";
 import { DEMO_SEED } from "./state/seed";
 import { useCardActions } from "./state/useCardActions";
 import { useCatalog } from "./state/useCatalog";
+import { useClaudeBar } from "./state/useClaudeBar";
 import { useLibrary } from "./state/useLibrary";
 import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
@@ -33,7 +35,7 @@ import { useNotes } from "./state/useNotes";
 import { useSession } from "./state/useSession";
 import { useTabs } from "./state/useTabs";
 
-type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage }>;
+type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage; assistant: AssistantPort }>;
 
 const baseReducer = makeReducer(DEMO_SEED);
 const NO_VIDEOS: readonly Video[] = [];
@@ -43,7 +45,7 @@ const reducer = withHistory(baseReducer);
 const restore = (storage: StateStorage) =>
   startHistory(baseReducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" }));
 
-export default function App({ loadCatalog, storage }: Props) {
+export default function App({ loadCatalog, storage, assistant }: Props) {
   const [history, dispatch] = useReducer(reducer, storage, restore);
   const state = history.present;
   usePersist(storage, state);
@@ -66,6 +68,8 @@ export default function App({ loadCatalog, storage }: Props) {
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);
+  const upNext = [...pinned, ...(composition?.upNext ?? [])];
+  const claudeBar = useClaudeBar({ assistant, feed, upNext, dispatch });
 
   return (
     <div className="app">
@@ -89,6 +93,7 @@ export default function App({ loadCatalog, storage }: Props) {
                 <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
               </div>
             </div>
+            {!feed.draft && <ClaudeBar bar={claudeBar} />}
             {feed.draft ? (
               <NameFeed onName={tabs.name} />
             ) : (
