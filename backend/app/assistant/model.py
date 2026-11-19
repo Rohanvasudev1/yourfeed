@@ -9,6 +9,7 @@ from app.catalog import Video
 
 MAX_REQUEST_CHARS = 300
 MAX_UP_NEXT = 20
+MAX_EXPLORE = 8
 
 BarMode = Literal["edit", "new"]
 AnsweredBy = Literal["model", "rules"]
@@ -43,6 +44,8 @@ class FeedContext(_Frozen):
     session: Minutes
     pinned: tuple[str, ...]
     up_next: tuple[ContextVideo, ...] = Field(max_length=MAX_UP_NEXT)
+    explore: tuple[ContextVideo, ...] = Field(default=(), max_length=MAX_EXPLORE)
+    """Videos from topics the feed doesn't have, one per topic, for a question card to offer."""
 
     def first_video(self) -> ContextVideo | None:
         """The video at the top of Up next: the first pinned one, else the first composed one."""

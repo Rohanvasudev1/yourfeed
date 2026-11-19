@@ -12,6 +12,7 @@ const CONTEXT: FeedContext = {
   session: [30, 90],
   pinned: [],
   upNext: [],
+  explore: [],
 };
 
 const answer = (status: number, body: unknown) => vi.fn(async () => new Response(JSON.stringify(body), { status }));

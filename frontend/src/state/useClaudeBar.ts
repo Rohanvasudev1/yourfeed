@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type Dispatch } from "react";
 import { barModeFor, changesFeed, feedContext, MAX_REQUEST_CHARS, type AssistantResult } from "../domain/assistant";
+import { exploreVideos } from "../domain/questionCard";
 import type { Feed, Video } from "../domain/types";
 import type { AssistantPort } from "../ports";
 import type { Action } from "./appState";
+import type { QuestionCardState } from "./useQuestionCard";
 import { useTimedValue } from "./useTimedValue";
 
 const REPLY_MS = 5000;
@@ -17,11 +19,14 @@ type Input = Readonly<{
   feeds: readonly Feed[];
   feed: Feed;
   upNext: readonly Video[];
+  /** The whole catalog, for videos from topics the feed doesn't have. */
+  catalog: readonly Video[];
+  questions: Pick<QuestionCardState, "answer" | "close">;
   dispatch: Dispatch<Action>;
 }>;
 
 /** The Claude bar: what's typed, whether the assistant is thinking, and its last reply or error. */
-export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input) {
+export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, questions, dispatch }: Input) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
@@ -35,9 +40,11 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input
   const settle = (askedName: string, result: AssistantResult) => {
     const asked = latestFeeds.current.find((f) => f.name === askedName);
     if (!asked) return;
-    const shouldApply = barModeFor(asked) === "edit" && changesFeed(asked, result.actions);
+    const editing = barModeFor(asked) === "edit";
+    const shouldApply = editing && changesFeed(asked, result.actions);
     if (shouldApply) dispatch({ type: "apply_request", feed: asked.name, actions: result.actions });
-    const message = result.reply ?? (shouldApply ? null : ALREADY);
+    const asking = editing && questions.answer(asked, result.actions, shouldApply);
+    const message = result.reply ?? (shouldApply || asking ? null : ALREADY);
     if (message) showReply(message);
   };
 
@@ -48,9 +55,11 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input
     if (request.length > MAX_REQUEST_CHARS) return setError(TOO_LONG);
     setError(null);
     setThinking(true);
+    questions.close();
     const asked = feed;
+    const context = feedContext(asked, upNext, exploreVideos(catalog, asked, request));
     try {
-      settle(asked.name, await assistant.request(request, barModeFor(asked), feedContext(asked, upNext)));
+      settle(asked.name, await assistant.request(request, barModeFor(asked), context));
       setText("");
     } catch (err) {
       console.error("Claude bar request failed", err);

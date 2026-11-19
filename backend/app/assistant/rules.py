@@ -50,6 +50,8 @@ PIN_FILLER = frozenset({"first", "top", "next", "video", "videos", "one", "the",
 ALREADY = "Already in this feed."
 CANT_DO_REPLY = "I can change this feed's topics, video length and session time. Filters, tabs and saved videos are yours to change."
 BUILT_IN_REPLY = "This tab builds itself, so I can't change it. Try one of your own feeds."
+PICK_VIDEOS = "Pick the ones you're feeling and I'll add more like them."
+VIDEO_CHOICES = 4
 NO_MATCH_REPLY = "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."
 SHORT_LENGTH = (1, 15)
 LONG_LENGTH = (20, 120)
@@ -66,10 +68,6 @@ def _act(*actions: dict) -> Proposal:
 
 def _topics_in(text: str) -> list[str]:
     return [name for name, rx in TOPIC_RX.items() if rx.search(text)]
-
-
-def _or_list(items: list[str]) -> str:
-    return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} or {items[-1]}"
 
 
 def _why(text: str, context: FeedContext) -> Proposal | None:
@@ -152,8 +150,21 @@ def _add(text: str, context: FeedContext) -> Proposal:
     for rx, question, options in BROAD:
         left = [o for o in options if o not in context.topics]
         if rx.search(text) and left:
-            return _reply(f"{question} Try naming one, like {_or_list(left[:3])}.")
-    return _reply(NO_MATCH_REPLY)
+            return _act({"type": "ask_user", "kind": "chips", "question": question, "items": left})
+    return _offer_videos(context)
+
+
+def _offer_videos(context: FeedContext) -> Proposal:
+    """Shows videos from topics the feed doesn't have, so the visitor can show rather than tell."""
+    seen = set(context.topics)
+    picks: list[str] = []
+    for video in context.explore:
+        if video.topic not in seen and len(picks) < VIDEO_CHOICES:
+            seen.add(video.topic)
+            picks.append(video.id)
+    if not picks:
+        return _reply(NO_MATCH_REPLY)
+    return _act({"type": "ask_user", "kind": "videos", "question": PICK_VIDEOS, "items": picks})
 
 
 Rule = Callable[[str, FeedContext], Proposal | None]
