@@ -59,6 +59,8 @@ describe("the Explore menu", () => {
       "SubscriptionsNewest from your channels",
       "Most viewedRanked by views",
       "NewsLatest from news channels",
+      "From ClaudeFrom your Claude work",
+      "BlendMixed with a friend",
       "Shared with youFeeds people sent you2 unread",
     ]);
     expect(exploreButton()).toHaveAttribute("aria-expanded", "true");

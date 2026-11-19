@@ -1,14 +1,23 @@
 import { z } from "zod";
+import { BAR_MODES } from "../domain/assistant";
+import { BLEND_STATUSES, MATCH_SCORE } from "../domain/blend";
 import { RECENT_LIMIT } from "../domain/search";
 import { SHARE_LIMITS } from "../domain/share";
 import { FEED_KINDS, NEWS_CATEGORIES, TOP_RANGES } from "../domain/types";
+import { USERNAME_PATTERN } from "../domain/username";
 import { VIEWS, type AppState } from "./appState";
 
 /** Bump when AppState changes shape. Saved state from any other version is ignored. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 4;
 
 const ids = z.array(z.string());
 const range = z.tuple([z.number(), z.number()]).refine(([min, max]) => min <= max, "min must not exceed max");
+
+const partnerSchema = z.object({
+  name: z.string().regex(USERNAME_PATTERN),
+  topics: ids,
+  score: z.number().int().min(MATCH_SCORE.min).max(MATCH_SCORE.max),
+});
 
 const feedSchema = z.object({
   name: z.string().min(1),
@@ -31,6 +40,8 @@ const feedSchema = z.object({
   seed: z.number().int(),
   // Saved before feed notes existed: start with an empty note rather than discarding the save.
   note: z.string().default(""),
+  connected: z.boolean(),
+  partner: partnerSchema.extend({ status: z.enum(BLEND_STATUSES) }).nullable(),
 });
 
 const shareSchema = z
@@ -69,6 +80,9 @@ const stateSchema = z
     view: z.enum(VIEWS),
     // Saved before search existed: start with no recent searches rather than discarding the save.
     recentSearches: z.array(z.string().min(1)).max(RECENT_LIMIT).default([]),
+    // Saved before bar modes existed, or with one this version doesn't know: start in edit mode.
+    barMode: z.enum(BAR_MODES).catch("edit"),
+    blends: z.array(partnerSchema),
     inbox: inboxSchema,
   })
   .refine((s) => new Set(s.feeds.map((f) => f.name.toLowerCase())).size === s.feeds.length, "feed names must be unique")

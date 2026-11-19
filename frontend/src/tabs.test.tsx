@@ -133,7 +133,7 @@ describe("the All tabs page", () => {
 
     expect(screen.getByRole("heading", { level: 2, name: "All tabs" })).toBeInTheDocument();
     expect(within(allTabsSection("In the tab bar")).getByText(/4 of 8 spaces/)).toBeInTheDocument();
-    expect(namesIn("In the tab bar")).toEqual(["Everything", "Subscriptions", "Most viewed", "News", "Shared with you", "Learn", "Sport"]);
+    expect(namesIn("In the tab bar")).toEqual(["Everything", "Subscriptions", "Most viewed", "News", "From Claude", "Blend", "Shared with you", "Learn", "Sport"]);
     expect(namesIn("Only in All tabs")).toEqual(["Wind down", "Cooking"]);
   });
 

@@ -1,3 +1,4 @@
+import type { AnswerResult } from "./domain/askNotes";
 import type { AssistantResult, BarMode, FeedContext } from "./domain/assistant";
 import type { Video } from "./domain/types";
 
@@ -10,7 +11,8 @@ export type StateStorage = Readonly<{
   save: (value: unknown) => void;
 }>;
 
-/** Answers Claude bar requests. Production calls the backend; tests pass a scripted fake. */
+/** Answers Claude bar requests and questions in a video's notes. Production calls the backend; tests pass a scripted fake. */
 export type AssistantPort = Readonly<{
   request: (text: string, mode: BarMode, context: FeedContext) => Promise<AssistantResult>;
+  answer: (videoId: string, question: string) => Promise<AnswerResult>;
 }>;

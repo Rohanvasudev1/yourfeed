@@ -3,7 +3,9 @@
 import re
 from collections.abc import Callable
 
+from app.assistant.answers import answer_for
 from app.assistant.model import AnsweredBy, BarMode, FeedContext, Proposal
+from app.catalog import Video
 
 TOPIC_RX: dict[str, re.Pattern[str]] = {
     name: re.compile(rx)
@@ -48,7 +50,11 @@ PIN_FILLER = frozenset({"first", "top", "next", "video", "videos", "one", "the",
 ALREADY = "Already in this feed."
 CANT_DO_REPLY = "I can change this feed's topics, video length and session time. Filters, tabs and saved videos are yours to change."
 BUILT_IN_REPLY = "This tab builds itself, so I can't change it. Try one of your own feeds."
+PICK_VIDEOS = "Pick the ones you're feeling and I'll add more like them."
+VIDEO_CHOICES = 4
 NO_MATCH_REPLY = "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."
+# Your own feeds, and From Claude, which the frontend only sends in edit mode once it's connected.
+EDITABLE_KINDS = frozenset({"topics", "claude"})
 SHORT_LENGTH = (1, 15)
 LONG_LENGTH = (20, 120)
 SESSION_SLACK = 10
@@ -64,10 +70,6 @@ def _act(*actions: dict) -> Proposal:
 
 def _topics_in(text: str) -> list[str]:
     return [name for name, rx in TOPIC_RX.items() if rx.search(text)]
-
-
-def _or_list(items: list[str]) -> str:
-    return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} or {items[-1]}"
 
 
 def _why(text: str, context: FeedContext) -> Proposal | None:
@@ -150,12 +152,43 @@ def _add(text: str, context: FeedContext) -> Proposal:
     for rx, question, options in BROAD:
         left = [o for o in options if o not in context.topics]
         if rx.search(text) and left:
-            return _reply(f"{question} Try naming one, like {_or_list(left[:3])}.")
-    return _reply(NO_MATCH_REPLY)
+            return _act({"type": "ask_user", "kind": "chips", "question": question, "items": left})
+    return _offer_videos(context)
+
+
+def _offer_videos(context: FeedContext) -> Proposal:
+    """Shows videos from topics the feed doesn't have, so the visitor can show rather than tell."""
+    seen = set(context.topics)
+    picks: list[str] = []
+    for video in context.explore:
+        if video.topic not in seen and len(picks) < VIDEO_CHOICES:
+            seen.add(video.topic)
+            picks.append(video.id)
+    if not picks:
+        return _reply(NO_MATCH_REPLY)
+    return _act({"type": "ask_user", "kind": "videos", "question": PICK_VIDEOS, "items": picks})
 
 
 Rule = Callable[[str, FeedContext], Proposal | None]
 EDIT_RULES: tuple[Rule, ...] = (_less, _length, _session, _pin)
+
+
+def _or_list(items: list[str]) -> str:
+    return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} or {items[-1]}"
+
+
+def _new_feed(text: str, context: FeedContext) -> Proposal:
+    """
+    New mode: the topics a request names go to a new, empty feed, never the one open. Question
+    cards only edit the open feed, so without a topic the rules suggest some in a reply instead.
+    """
+    added = _add(text, context.model_copy(update={"topics": (), "muted": ()}))
+    if any(a["type"] == "set_topics" for a in added.actions):
+        return _act({"type": "create_feed"}, *added.actions)
+    chips = next((a for a in added.actions if a["type"] == "ask_user" and a["kind"] == "chips"), None)
+    if chips:
+        return _reply(f"{chips['question']} Try naming one, like {_or_list(list(chips['items'][:3]))}.")
+    return added if added.reply else _reply(NO_MATCH_REPLY)
 
 
 class KeywordRules:
@@ -165,9 +198,14 @@ class KeywordRules:
         lowered = text.lower()
         if answer := _why(lowered, context):
             return answer
-        if mode == "new" or context.kind != "topics":
+        if mode == "new":
+            return _new_feed(lowered, context)
+        if context.kind not in EDITABLE_KINDS:
             return _reply(BUILT_IN_REPLY)
         for rule in EDIT_RULES:
             if answer := rule(lowered, context):
                 return answer
         return _add(lowered, context)
+
+    def answer(self, question: str, video: Video) -> str:
+        return answer_for(video, question)

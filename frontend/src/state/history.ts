@@ -1,14 +1,19 @@
+import type { BlendPartner } from "../domain/blend";
 import type { Feed, GlobalFilters } from "../domain/types";
 import type { Action, AppState } from "./appState";
+import { toggleFeed, type FeedToggle } from "./feedToggle";
 
 /** Most steps kept each way. */
 export const UNDO_LIMIT = 10;
 
-const FEED_SETTING_KEYS = ["topics", "channels", "muted", "length", "session"] as const;
+const FEED_SETTING_KEYS = ["topics", "channels", "muted", "length", "session", "partner", "connected"] as const;
 type FeedSettings = Pick<Feed, (typeof FEED_SETTING_KEYS)[number]>;
 
-/** What undo covers: every feed's topics, channels, mutes and ranges, plus the global filters. Sessions, sets and tabs are left alone. */
-type Settings = Readonly<{ feeds: ReadonlyMap<string, FeedSettings>; filters: GlobalFilters }>;
+/**
+ * What undo covers: every feed's topics, channels, mutes and ranges, a Blend's partner (its topics come from it), From Claude's connection (likewise), plus the
+ * global filters and the visitor's blends (approving or removing one moves both). Sessions, sets and tabs are left alone.
+ */
+type Settings = Readonly<{ feeds: ReadonlyMap<string, FeedSettings>; filters: GlobalFilters; blends: readonly BlendPartner[] }>;
 
 const RANGE_KEYS = ["length", "session"] as const;
 type RangeKey = (typeof RANGE_KEYS)[number];
@@ -17,7 +22,7 @@ type RangeKey = (typeof RANGE_KEYS)[number];
  * The settings to go back (or forward) to, and the feed to open so the change is on screen.
  * `range` names the one range the change moved, when that was all it changed.
  */
-type Step = Readonly<{ settings: Settings; feed: string; range?: RangeKey }>;
+type Step = Readonly<{ settings: Settings; feed: string; range?: RangeKey; toggle?: FeedToggle }>;
 
 /** Where a change landed: its feed, and the range it moved when that was all it changed. */
 type Change = Readonly<{ feed: string; range?: RangeKey }>;
@@ -35,6 +40,7 @@ const feedSettingsOf = (feed: Feed): FeedSettings =>
 const settingsOf = (state: AppState): Settings => ({
   feeds: new Map(state.feeds.map((f) => [f.name, feedSettingsOf(f)])),
   filters: state.filters,
+  blends: state.blends,
 });
 
 /** Value equality for plain settings data (string lists, ranges, filter flags). */
@@ -56,7 +62,7 @@ function changeBetween(before: Settings, after: Settings, current: string): Chan
     const old = before.feeds.get(name);
     if (old && !sameValue(old, settings)) return { feed: name, range: onlyRangeChanged(old, settings) };
   }
-  return sameValue(before.filters, after.filters) ? null : { feed: current };
+  return sameValue(before.filters, after.filters) && sameValue(before.blends, after.blends) ? null : { feed: current };
 }
 
 /**
@@ -81,6 +87,7 @@ function applySettings(state: AppState, { settings, feed }: Step): AppState {
     ...state,
     feeds,
     filters: settings.filters,
+    blends: settings.blends,
     currentFeed: feeds.some((f) => f.name === feed) ? feed : state.currentFeed,
   };
 }
@@ -92,12 +99,25 @@ const pushCapped = (steps: readonly Step[], step: Step) => [...steps, step].slic
 function travel(present: AppState, from: readonly Step[], to: readonly Step[]) {
   const step = from.at(-1);
   if (!step) return null;
+  const toggled = step.toggle ? toggleFeed(present, step.toggle) : null;
+  const settled = applySettings(toggled?.state ?? present, step);
+  // Going back over a toggle returns to the feed open now; any other step reopens its own feed.
+  const back: Step = toggled
+    ? { settings: settingsOf(present), feed: present.currentFeed, toggle: toggled.back }
+    : { settings: settingsOf(present), feed: step.feed };
   return {
-    present: applySettings(present, step),
+    present: toggled?.open ? { ...settled, currentFeed: toggled.open } : settled,
     from: from.slice(0, -1),
-    to: pushCapped(to, { settings: settingsOf(present), feed: step.feed }),
+    to: pushCapped(to, back),
   };
 }
+
+/** The step a request that made a feed adds: undoing it removes that feed and goes back to the feed that asked. */
+const creationStep = (before: AppState, after: AppState): Step => ({
+  settings: settingsOf(before),
+  feed: before.currentFeed,
+  toggle: { remove: after.currentFeed },
+});
 
 /** Wraps the app reducer so every change to feed settings or filters becomes an undo step, and a new change clears redo. */
 export function withHistory(reduce: (state: AppState, action: Action) => AppState) {
@@ -116,6 +136,9 @@ export function withHistory(reduce: (state: AppState, action: Action) => AppStat
       default: {
         const present = reduce(history.present, action);
         if (present === history.present) return history;
+        if (action.type === "create_from_request") {
+          return { present, undo: pushCapped(history.undo, creationStep(history.present, present)), redo: [] };
+        }
         const before = settingsOf(history.present);
         const change = asOwnStep(action, changeBetween(before, settingsOf(present), history.present.currentFeed));
         if (change === null || extendsNewestStep(history, change)) return { ...history, present };
