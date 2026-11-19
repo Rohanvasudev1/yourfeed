@@ -1,5 +1,7 @@
 # Yourfeed: a custom YouTube feed (prototype)
 
+> **Retired (Nov 2026).** The React app in `frontend/` and `backend/` now covers everything this mockup does (spec [0002](docs/specs/0002-assistant-search-and-sharing-demo-mode.md)); see the [README](README.md) to run it. These notes and `prototype/index.html` stay as the record of how the design got here and aren't updated.
+
 A product experiment: what if viewers chose their own feed instead of the recommendation engine choosing for them? This isn't a claim that YouTube's algorithm is bad (it's very good). The point is to explore how far "maximum customization" can go before it gets in the way.
 
 The current state is a **clickable, single-file mockup** (`index.html`). All data is made up and all "AI" behaviour is simulated with keyword rules.
