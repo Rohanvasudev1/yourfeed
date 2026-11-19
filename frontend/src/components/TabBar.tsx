@@ -15,13 +15,15 @@ type Props = Readonly<{
   current: Feed;
   tabs: TabControls;
   edit: EditControls;
+  /** Unread shares, counted on the Explore button. */
+  unread: number;
 }>;
 
 /**
  * Home, the Explore button, then your own feeds (each with a × that shelves it, and draggable to
  * reorder). A shelved feed you open shows at the end with a pin. New feed, All tabs and Edit sit beside the bar.
  */
-export function TabBar({ feeds, current, tabs, edit }: Props) {
+export function TabBar({ feeds, current, tabs, edit, unread }: Props) {
   const onFeedPage = tabs.page === "feed";
   const inBar = feeds.filter((f) => !f.shelved);
   const home = inBar.find((f) => f.kind === "home");
@@ -50,7 +52,7 @@ export function TabBar({ feeds, current, tabs, edit }: Props) {
                 <IconHome size={17} aria-hidden="true" />
               </button>
             )}
-            {explore.length > 0 && <ExploreMenu feeds={explore} current={current} onOpen={tabs.open} />}
+            {explore.length > 0 && <ExploreMenu feeds={explore} current={current} unread={unread} onOpen={tabs.open} />}
             {ownTabs(feeds).map((f) => (
               <span key={f.name} className="tab-chip" {...drag(f.name)}>
                 <button type="button" className="tab" aria-current={currentPage(f)} onClick={() => tabs.open(f.name)}>

@@ -79,7 +79,8 @@ export function feedNameProblem(feeds: readonly Feed[], name: string, renaming: 
   return null;
 }
 
-function uniqueName(feeds: readonly Feed[], base: string): string {
+/** `base`, or `base 2`, `base 3`… when a feed already has that name (ignoring case). */
+export function uniqueName(feeds: readonly Feed[], base: string): string {
   const taken = (n: string) => feeds.some((f) => sameName(f.name, n));
   let name = base;
   for (let i = 2; taken(name); i++) name = `${base} ${i}`;
