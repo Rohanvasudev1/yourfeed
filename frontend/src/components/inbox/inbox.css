@@ -1,0 +1,35 @@
+/* Shared with you: the inbox cards and an open share's header, after the mockup's .shcard and #shback blocks. */
+.inbox-hint { margin: 0 2px 8px; font-size: 12px; }
+.inbox { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 0 0 14px; padding: 0; }
+.share-card { position: relative; display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); }
+.share-card:hover { border-color: var(--border-strong); }
+.share-card.unread { border-color: var(--border-accent); }
+.share-card-body { flex: 1; min-width: 0; }
+.share-card-line { margin: 0; font-size: 14px; }
+.share-card-line b { font-weight: 500; }
+.share-card-open { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+/* Stretches the open button over the card; the remove button sits above it. */
+.share-card-open::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.share-card-open:focus-visible { outline: none; }
+.share-card:has(.share-card-open:focus-visible) { outline: 2px solid var(--border-accent); outline-offset: 2px; }
+.share-card-remove { position: relative; z-index: 1; }
+.share-card-meta { margin: 2px 0 0; font-size: 12px; }
+.new-dot { display: inline-block; width: 8px; height: 8px; margin-left: 6px; border-radius: 50%; background: var(--fill-accent); vertical-align: middle; }
+.share-message { margin: 6px 0 0; font-family: var(--font-voice); font-size: 14px; line-height: 1.45; color: var(--text-primary); overflow-wrap: anywhere; }
+.share-strip { display: grid; grid-template-columns: repeat(4, 72px); gap: 6px; margin-top: 8px; }
+.share-strip .thumb { border-radius: 4px; }
+.share-strip .thumb-badge { display: none; }
+.sender-avatar { display: inline-flex; flex: none; align-items: center; justify-content: center; border-radius: 50%; background: var(--bg-accent); color: var(--text-accent); font-size: 14px; font-weight: 500; }
+.inbox-empty { margin-bottom: 12px; padding: 18px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); text-align: center; color: var(--text-muted); }
+.inbox-empty p { margin: 4px 0 0; font-size: 13px; }
+.inbox-empty .inbox-empty-title { margin-top: 6px; font-size: 15px; font-weight: 500; color: var(--text-primary); }
+.shared-header { margin-bottom: 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); }
+.shared-header-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.shared-header-text { flex: 1; min-width: 0; }
+.shared-header-text p { margin: 0; font-size: 12px; }
+.shared-header-text .shared-header-title { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.shared-header-from { font-weight: 400; color: var(--text-secondary); }
+.shared-notes { margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: var(--surface-1); }
+.shared-notes .share-label { margin: 0 0 4px; }
+.shared-notes ul { list-style: none; display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-line; }
+.shared-notes b { font-weight: 500; }

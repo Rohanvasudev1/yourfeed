@@ -1,7 +1,45 @@
 import { myTopics, tasteOf } from "../domain/blend";
 import { makeFeed } from "../domain/feed";
+import type { InboxShare } from "../domain/inbox";
+import { MS_PER_HOUR } from "../domain/time";
 import type { Feed } from "../domain/types";
 import type { AppState } from "./appState";
+
+const hoursAgo = (hours: number) => Date.now() - hours * MS_PER_HOUR;
+
+/** The mockup's demo inbox: feeds other people "sent", re-keyed to demo-N ids. */
+const DEMO_INBOX: readonly InboxShare[] = [
+  {
+    id: "demo-share-1",
+    from: "maya.k",
+    title: "Trip planning",
+    videos: ["demo-28", "demo-30", "demo-25", "demo-26"],
+    message: "For your Japan trip, the night trains one is great",
+    notes: {},
+    received: hoursAgo(2),
+    unread: true,
+  },
+  {
+    id: "demo-share-2",
+    from: "devon_r",
+    title: "Learn",
+    videos: ["demo-22", "demo-29", "demo-0", "demo-21"],
+    message: "The MCP ones are worth it",
+    notes: { "demo-22": "Skip to 6:00 for the actual server code", "demo-29": "Good explanation of tools vs resources" },
+    received: hoursAgo(24),
+    unread: true,
+  },
+  {
+    id: "demo-share-3",
+    from: "sam_k",
+    title: "Sport",
+    videos: ["demo-6", "demo-8", "demo-9"],
+    message: "",
+    notes: {},
+    received: hoursAgo(72),
+    unread: false,
+  },
+];
 
 /** The demo catalog's topics, which the mockup's example blends take their taste from. */
 const DEMO_TOPICS = [
@@ -44,6 +82,7 @@ const DEMO_FEEDS: readonly Feed[] = [
     makeFeed({ name: "News", kind: "news", color: 0 }),
     makeFeed({ name: "From Claude", kind: "claude", length: [5, 60], session: [20, 90], color: 5 }),
     makeFeed({ name: "Blend", kind: "blend", length: [5, 60], session: [20, 120], color: 3 }),
+    makeFeed({ name: "Shared with you", kind: "shared", color: 2 }),
     makeFeed({ name: "Learn", topics: ["AI", "Programming", "Economics", "Careers"], length: [10, 60], session: [30, 90], color: 0 }),
     makeFeed({ name: "Sport", topics: ["Premier League", "Tennis", "Cricket", "Wrestling"], length: [3, 20], session: [20, 60], color: 1 }),
     makeFeed({ name: "Wind down", topics: ["Podcasts", "Live music", "Vlogs"], length: [10, 120], session: [30, 150], color: 2, shelved: true }),
@@ -73,4 +112,5 @@ export const DEMO_SEED: AppState = {
   recentSearches: ["mcp server", "premier league highlights"],
   barMode: "edit",
   blends: DEMO_BLENDS.map((name) => tasteOf(name, myTopics(DEMO_FEEDS), DEMO_TOPICS)),
+  inbox: { shares: DEMO_INBOX, open: null, sessionShare: null },
 };
