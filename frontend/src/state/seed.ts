@@ -1,9 +1,9 @@
 import { makeFeed } from "../domain/feed";
 import type { InboxShare } from "../domain/inbox";
+import { MS_PER_HOUR } from "../domain/time";
 import type { AppState } from "./appState";
 
-const HOUR_MS = 3_600_000;
-const hoursAgo = (hours: number) => Date.now() - hours * HOUR_MS;
+const hoursAgo = (hours: number) => Date.now() - hours * MS_PER_HOUR;
 
 /** The mockup's demo inbox: feeds other people "sent", re-keyed to demo-N ids. */
 const DEMO_INBOX: readonly InboxShare[] = [
@@ -83,5 +83,5 @@ export const DEMO_SEED: AppState = {
   watched: ["demo-6", "demo-13", "demo-0", "demo-8"],
   view: "grid",
   recentSearches: ["mcp server", "premier league highlights"],
-  inbox: { shares: DEMO_INBOX, open: null, last: null },
+  inbox: { shares: DEMO_INBOX, open: null, sessionShare: null },
 };

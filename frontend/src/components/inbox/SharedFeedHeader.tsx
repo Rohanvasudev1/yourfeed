@@ -17,6 +17,7 @@ type Props = Readonly<{
 /** An open share's header: back to the inbox, who sent it, Save as my feed, remove, their message and their notes. */
 export function SharedFeedHeader({ share, videos, filters, onBack, onSave, onRemove }: Props) {
   const sender = senderName(share);
+  const notesLabel = share.from === null ? "Notes in the link" : `${sender}'s notes`;
   const notes = videos.flatMap((video) => {
     const note = share.notes[video.id];
     return note ? [{ video, note }] : [];
@@ -47,8 +48,8 @@ export function SharedFeedHeader({ share, videos, filters, onBack, onSave, onRem
       {share.message && <p className="share-message">“{share.message}”</p>}
       {notes.length > 0 && (
         <div className="shared-notes">
-          <p className="share-label">{share.from === null ? "Notes in the link" : `${sender}'s notes`}</p>
-          <ul aria-label={share.from === null ? "Notes in the link" : `${sender}'s notes`}>
+          <p className="share-label">{notesLabel}</p>
+          <ul aria-label={notesLabel}>
             {notes.map(({ video, note }) => (
               <li key={video.id}>
                 <b>{displayTitle(video, filters)}:</b> {note}

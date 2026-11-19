@@ -1,9 +1,8 @@
 import { ago } from "./format";
 import { hash } from "./hash";
 import type { Share } from "./share";
+import { MS_PER_HOUR } from "./time";
 import type { Composition, Feed, Video } from "./types";
-
-const MS_PER_HOUR = 3_600_000;
 
 /** One feed someone sent: who sent it (null for a link, which carries no sender), what's in it, and whether it's been opened. */
 export type InboxShare = Readonly<{
@@ -21,9 +20,9 @@ export type InboxShare = Readonly<{
 
 /**
  * Shared with you: the shares, newest first; the one open in the Shared with you feed;
- * and the one that feed's session belongs to, so reopening it picks up where you left off.
+ * and `sessionShare`, the one that feed's session belongs to, so reopening it picks up where you left off.
  */
-export type Inbox = Readonly<{ shares: readonly InboxShare[]; open: string | null; last: string | null }>;
+export type Inbox = Readonly<{ shares: readonly InboxShare[]; open: string | null; sessionShare: string | null }>;
 
 export const BROKEN_LINK = "This share link doesn't work.";
 

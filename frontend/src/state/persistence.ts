@@ -47,7 +47,7 @@ const shareSchema = z
   .refine((s) => Object.values(s.notes).reduce((sum, n) => sum + n.length, 0) <= SHARE_LIMITS.notes, "notes are too long");
 
 const inboxSchema = z
-  .object({ shares: z.array(shareSchema), open: z.string().nullable(), last: z.string().nullable() })
+  .object({ shares: z.array(shareSchema), open: z.string().nullable(), sessionShare: z.string().nullable() })
   .refine((i) => new Set(i.shares.map((s) => s.id)).size === i.shares.length, "share ids must be unique")
   .refine((i) => i.open === null || i.shares.some((s) => s.id === i.open), "the open share must exist");
 

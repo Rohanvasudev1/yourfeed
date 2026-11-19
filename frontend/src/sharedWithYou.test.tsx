@@ -196,6 +196,7 @@ describe("opening a share link", () => {
   ])("says a %s link doesn't work and changes nothing", async (_, hash) => {
     window.history.replaceState(null, "", `/${hash}`);
     renderShared();
+    await feedTitles();
 
     expect(await screen.findByRole("alert")).toHaveTextContent("This share link doesn't work.");
     expect(openFeedTitle()).toBe("Everything");

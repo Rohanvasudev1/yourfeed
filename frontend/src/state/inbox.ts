@@ -39,17 +39,17 @@ function openShare<S extends WithInbox>(state: S, id: string): S {
   const { inbox } = state;
   if (!inbox.shares.some((s) => s.id === id)) return state;
   const shares = inbox.shares.map((s) => (s.id === id && s.unread ? { ...s, unread: false } : s));
-  const opened = { ...state, inbox: { shares, open: id, last: id } };
-  return inbox.last === id ? opened : withSharedSession(opened, freshSession);
+  const opened = { ...state, inbox: { shares, open: id, sessionShare: id } };
+  return inbox.sessionShare === id ? opened : withSharedSession(opened, freshSession);
 }
 
 function removeShare<S extends WithInbox>(state: S, id: string): S {
   const { inbox } = state;
   if (!inbox.shares.some((s) => s.id === id)) return state;
   const shares = inbox.shares.filter((s) => s.id !== id);
-  const wasLast = inbox.last === id;
-  const removed = { ...state, inbox: { shares, open: inbox.open === id ? null : inbox.open, last: wasLast ? null : inbox.last } };
-  return wasLast ? withSharedSession(removed, freshSession) : removed;
+  const ownedSession = inbox.sessionShare === id;
+  const removed = { ...state, inbox: { shares, open: inbox.open === id ? null : inbox.open, sessionShare: ownedSession ? null : inbox.sessionShare } };
+  return ownedSession ? withSharedSession(removed, freshSession) : removed;
 }
 
 function saveShare<S extends WithInbox>(state: S, id: string): S {
@@ -57,8 +57,9 @@ function saveShare<S extends WithInbox>(state: S, id: string): S {
   if (!share) return state;
   const name = uniqueName(state.feeds, savedFeedName(share));
   const feed = makeFeed({ name, pinned: share.videos, color: state.feeds.length });
-  const feeds = [...state.feeds, feed];
-  return { ...state, feeds: [...state.feeds, { ...feed, shelved: !fitsInBar(feeds, name) }], currentFeed: name };
+  // Shelved when the tab bar has no room, like a new feed.
+  const saved = { ...feed, shelved: !fitsInBar([...state.feeds, feed], name) };
+  return { ...state, feeds: [...state.feeds, saved], currentFeed: name };
 }
 
 export function reduceInbox<S extends WithInbox>(state: S, action: InboxAction): S {
