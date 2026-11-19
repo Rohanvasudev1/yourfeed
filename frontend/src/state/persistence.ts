@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BAR_MODES } from "../domain/assistant";
 import { RECENT_LIMIT } from "../domain/search";
 import { FEED_KINDS, NEWS_CATEGORIES, TOP_RANGES } from "../domain/types";
 import { VIEWS, type AppState } from "./appState";
@@ -50,6 +51,8 @@ const stateSchema = z
     view: z.enum(VIEWS),
     // Saved before search existed: start with no recent searches rather than discarding the save.
     recentSearches: z.array(z.string().min(1)).max(RECENT_LIMIT).default([]),
+    // Saved before bar modes existed, or with one this version doesn't know: start in edit mode.
+    barMode: z.enum(BAR_MODES).catch("edit"),
   })
   .refine((s) => new Set(s.feeds.map((f) => f.name.toLowerCase())).size === s.feeds.length, "feed names must be unique")
   .refine((s) => s.feeds.some((f) => f.name === s.currentFeed), "the open feed must exist") satisfies z.ZodType<AppState>;

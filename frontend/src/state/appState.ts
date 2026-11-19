@@ -1,5 +1,6 @@
-import { applyFeedActions, type FeedAction } from "../domain/assistant";
+import { applyFeedActions, type BarMode, type FeedAction } from "../domain/assistant";
 import { listKeyOf } from "../domain/feedList";
+import { createFromRequest } from "../domain/newFeed";
 import type { FeedSet } from "../domain/refresh";
 import { appendDictation, type NoteTarget } from "../domain/notes";
 import { forgetWatch, recordWatch, type SavedFolder } from "../domain/library";
@@ -28,6 +29,8 @@ export type AppState = Readonly<{
   view: View;
   /** The visitor's searches, newest first, normalized. */
   recentSearches: readonly string[];
+  /** The Claude bar's mode on your own feeds. Built-in feeds and drafts have a fixed mode. */
+  barMode: BarMode;
 }>;
 
 export type Action =
@@ -64,7 +67,10 @@ export type Action =
   /** Loads (or, for undo, restores) a feed set. */
   | Readonly<{ type: "set_feed_set"; set: FeedSet }>
   /** Every feed action of one Claude bar request, applied together so they make one undo step. */
-  | Readonly<{ type: "apply_request"; feed: string; actions: readonly FeedAction[] }>;
+  | Readonly<{ type: "apply_request"; feed: string; actions: readonly FeedAction[] }>
+  /** A new-mode request (or one asked on a draft): makes a feed from its actions and opens it. */
+  | Readonly<{ type: "create_from_request"; from: string; actions: readonly FeedAction[] }>
+  | Readonly<{ type: "set_bar_mode"; mode: BarMode }>;
 
 const mapFeed = (state: AppState, name: string, change: (feed: Feed) => Feed): AppState => ({
   ...state,
@@ -140,6 +146,12 @@ export function makeReducer(seed: AppState) {
         return updateFeed(state, action.set.feed, { seed: action.set.seed, skipped: action.set.skipped });
       case "apply_request":
         return mapFeed(state, action.feed, (f) => applyFeedActions(f, action.actions));
+      case "create_from_request": {
+        const tabs = createFromRequest(state, action.from, action.actions);
+        return tabs.feeds === state.feeds ? state : { ...state, ...tabs };
+      }
+      case "set_bar_mode":
+        return state.barMode === action.mode ? state : { ...state, barMode: action.mode };
       default:
         return reduceLibrary(state, action);
     }

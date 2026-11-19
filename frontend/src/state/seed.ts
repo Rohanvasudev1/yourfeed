@@ -44,4 +44,5 @@ export const DEMO_SEED: AppState = {
   watched: ["demo-6", "demo-13", "demo-0", "demo-8"],
   view: "grid",
   recentSearches: ["mcp server", "premier league highlights"],
+  barMode: "edit",
 };

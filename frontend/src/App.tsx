@@ -83,7 +83,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   // With nothing to share the panel has nothing to show, so the button never claims it's open.
   const share = { ...shareToggle, open: shareToggle.open && shareVideos.length > 0 };
   const upNext = [...pinned, ...(composition?.upNext ?? [])];
-  const claudeBar = useClaudeBar({ assistant, feeds: state.feeds, feed, upNext, dispatch });
+  const claudeBar = useClaudeBar({ assistant, feeds: state.feeds, feed, upNext, chosenMode: state.barMode, dispatch });
   const edit = useEditMode(state.feeds, dispatch);
   const search = useSearch({
     catalog: ready ?? NO_VIDEOS,
@@ -149,7 +149,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                 <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
               </div>
             </div>
-            {!feed.draft && <ClaudeBar bar={claudeBar} />}
+            <ClaudeBar bar={claudeBar} />
             {feed.draft ? (
               <NameFeed onName={tabs.name} />
             ) : (

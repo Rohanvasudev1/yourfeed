@@ -158,6 +158,12 @@ Rule = Callable[[str, FeedContext], Proposal | None]
 EDIT_RULES: tuple[Rule, ...] = (_less, _length, _session, _pin)
 
 
+def _new_feed(text: str, context: FeedContext) -> Proposal:
+    """New mode: whatever the request adds goes to a new, empty feed, never the one open."""
+    added = _add(text, context.model_copy(update={"topics": (), "muted": ()}))
+    return _act({"type": "create_feed"}, *added.actions) if added.actions else added
+
+
 class KeywordRules:
     answered_by: AnsweredBy = "rules"
 
@@ -165,7 +171,9 @@ class KeywordRules:
         lowered = text.lower()
         if answer := _why(lowered, context):
             return answer
-        if mode == "new" or context.kind != "topics":
+        if mode == "new":
+            return _new_feed(lowered, context)
+        if context.kind != "topics":
             return _reply(BUILT_IN_REPLY)
         for rule in EDIT_RULES:
             if answer := rule(lowered, context):

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type Dispatch } from "react";
-import { barModeFor, changesFeed, feedContext, MAX_REQUEST_CHARS, type AssistantResult } from "../domain/assistant";
+import { barModeFor, changesFeed, feedContext, MAX_REQUEST_CHARS, type AssistantResult, type BarMode } from "../domain/assistant";
+import { isBuiltIn } from "../domain/feed";
+import { createFromRequest } from "../domain/newFeed";
 import type { Feed, Video } from "../domain/types";
 import type { AssistantPort } from "../ports";
 import type { Action } from "./appState";
@@ -10,6 +12,8 @@ const EMPTY_REQUEST = "Type something first";
 const TOO_LONG = `Keep requests under ${MAX_REQUEST_CHARS} characters`;
 const UNREACHABLE = "Couldn't reach Claude. Try again.";
 const ALREADY = "Already in this feed.";
+const NOTHING_TO_START = "Name a topic to start a new feed.";
+const shelvedNotice = (name: string) => `The tab bar is full, so ${name} is in All tabs.`;
 
 type Input = Readonly<{
   assistant: AssistantPort;
@@ -17,11 +21,13 @@ type Input = Readonly<{
   feeds: readonly Feed[];
   feed: Feed;
   upNext: readonly Video[];
+  /** The mode the visitor chose for their own feeds. */
+  chosenMode: BarMode;
   dispatch: Dispatch<Action>;
 }>;
 
-/** The Claude bar: what's typed, whether the assistant is thinking, and its last reply or error. */
-export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input) {
+/** The Claude bar: its mode, what's typed, whether the assistant is thinking, and its last reply or error. */
+export function useClaudeBar({ assistant, feeds, feed, upNext, chosenMode, dispatch }: Input) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
@@ -31,11 +37,25 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input
     latestFeeds.current = feeds;
   }, [feeds]);
 
+  const mode = barModeFor(feed, chosenMode);
+
+  /** Makes a feed from the answer. Its name and place are worked out here the same way the reducer will. */
+  const create = (asked: Feed, result: AssistantResult) => {
+    const before = latestFeeds.current;
+    const made = createFromRequest({ feeds: before, currentFeed: asked.name }, asked.name, result.actions);
+    const created = made.feeds === before ? undefined : made.feeds.find((f) => f.name === made.currentFeed);
+    if (created) dispatch({ type: "create_from_request", from: asked.name, actions: result.actions });
+    const notice = created ? (created.shelved ? shelvedNotice(created.name) : null) : NOTHING_TO_START;
+    const message = result.reply ?? notice;
+    if (message) showReply(message);
+  };
+
   /** Applies the answer to the feed that asked, which may no longer be open and may have changed meanwhile. */
-  const settle = (askedName: string, result: AssistantResult) => {
+  const settle = (askedName: string, askedMode: BarMode, result: AssistantResult) => {
     const asked = latestFeeds.current.find((f) => f.name === askedName);
     if (!asked) return;
-    const shouldApply = barModeFor(asked) === "edit" && changesFeed(asked, result.actions);
+    if (askedMode === "new" || asked.draft) return create(asked, result);
+    const shouldApply = changesFeed(asked, result.actions);
     if (shouldApply) dispatch({ type: "apply_request", feed: asked.name, actions: result.actions });
     const message = result.reply ?? (shouldApply ? null : ALREADY);
     if (message) showReply(message);
@@ -49,8 +69,9 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input
     setError(null);
     setThinking(true);
     const asked = feed;
+    const askedMode = mode;
     try {
-      settle(asked.name, await assistant.request(request, barModeFor(asked), feedContext(asked, upNext)));
+      settle(asked.name, askedMode, await assistant.request(request, askedMode, feedContext(asked, upNext)));
       setText("");
     } catch (err) {
       console.error("Claude bar request failed", err);
@@ -60,7 +81,21 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input
     }
   };
 
-  return { text, setText, error, thinking, reply, send };
+  return {
+    text,
+    setText,
+    error,
+    thinking,
+    reply,
+    send,
+    mode,
+    feedName: feed.name,
+    /** Whether the switch is shown: a draft is always the new feed, so it has none. */
+    hasSwitch: !feed.draft,
+    /** Built-in feeds are always in new mode. */
+    modeLocked: isBuiltIn(feed),
+    setMode: (next: BarMode) => dispatch({ type: "set_bar_mode", mode: next }),
+  };
 }
 
 export type ClaudeBarState = ReturnType<typeof useClaudeBar>;
