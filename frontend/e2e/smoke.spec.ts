@@ -42,6 +42,7 @@ test("with no AI key, the keyword rules add Cooking from the Claude bar and undo
   await page.goto("/");
   await page.getByRole("navigation", { name: "Feeds" }).getByRole("button", { name: "Learn", exact: true }).click();
   await expect(upNextCards(page).first()).toBeVisible();
+  const topicsBefore = (await topicsPhrase(page).textContent()) ?? "";
   await expect(await openTopics(page)).not.toContainText("Cooking");
   await page.keyboard.press("Escape");
 
@@ -50,10 +51,12 @@ test("with no AI key, the keyword rules add Cooking from the Claude bar and undo
 
   const undo = page.getByRole("button", { name: /^Undo last change/ });
   await expect(undo).toBeVisible();
+  await expect(topicsPhrase(page)).not.toHaveText(topicsBefore);
   await expect(await openTopics(page)).toContainText("Cooking");
   await page.keyboard.press("Escape");
 
   await undo.click();
+  await expect(topicsPhrase(page)).toHaveText(topicsBefore);
 
   await expect(await openTopics(page)).not.toContainText("Cooking");
 });
