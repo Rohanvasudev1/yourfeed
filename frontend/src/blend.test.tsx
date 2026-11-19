@@ -94,6 +94,23 @@ describe("Blend", () => {
     expect(settingsLine()).toHaveTextContent("5 topics");
   });
 
+  it("undoing an approval takes the blend back out of your blends", async () => {
+    renderApp();
+    await openBlend();
+    await invite("sam");
+    await userEvent.click(inPanel().getByRole("button", { name: "Simulate their approval (demo only)" }));
+
+    await userEvent.click(screen.getByRole("button", { name: /^Undo/ }));
+    expect(blendPanel()).toHaveAccessibleName("Invite sent to @sam");
+    expect(within(previousBlends()).queryByRole("button", { name: "Open blend with @sam" })).not.toBeInTheDocument();
+  });
+
+  it("waits for the catalog before sending an invite", async () => {
+    renderApp({ loadCatalog: () => new Promise(() => {}) });
+    await openBlend();
+    expect(screen.getByRole("button", { name: "Send invite" })).toBeDisabled();
+  });
+
   it("starts with the mockup's two blends, which open and can be removed", async () => {
     renderApp();
     await openBlend();

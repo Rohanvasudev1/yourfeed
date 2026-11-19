@@ -1,4 +1,8 @@
 /* The Blend feed's panel and Previous blends, after the mockup's #extra block for kind "blend". */
+:root { --bg-partner: #f5c4b3; --text-partner: #712b13; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg-partner: #712b13; --text-partner: #f5c4b3; }
+}
 .blend-panel { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; padding: 18px; border-radius: 12px; background: var(--surface-0); border: 0.5px solid var(--border-strong); }
 .blend-icon { flex: none; color: var(--text-secondary); }
 .blend-body { flex: 1; min-width: 0; }
@@ -15,7 +19,7 @@
 .blend-avatars { display: flex; }
 .blend-avatar { width: 28px; height: 28px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; border: 2px solid var(--surface-1); }
 .blend-avatar.you { background: var(--bg-accent); color: var(--text-accent); }
-.blend-avatar.them { background: #f5c4b3; color: #712b13; }
+.blend-avatar.them { background: var(--bg-partner); color: var(--text-partner); }
 .blend-avatars .them { margin-left: -8px; }
 .blend-score { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
 .blend-score-bar { position: relative; display: inline-block; width: 48px; height: 3px; border-radius: 2px; overflow: hidden; background: var(--fill-control); }

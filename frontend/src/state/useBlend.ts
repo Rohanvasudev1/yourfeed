@@ -7,6 +7,8 @@ import type { HistoryAction } from "./history";
 export function useBlend(feeds: readonly Feed[], feed: Feed, catalog: readonly Video[], dispatch: Dispatch<HistoryAction>) {
   const catalogTopics = useMemo(() => [...new Set(catalog.map((v) => v.topic))], [catalog]);
   return {
+    /** Taste comes from the catalog's topics, so inviting waits until it has loaded. */
+    canInvite: catalogTopics.length > 0,
     invite: (name: string) => dispatch({ type: "invite_blend", feed: feed.name, partner: tasteOf(name, myTopics(feeds), catalogTopics) }),
     clear: () => dispatch({ type: "clear_blend", feed: feed.name }),
     approve: () => dispatch({ type: "approve_blend", feed: feed.name }),

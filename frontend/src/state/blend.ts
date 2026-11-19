@@ -53,13 +53,13 @@ export function reduceBlend<S extends WithBlends>(state: S, action: BlendAction)
       return setPartner({ ...state, blends }, feed.name, { ...feed.partner, status: "accepted" });
     }
     case "open_blend": {
-      const blend = state.blends.find((b) => b.name === action.name);
+      const blend = state.blends.find((b) => sameName(b.name, action.name));
       if (!blend || isOpen(feed, blend.name)) return state;
       return setPartner(state, feed.name, { ...blend, status: "accepted" });
     }
     case "forget_blend": {
-      if (!state.blends.some((b) => b.name === action.name)) return state;
-      const forgotten = { ...state, blends: state.blends.filter((b) => b.name !== action.name) };
+      if (!state.blends.some((b) => sameName(b.name, action.name))) return state;
+      const forgotten = { ...state, blends: state.blends.filter((b) => !sameName(b.name, action.name)) };
       return isOpen(feed, action.name) ? setPartner(forgotten, feed.name, null) : forgotten;
     }
   }

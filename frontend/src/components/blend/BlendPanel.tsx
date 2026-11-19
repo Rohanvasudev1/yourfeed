@@ -14,7 +14,7 @@ export function BlendPanel({ partner, blends, controls }: Props) {
   return (
     <>
       {partner === null ? (
-        <InviteForm onInvite={controls.invite} />
+        <InviteForm canInvite={controls.canInvite} onInvite={controls.invite} />
       ) : partner.status === "pending" ? (
         <PendingInvite name={partner.name} onCancel={controls.clear} onApprove={controls.approve} />
       ) : (
@@ -27,13 +27,14 @@ export function BlendPanel({ partner, blends, controls }: Props) {
   );
 }
 
-function InviteForm({ onInvite }: Readonly<{ onInvite: (name: string) => void }>) {
+function InviteForm({ canInvite, onInvite }: Readonly<{ canInvite: boolean; onInvite: (name: string) => void }>) {
   const headingId = useId();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const send = (event: FormEvent) => {
     event.preventDefault();
+    if (!canInvite) return;
     const username = cleanUsername(name);
     const problem = usernameProblem(username, []);
     setError(problem);
@@ -60,7 +61,7 @@ function InviteForm({ onInvite }: Readonly<{ onInvite: (name: string) => void }>
               setError(null);
             }}
           />
-          <button type="submit" className="text-button">
+          <button type="submit" className="text-button" disabled={!canInvite}>
             <IconSend size={15} aria-hidden="true" />
             Send invite
           </button>
