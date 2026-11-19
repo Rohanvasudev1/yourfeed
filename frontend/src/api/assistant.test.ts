@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FeedContext } from "../domain/assistant";
-import { requestAssistant } from "./assistant";
+import { answerQuestion, requestAssistant } from "./assistant";
 
 const CONTEXT: FeedContext = {
   kind: "topics",
@@ -12,6 +12,7 @@ const CONTEXT: FeedContext = {
   session: [30, 90],
   pinned: [],
   upNext: [],
+  explore: [],
 };
 
 const answer = (status: number, body: unknown) => vi.fn(async () => new Response(JSON.stringify(body), { status }));
@@ -44,5 +45,23 @@ describe("the assistant API client", () => {
   it("says what the server answered when the body isn't JSON", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>", { status: 502 })));
     await expect(requestAssistant("x", "edit", CONTEXT)).rejects.toThrow("The server answered 502.");
+  });
+});
+
+describe("the note answer API client", () => {
+  it("posts the video id and question and returns the checked answer", async () => {
+    const data = { answer: "An agent runs in a loop.", answeredBy: "rules" };
+    const fetch = answer(200, { success: true, data, error: null });
+    vi.stubGlobal("fetch", fetch);
+
+    expect(await answerQuestion("demo-0", "What is an agent?")).toEqual(data);
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/assistant/answer");
+    expect(JSON.parse(init.body as string)).toEqual({ videoId: "demo-0", question: "What is an agent?" });
+  });
+
+  it("rejects an empty answer", async () => {
+    vi.stubGlobal("fetch", answer(200, { success: true, data: { answer: "", answeredBy: "rules" }, error: null }));
+    await expect(answerQuestion("demo-0", "Why?")).rejects.toThrow("didn't match the contract");
   });
 });

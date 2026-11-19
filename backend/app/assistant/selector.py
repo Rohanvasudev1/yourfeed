@@ -1,23 +1,32 @@
-"""Picks who answers a request: the model when one is set up and allowed, else the keyword rules, so the demo never breaks (ADR 0006)."""
+"""Picks who answers: the model when one is set up and allowed, else the keyword rules, so the demo never breaks (ADR 0006)."""
 
 import logging
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
-from typing import NamedTuple
+from typing import NamedTuple, TypeVar
 
 from app.assistant.limits import AiLimits
 from app.assistant.model import AnsweredBy, Assistant, BarMode, FeedContext, Model, Proposal
+from app.catalog import Video
 
 log = logging.getLogger("yourfeed")
 
 BUSY_NOTICE = "Using simple rules for now. AI is busy."
 MODEL_WORKERS = 4
 
+T = TypeVar("T")
+
 
 class Answer(NamedTuple):
     proposal: Proposal
     answered_by: AnsweredBy
     notice: str | None = None
+
+
+class NoteAnswer(NamedTuple):
+    text: str
+    answered_by: AnsweredBy
 
 
 class AssistantInfo(NamedTuple):
@@ -39,21 +48,32 @@ class AssistantSelector:
             return AssistantInfo("rules", None, None)
         return AssistantInfo("model", self._model.provider, self._model.model_name)
 
-    def _rules_answer(self, text: str, mode: BarMode, context: FeedContext, notice: str | None) -> Answer:
-        return Answer(self._rules.handle(text, mode, context), self._rules.answered_by, notice)
-
-    def handle(self, text: str, mode: BarMode, context: FeedContext, visitor: str) -> Answer:
-        if self._model is None or self._pool is None:
-            return self._rules_answer(text, mode, context, None)
+    def _try_model(self, call: Callable[[Model], T], visitor: str) -> tuple[T | None, bool]:
+        """The model's result, or None when the rules must answer; the flag says a set-up model couldn't (a limit, an error or a timeout)."""
+        model, pool = self._model, self._pool
+        if model is None or pool is None:
+            return None, False
         if not self._limits.take(visitor):
             log.info("AI limit reached for a visitor or the site; the rules answer")
-            return self._rules_answer(text, mode, context, BUSY_NOTICE)
-        future = self._pool.submit(self._model.handle, text, mode, context)
+            return None, True
+        future = pool.submit(call, model)
         try:
-            return Answer(future.result(timeout=self._timeout), self._model.answered_by)
+            return future.result(timeout=self._timeout), False
         except FutureTimeout:
-            log.warning("%s took over %ss; the rules answer", self._model.provider, self._timeout)
+            log.warning("%s took over %ss; the rules answer", model.provider, self._timeout)
         except Exception as exc:
             # The type only: httpx messages carry the request URL, which may hold credentials.
-            log.warning("%s failed (%s); the rules answer", self._model.provider, type(exc).__name__)
-        return self._rules_answer(text, mode, context, BUSY_NOTICE)
+            log.warning("%s failed (%s); the rules answer", model.provider, type(exc).__name__)
+        return None, True
+
+    def handle(self, text: str, mode: BarMode, context: FeedContext, visitor: str) -> Answer:
+        proposal, busy = self._try_model(lambda m: m.handle(text, mode, context), visitor)
+        if proposal is not None:
+            return Answer(proposal, "model")
+        return Answer(self._rules.handle(text, mode, context), self._rules.answered_by, BUSY_NOTICE if busy else None)
+
+    def answer(self, question: str, video: Video, visitor: str) -> NoteAnswer:
+        text, _ = self._try_model(lambda m: m.answer(question, video), visitor)
+        if text and text.strip():
+            return NoteAnswer(text, "model")
+        return NoteAnswer(self._rules.answer(question, video), self._rules.answered_by)

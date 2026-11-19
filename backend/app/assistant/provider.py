@@ -11,7 +11,7 @@ from pydantic import BaseModel, ValidationError
 
 from app.assistant.actions import LENGTH_LIMITS, SESSION_LIMITS, Limits
 from app.assistant.model import AnsweredBy, BarMode, FeedContext, Proposal
-from app.catalog import catalog_topics
+from app.catalog import Video, catalog_topics
 
 log = logging.getLogger("yourfeed")
 
@@ -20,6 +20,8 @@ DEFAULT_MODEL = "openai/gpt-oss-20b"
 MODEL_TIMEOUT_S = 15.0
 TEMPERATURE = 0.2
 MAX_FEED_NAME = 40
+MAX_QUESTION = 200
+MAX_CARD_ITEMS = 8
 OLLAMA_PORT = 11434
 KNOWN_PROVIDERS = {"api.groq.com": "Groq", "openrouter.ai": "OpenRouter"}
 
@@ -28,7 +30,12 @@ SYSTEM_PROMPT = """You change one YouTube feed for the user by calling tools. Ru
 - Lengths are minutes per video; a session is the total minutes the user has for one sitting.
 - Make every change the request asks for in one answer, then say what you did in one short sentence.
 - If you can't do it with these tools (filters, tabs, saving or deleting videos), call no tool and say in one sentence what you can change instead: topics, muted topics, video length, session time and which video comes first.
+- If the request is broad ("something fun", "sport"), ask with ask_user instead of guessing.
 - If the user asks why a video is first, answer in one sentence without calling a tool."""
+
+NOTE_PROMPT = """You answer a question someone wrote in their notes about one YouTube video.
+You only know the video's details below, never its transcript. Answer in at most two sentences.
+If the details don't say, say what you can't know from them instead of guessing."""
 
 
 class ProviderError(Exception):
@@ -108,10 +115,23 @@ def _tools(mode: BarMode, context: FeedContext, topics: frozenset[str]) -> list[
     if context.up_next:
         video = {"type": "string", "enum": [v.id for v in context.up_next]}
         tools.append(_function("pin_video", "Put one of the listed videos first in Up next.", {"id": video}, ["id"]))
+    tools.append(_ask_user(context, topics))
     if mode == "new":
         name = {"type": "string", "maxLength": MAX_FEED_NAME}
         tools.append(_function("create_feed", "Start a new feed; then add its topics with set_topics.", {"name": name}, []))
     return tools
+
+
+def _ask_user(context: FeedContext, topics: frozenset[str]) -> dict:
+    """A question card: chips and feedback name topics, videos name ids the frontend sent (Up next or explore)."""
+    choices = sorted(topics) + [v.id for v in (*context.up_next, *context.explore)]
+    properties = {
+        "kind": {"type": "string", "enum": ["chips", "videos", "feedback"]},
+        "question": {"type": "string", "maxLength": MAX_QUESTION},
+        "items": {"type": "array", "items": {"type": "string", "enum": choices}, "minItems": 1, "maxItems": MAX_CARD_ITEMS},
+    }
+    description = "Ask before acting when the request is broad: chips offer topics, videos offer listed video ids, feedback asks whether added topics fit."
+    return _function("ask_user", description, properties, ["kind", "question", "items"])
 
 
 def _user_message(text: str, mode: BarMode, context: FeedContext) -> str:
@@ -148,6 +168,12 @@ class OpenAICompatibleModel:
         except ValueError as exc:
             raise ProviderError(f"{self.provider} answered with something that isn't JSON") from exc
 
+    def _message(self, body: dict) -> _Message:
+        try:
+            return _Completion.model_validate(self._post(body)).choices[0].message
+        except (ValidationError, IndexError) as exc:
+            raise ProviderError(f"{self.provider}'s answer isn't a chat completion") from exc
+
     def handle(self, text: str, mode: BarMode, context: FeedContext) -> Proposal:
         body = {
             "model": self._config.model,
@@ -156,9 +182,18 @@ class OpenAICompatibleModel:
             "tool_choice": "auto",
             "temperature": TEMPERATURE,
         }
-        try:
-            message = _Completion.model_validate(self._post(body)).choices[0].message
-        except (ValidationError, IndexError) as exc:
-            raise ProviderError(f"{self.provider}'s answer isn't a chat completion") from exc
+        message = self._message(body)
         reply = (message.content or "").strip() or None
         return Proposal(actions=tuple(_action(c) for c in message.tool_calls or ()), reply=reply)
+
+    def answer(self, question: str, video: Video) -> str:
+        details = video.model_dump(by_alias=True, mode="json")
+        body = {
+            "model": self._config.model,
+            "messages": [{"role": "system", "content": NOTE_PROMPT}, {"role": "user", "content": f"Video: {json.dumps(details)}\nQuestion: {question}"}],
+            "temperature": TEMPERATURE,
+        }
+        text = (self._message(body).content or "").strip()
+        if not text:
+            raise ProviderError(f"{self.provider} gave an empty answer")
+        return text

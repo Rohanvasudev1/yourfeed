@@ -8,6 +8,7 @@ const LABELS: Readonly<Record<ListedKind, string>> = {
   top: "Limit to topics",
   home: "Boost topics",
   claude: "Topics in this feed",
+  blend: "Topics in this blend",
   topics: "Topics in this feed",
 };
 
@@ -16,6 +17,7 @@ const EMPTY: Readonly<Record<ListedKind, string>> = {
   top: "All topics. Add one to narrow it down.",
   home: "Recommendations come from what you watch. Add a topic to boost it.",
   claude: "Connect Claude to fill this in.",
+  blend: "Blend with someone to fill this in.",
   topics: "Nothing here yet. Add one below.",
 };
 

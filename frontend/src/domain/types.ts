@@ -1,3 +1,5 @@
+import type { Blend } from "./blend";
+
 export type Video = Readonly<{
   id: string;
   title: string;
@@ -13,7 +15,7 @@ export type Video = Readonly<{
   newsCategory: string | null;
 }>;
 
-export const FEED_KINDS = ["home", "subs", "top", "news", "claude", "topics"] as const;
+export const FEED_KINDS = ["home", "subs", "top", "news", "claude", "blend", "topics"] as const;
 export type FeedKind = (typeof FEED_KINDS)[number];
 
 export type Range = readonly [min: number, max: number];
@@ -49,6 +51,10 @@ export type Feed = Readonly<{
   seed: number;
   /** The visitor's note on the whole feed, shown in Feed notes. */
   note: string;
+  /** From Claude only: whether the visitor connected Claude, which fills the feed's topics. */
+  connected: boolean;
+  /** Blend only: who the visitor invited or blends with, or null before an invite. */
+  partner: Blend | null;
 }>;
 
 export const NEWS_CATEGORIES = ["All", "World", "Business", "Tech", "Science"] as const;
@@ -77,6 +83,8 @@ export type ComposeInput = Readonly<{
   watched: readonly string[];
   /** Max age in hours for Most viewed. */
   topMaxAgeHours: number;
+  /** The topics of the visitor's own feeds; a blend puts them against its partner's. */
+  myTopics: readonly string[];
 }>;
 
 export type Composition = Readonly<{

@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 
 from app.assistant.limits import AiLimits, Clock, LimitConfig
-from app.assistant.model import Model
+from app.assistant.model import Assistant, Model
 from app.assistant.provider import MODEL_TIMEOUT_S, ModelConfig, OpenAICompatibleModel
 from app.assistant.router import assistant_router
 from app.assistant.rules import KeywordRules
@@ -22,7 +22,7 @@ def _describe(exc: RequestValidationError) -> str:
 
 
 def create_app(
-    assistant: Model | None = None,
+    assistant: Model | Assistant | None = None,
     *,
     limits: LimitConfig = LimitConfig(),
     timeout: float = MODEL_TIMEOUT_S,
@@ -47,7 +47,9 @@ def create_app(
     def catalog(source: Source = Source.DEMO):
         return ok(list(load_catalog(source)))
 
-    selector = AssistantSelector(assistant, KeywordRules(), AiLimits(limits, clock), timeout)
+    # The keyword rules may be passed as the assistant too: then no model is set up.
+    model = assistant if assistant is not None and assistant.answered_by == "model" else None
+    selector = AssistantSelector(model, KeywordRules(), AiLimits(limits, clock), timeout)
     app.include_router(assistant_router(selector))
     return app
 

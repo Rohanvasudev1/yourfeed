@@ -1,8 +1,10 @@
 import { IconArrowUp, IconAsterisk, IconLoader2 } from "@tabler/icons-react";
 import type { ClaudeBarState } from "../state/useClaudeBar";
+import { BarModeSwitch } from "./BarModeSwitch";
 import "./claudeBar.css";
 
-const PLACEHOLDER = "Tell Claude what you want to watch";
+const placeholderFor = (bar: ClaudeBarState) =>
+  bar.mode === "edit" && bar.hasSwitch ? `Tell Claude what to change in ${bar.feedName}` : "Tell Claude what you want to watch";
 
 /** The plain-language command box: a request goes to the assistant and its feed actions land on this feed. */
 export function ClaudeBar({ bar }: Readonly<{ bar: ClaudeBarState }>) {
@@ -21,11 +23,12 @@ export function ClaudeBar({ bar }: Readonly<{ bar: ClaudeBarState }>) {
           aria-label="Tell Claude what to change"
           aria-describedby={bar.error ? "cbar-error" : undefined}
           aria-invalid={bar.error ? true : undefined}
-          placeholder={PLACEHOLDER}
+          placeholder={placeholderFor(bar)}
           value={bar.text}
           onChange={(event) => bar.setText(event.target.value)}
         />
         {bar.thinking && <span className="cbar-thinking">Thinking…</span>}
+        {bar.hasSwitch && <BarModeSwitch mode={bar.mode} feedName={bar.feedName} locked={bar.modeLocked} onChange={bar.setMode} />}
         <button type="submit" className="cbar-send" aria-label={bar.thinking ? "Thinking…" : "Send to Claude"} title={bar.thinking ? "Thinking…" : "Send to Claude"} disabled={bar.thinking}>
           {bar.thinking ? <IconLoader2 className="cbar-spin" size={17} aria-hidden="true" /> : <IconArrowUp size={17} aria-hidden="true" />}
         </button>
@@ -45,7 +48,7 @@ export function ClaudeBar({ bar }: Readonly<{ bar: ClaudeBarState }>) {
         )}
       </div>
       <div role="status" aria-label="AI busy notice">
-        {bar.notice && <p className="cbar-notice">{bar.notice}</p>}
+        {bar.busyNotice && <p className="cbar-notice">{bar.busyNotice}</p>}
       </div>
     </div>
   );

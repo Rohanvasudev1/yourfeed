@@ -140,3 +140,39 @@ def test_limits_are_set_by_environment_variables():
 def test_a_limit_that_isnt_a_whole_number_stops_the_server_at_startup():
     with pytest.raises(ValueError, match="AI_LIMIT_PER_DAY"):
         LimitConfig.from_env({"AI_LIMIT_PER_DAY": "lots"})
+
+
+def ask_note(client: TestClient, question: str = "What is an agent?") -> dict:
+    res = client.post("/api/assistant/answer", json={"videoId": "demo-0", "question": question})
+    assert res.status_code == 200, res.text
+    return res.json()["data"]
+
+
+def test_the_model_answers_note_questions_when_it_is_set_up():
+    client = TestClient(create_app(assistant=ScriptedAssistant(answer="An agent loops a model over tools.")))
+    assert ask_note(client) == {"answer": "An agent loops a model over tools.", "answeredBy": "model"}
+
+
+def test_a_note_question_falls_back_to_the_rules_when_the_model_fails():
+    client = TestClient(create_app(assistant=ScriptedAssistant(error=RuntimeError("provider is down"))))
+    body = ask_note(client)
+    assert body["answeredBy"] == "rules"
+    assert body["answer"]
+
+
+def test_note_questions_count_against_the_same_ai_limits():
+    fake = ScriptedAssistant()
+    me = visitor(create_app(assistant=fake, limits=LimitConfig(per_minute=2, per_day=100, site_per_day=100)), "10.0.0.1")
+    ask(me)
+    assert ask_note(me)["answeredBy"] == "model"
+    assert ask_note(me)["answeredBy"] == "rules"
+    assert ask(me)["answeredBy"] == "rules"
+    assert len(fake.questions) == 1
+
+
+def test_passing_the_keyword_rules_as_the_assistant_means_no_model():
+    from app.assistant.rules import KeywordRules
+
+    client = TestClient(create_app(assistant=KeywordRules()))
+    assert client.get("/api/assistant/info").json()["data"] == {"answeredBy": "rules", "provider": None, "model": None}
+    assert ask(client)["notice"] is None

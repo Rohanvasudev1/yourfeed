@@ -1,5 +1,6 @@
 import { useMemo, useReducer } from "react";
 import { AllTabsPage } from "./components/AllTabsPage";
+import { BlendPanel } from "./components/blend/BlendPanel";
 import { CatalogError } from "./components/CatalogError";
 import { ClaudeBar } from "./components/ClaudeBar";
 import { FeedNotes } from "./components/FeedNotes";
@@ -8,10 +9,12 @@ import { FeedView } from "./components/FeedView";
 import { Flash } from "./components/Flash";
 import { EditBar } from "./components/EditBar";
 import { Footer } from "./components/Footer";
+import { FromClaudePanel } from "./components/fromClaude/FromClaudePanel";
 import { Header } from "./components/Header";
 import { HistorySection } from "./components/library/HistorySection";
 import { SavedSection } from "./components/library/SavedSection";
 import { NameFeed } from "./components/NameFeed";
+import { QuestionCard } from "./components/QuestionCard";
 import { SearchBox } from "./components/search/SearchBox";
 import { SearchPage } from "./components/search/SearchPage";
 import { SettingsLine } from "./components/SettingsLine";
@@ -22,6 +25,7 @@ import { TabBar } from "./components/TabBar";
 import { UpNextLine } from "./components/UpNextLine";
 import { UndoRedo } from "./components/UndoRedo";
 import { ViewToggle } from "./components/ViewToggle";
+import { myTopics } from "./domain/blend";
 import { composeFeed } from "./domain/compose";
 import { TOP_RANGE_HOURS } from "./domain/feed";
 import { shareStartingVideos } from "./domain/share";
@@ -31,6 +35,7 @@ import { currentFeedOf, makeReducer } from "./state/appState";
 import { startHistory, withHistory } from "./state/history";
 import { restoreState } from "./state/persistence";
 import { DEMO_SEED } from "./state/seed";
+import { useBlend } from "./state/useBlend";
 import { useCardActions } from "./state/useCardActions";
 import { useCatalog } from "./state/useCatalog";
 import { useClaudeBar } from "./state/useClaudeBar";
@@ -40,6 +45,7 @@ import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
 import { useSearch } from "./state/useSearch";
 import { useNotes } from "./state/useNotes";
+import { useQuestionCard } from "./state/useQuestionCard";
 import { useSession } from "./state/useSession";
 import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
@@ -63,16 +69,24 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
 
   const feed = currentFeedOf(state);
   const ready = catalog.status === "ready" ? catalog.catalog : null;
+  const mine = useMemo(() => myTopics(state.feeds), [state.feeds]);
   const input = useMemo<ComposeInput | null>(
     () =>
-      ready && { catalog: ready, feed, filters: state.filters, watched: state.watched, topMaxAgeHours: TOP_RANGE_HOURS[feed.topRange] },
-    [ready, feed, state.filters, state.watched],
+      ready && {
+        catalog: ready,
+        feed,
+        filters: state.filters,
+        watched: state.watched,
+        topMaxAgeHours: TOP_RANGE_HOURS[feed.topRange],
+        myTopics: mine,
+      },
+    [ready, feed, state.filters, state.watched, mine],
   );
   const composition = useMemo(() => input && composeFeed(input), [input]);
   const byId = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const session = useSession(feed, byId, dispatch);
   const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
-  const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, dispatch, showFlash: session.showFlash });
+  const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, assistant, dispatch, showFlash: session.showFlash });
   const library = useLibrary(state, feed, byId, dispatch);
   const cardActions = useCardActions(state, feed, ready ?? NO_VIDEOS, dispatch);
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
@@ -83,8 +97,19 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   // With nothing to share the panel has nothing to show, so the button never claims it's open.
   const share = { ...shareToggle, open: shareToggle.open && shareVideos.length > 0 };
   const upNext = [...pinned, ...(composition?.upNext ?? [])];
-  const claudeBar = useClaudeBar({ assistant, feeds: state.feeds, feed, upNext, dispatch });
+  const questions = useQuestionCard({ feed, scope: `${tabs.page}:${feed.name}`, byId, dispatch });
+  const claudeBar = useClaudeBar({
+    assistant,
+    feeds: state.feeds,
+    feed,
+    upNext,
+    catalog: ready ?? NO_VIDEOS,
+    questions,
+    chosenMode: state.barMode,
+    dispatch,
+  });
   const edit = useEditMode(state.feeds, dispatch);
+  const blend = useBlend(state.feeds, feed, ready ?? NO_VIDEOS, dispatch);
   const search = useSearch({
     catalog: ready ?? NO_VIDEOS,
     recent: state.recentSearches,
@@ -149,7 +174,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                 <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
               </div>
             </div>
-            {!feed.draft && <ClaudeBar bar={claudeBar} />}
+            <ClaudeBar bar={claudeBar} />
             {feed.draft ? (
               <NameFeed onName={tabs.name} />
             ) : (
@@ -177,8 +202,18 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                   onTopRange={(range) => dispatch({ type: "set_top_range", feed: feed.name, range })}
                   onNewsCategory={(category) => dispatch({ type: "set_news_category", feed: feed.name, category })}
                 />
+                {feed.kind === "claude" && (
+                  <FromClaudePanel
+                    connected={feed.connected}
+                    onConnect={(connected) => dispatch({ type: "set_claude_connection", feed: feed.name, connected })}
+                    onSuggest={(request) => void claudeBar.send(request)}
+                    thinking={claudeBar.thinking}
+                  />
+                )}
+                {feed.kind === "blend" && <BlendPanel partner={feed.partner} blends={state.blends} controls={blend} />}
                 {catalog.status === "loading" && <p className="muted">Loading…</p>}
                 {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
+                <QuestionCard questions={questions} byId={byId} filters={state.filters} />
                 <Flash message={session.flash} />
                 {session.finished.length > 0 && (
                   <FinishedSection
@@ -214,6 +249,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                     videos={shareVideos}
                     notes={state.notes}
                     filters={state.filters}
+                    quickSend={state.blends.map((b) => b.name)}
                     onClose={share.close}
                   />
                 )}

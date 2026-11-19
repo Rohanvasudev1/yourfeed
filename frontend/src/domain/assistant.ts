@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { isBuiltIn } from "./feed";
+import { isConnectedClaude } from "./fromClaude";
 import { pinVideo } from "./session";
 import type { Feed, FeedKind, Video } from "./types";
 
@@ -8,7 +10,8 @@ export const MAX_REQUEST_CHARS = 300;
 export const CONTEXT_VIDEOS = 20;
 
 /** Edit changes the current feed; new starts a feed from the request. Built-in feeds are always new. */
-export type BarMode = "edit" | "new";
+export const BAR_MODES = ["edit", "new"] as const;
+export type BarMode = (typeof BAR_MODES)[number];
 
 const topics = z.array(z.string()).readonly();
 const minutes = z.number().int();
@@ -48,15 +51,38 @@ export type FeedContext = Readonly<{
   session: Feed["session"];
   pinned: readonly string[];
   upNext: readonly ContextVideo[];
+  /** Videos from topics the feed doesn't have, one per topic, that a question card may offer. */
+  explore: readonly ContextVideo[];
 }>;
 
-/** Only your own feeds can be edited; requests on built-in feeds start a new one. */
-export const barModeFor = (feed: Feed): BarMode => (feed.kind === "topics" ? "edit" : "new");
+/**
+ * The bar's mode on `feed`: a draft is the new feed already, so it's edited; built-in feeds can't
+ * be edited, so they're always new, except From Claude once connected, whose topics are yours to add to;
+ * your own feeds (and a connected From Claude) follow the visitor's choice.
+ */
+export const isLockedToNew = (feed: Feed): boolean => isBuiltIn(feed) && !isConnectedClaude(feed);
 
-export function feedContext(feed: Feed, upNext: readonly Video[]): FeedContext {
+export function barModeFor(feed: Feed, chosen: BarMode = "edit"): BarMode {
+  if (feed.draft) return "edit";
+  return isLockedToNew(feed) ? "new" : chosen;
+}
+
+const contextVideo = ({ id, title, topic, channel }: Video): ContextVideo => ({ id, title, topic, channel });
+
+export function feedContext(feed: Feed, upNext: readonly Video[], explore: readonly Video[] = []): FeedContext {
   const { kind, name, topics, channels, muted, length, session, pinned } = feed;
-  const shown = upNext.slice(0, CONTEXT_VIDEOS).map(({ id, title, topic, channel }) => ({ id, title, topic, channel }));
-  return { kind, name, topics, channels, muted, length, session, pinned, upNext: shown };
+  return {
+    kind,
+    name,
+    topics,
+    channels,
+    muted,
+    length,
+    session,
+    pinned,
+    upNext: upNext.slice(0, CONTEXT_VIDEOS).map(contextVideo),
+    explore: explore.map(contextVideo),
+  };
 }
 
 const withAll = (items: readonly string[], added: readonly string[]) => [...items, ...added.filter((x) => !items.includes(x))];

@@ -1,11 +1,16 @@
-import { applyFeedActions, type FeedAction } from "../domain/assistant";
+import { insertAnswer } from "../domain/askNotes";
+import { applyFeedActions, type BarMode, type FeedAction } from "../domain/assistant";
+import type { BlendPartner } from "../domain/blend";
 import { listKeyOf } from "../domain/feedList";
+import { withClaudeConnection } from "../domain/fromClaude";
+import { createFromRequest } from "../domain/newFeed";
 import type { FeedSet } from "../domain/refresh";
 import { appendDictation, type NoteTarget } from "../domain/notes";
 import { forgetWatch, recordWatch, type SavedFolder } from "../domain/library";
 import { finishCurrent, moveBackToUpNext, pinVideo, removeFromSession, startWatching } from "../domain/session";
 import { isTabAction, reduceTabs, type TabAction } from "../domain/tabs";
 import type { Feed, GlobalFilters, NewsCategory, Range, TopRange } from "../domain/types";
+import { isBlendAction, reduceBlend, type BlendAction } from "./blend";
 import { reduceLibrary, type LibraryAction } from "./library";
 import { isSearchAction, reduceSearch, type SearchAction } from "./search";
 
@@ -28,6 +33,10 @@ export type AppState = Readonly<{
   view: View;
   /** The visitor's searches, newest first, normalized. */
   recentSearches: readonly string[];
+  /** The Claude bar's mode on your own feeds. Built-in feeds and drafts have a fixed mode. */
+  barMode: BarMode;
+  /** People the visitor has blended with, newest first; Share offers them as quick-send chips. */
+  blends: readonly BlendPartner[];
 }>;
 
 export type Action =
@@ -53,6 +62,8 @@ export type Action =
   | Readonly<{ type: "set_note"; target: NoteTarget; text: string }>
   /** Adds words heard by voice typing to the end of a note. */
   | Readonly<{ type: "add_dictation"; target: NoteTarget; heard: string }>
+  /** Puts an answer under its question in a video's notes; nothing changes if the question is gone. */
+  | Readonly<{ type: "insert_answer"; video: string; question: string; answer: string }>
   /** Adds a video to the session by hand, first in Up next. */
   | Readonly<{ type: "pin_video"; feed: string; video: string }>
   /** Unpins a video and keeps it out of the feed's Up next. */
@@ -61,10 +72,16 @@ export type Action =
   | Readonly<{ type: "mark_watched"; video: string }>
   | LibraryAction
   | SearchAction
+  | BlendAction
   /** Loads (or, for undo, restores) a feed set. */
   | Readonly<{ type: "set_feed_set"; set: FeedSet }>
   /** Every feed action of one Claude bar request, applied together so they make one undo step. */
-  | Readonly<{ type: "apply_request"; feed: string; actions: readonly FeedAction[] }>;
+  | Readonly<{ type: "apply_request"; feed: string; actions: readonly FeedAction[] }>
+  /** A new-mode request (or one asked on a draft): makes a feed from its actions and opens it. */
+  | Readonly<{ type: "create_from_request"; from: string; actions: readonly FeedAction[] }>
+  | Readonly<{ type: "set_bar_mode"; mode: BarMode }>
+  /** Connects From Claude (filling its topics from the summary) or disconnects it (clearing them). */
+  | Readonly<{ type: "set_claude_connection"; feed: string; connected: boolean }>;
 
 const mapFeed = (state: AppState, name: string, change: (feed: Feed) => Feed): AppState => ({
   ...state,
@@ -90,6 +107,7 @@ export function makeReducer(seed: AppState) {
       return tabs.feeds === state.feeds && tabs.currentFeed === state.currentFeed ? state : { ...state, ...tabs };
     }
     if (isSearchAction(action)) return reduceSearch(state, action);
+    if (isBlendAction(action)) return reduceBlend(state, action);
     switch (action.type) {
       case "reset":
         return seed;
@@ -136,10 +154,22 @@ export function makeReducer(seed: AppState) {
         return writeNote(state, action.target, () => action.text);
       case "add_dictation":
         return writeNote(state, action.target, (note) => appendDictation(note, action.heard));
+      case "insert_answer": {
+        const note = insertAnswer(state.notes[action.video] ?? "", action.question, action.answer);
+        return note === null ? state : { ...state, notes: { ...state.notes, [action.video]: note } };
+      }
       case "set_feed_set":
         return updateFeed(state, action.set.feed, { seed: action.set.seed, skipped: action.set.skipped });
       case "apply_request":
         return mapFeed(state, action.feed, (f) => applyFeedActions(f, action.actions));
+      case "set_claude_connection":
+        return mapFeed(state, action.feed, (f) => (f.kind === "claude" ? withClaudeConnection(f, action.connected) : f));
+      case "create_from_request": {
+        const tabs = createFromRequest(state, action.from, action.actions);
+        return tabs.feeds === state.feeds ? state : { ...state, ...tabs };
+      }
+      case "set_bar_mode":
+        return state.barMode === action.mode ? state : { ...state, barMode: action.mode };
       default:
         return reduceLibrary(state, action);
     }

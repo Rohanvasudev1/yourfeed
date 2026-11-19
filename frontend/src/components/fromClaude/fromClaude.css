@@ -1,0 +1,18 @@
+/* From Claude's panel, after the mockup's renderExtra: the Connect Claude step, or the summary with suggestion chips. */
+.from-claude { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; padding: 18px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); }
+.from-claude h3 { margin: 0 0 4px; font-size: 15px; font-weight: 500; }
+.from-claude-mark { flex: none; color: var(--fill-brand); }
+.from-claude-text { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.from-claude-demo { margin: 10px 0 0; font-size: 12px; }
+.from-claude-connected { display: block; padding: 12px; }
+.from-claude-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.from-claude-head h3 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; }
+.from-claude-work { list-style: none; margin: 0; padding: 0; }
+.from-claude-work li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-top: 0.5px solid var(--border); font-size: 13px; }
+.from-claude-work .muted { font-size: 12px; text-align: right; }
+.from-claude-ask { margin-top: 4px; padding-top: 10px; border-top: 0.5px solid var(--border); }
+.from-claude-ask p { margin: 0 0 8px; font-size: 14px; font-weight: 500; }
+.from-claude-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.from-claude-chip { min-height: 0; height: auto; padding: 4px 10px; border-radius: 999px; border: 0.5px solid var(--border-strong); background: var(--surface-2); font-size: 12px; color: var(--text-primary); }
+.from-claude-chip:hover { background: var(--surface-1); }
+.from-claude-chip:disabled { opacity: 0.6; cursor: default; }

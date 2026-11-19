@@ -1,0 +1,17 @@
+.cmode { position: relative; flex: none; display: flex; align-items: center; height: 32px; min-height: 0; padding: 0 4px; border: none; border-radius: 999px; background: transparent; }
+.cmode:hover { background: transparent; }
+.mtrack { position: relative; display: flex; align-items: center; justify-content: space-between; width: 48px; height: 24px; padding: 0 6px; border-radius: 999px; background: var(--surface-1); border: 1px solid var(--border-strong); transition: background 0.15s, border-color 0.15s; }
+.mend { color: var(--text-muted); }
+.mknob { position: absolute; top: 1px; left: 1px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--surface-2); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); color: var(--text-primary); transition: transform 0.18s ease; }
+.cmode.new .mtrack { background: var(--fill-accent); border-color: var(--fill-accent); }
+.cmode.new .mend { color: var(--on-accent); opacity: 0.75; }
+.cmode.new .mknob { transform: translateX(24px); color: var(--fill-accent); }
+.cmode:hover .mtrack { border-color: var(--border-stronger); }
+.cmode[aria-disabled="true"] { cursor: default; }
+.cmode[aria-disabled="true"] .mtrack { opacity: 0.55; }
+.cmode:focus-visible { box-shadow: none; outline: none; }
+.cmode:focus-visible .mtrack { box-shadow: 0 0 0 3px var(--bg-accent); }
+.ctip { position: absolute; right: -6px; top: calc(100% + 8px); z-index: 45; width: 230px; padding: 9px 11px; border-radius: 10px; background: var(--fill-primary); color: var(--on-primary); font-size: 12px; line-height: 1.45; text-align: left; font-weight: 400; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25); opacity: 0; visibility: hidden; transform: translateY(-3px); transition: opacity 0.12s, transform 0.12s, visibility 0.12s; pointer-events: none; }
+.ctip b { display: block; margin-bottom: 2px; font-size: 13px; font-weight: 600; }
+.cmode:hover .ctip, .cmode:focus-visible .ctip { opacity: 1; visibility: visible; transform: none; transition-delay: 0.25s; }
+@media (prefers-reduced-motion: reduce) { .mknob, .mtrack, .ctip { transition: none; } }

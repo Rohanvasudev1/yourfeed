@@ -57,7 +57,6 @@ def test_requests_become_feed_actions(text, actions):
         ("turn on honest titles", "I can change this feed's topics, video length and session time. Filters, tabs and saved videos are yours to change."),
         ("delete this tab", "I can change this feed's topics, video length and session time. Filters, tabs and saved videos are yours to change."),
         ("save the first one", "I can change this feed's topics, video length and session time. Filters, tabs and saved videos are yours to change."),
-        ("something to learn", "What do you want to learn about? Try naming one, like MCP or Product design."),
         ("asdfgh", "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."),
         ("put the knitting one first", "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."),
     ],
@@ -96,14 +95,93 @@ def test_built_in_feeds_cannot_be_edited(kind):
     assert body["reply"] == "This tab builds itself, so I can't change it. Try one of your own feeds."
 
 
-def test_new_mode_is_not_supported_yet():
-    res = client.post("/api/assistant/request", json=request("add cooking", mode="new"))
-    body = res.json()["data"]
+def test_from_claude_once_connected_is_edited_like_your_own_feeds():
+    """The frontend sends From Claude in edit mode only once it's connected."""
+    body = ask("add cooking", kind="claude", topics=["MCP", "AI"])
+    assert body["actions"] == [{"type": "set_topics", "add": ["Cooking"], "remove": []}]
+
+
+def ask_new(text: str, **context_changes) -> dict:
+    res = client.post("/api/assistant/request", json=request(text, mode="new", **context_changes))
+    assert res.status_code == 200, res.text
+    return res.json()["data"]
+
+
+@pytest.mark.parametrize("kind", ["topics", "home", "news"])
+def test_new_mode_starts_a_feed_with_the_topics_asked_for(kind):
+    body = ask_new("cooking and travel", kind=kind)
+    assert body["actions"] == [
+        {"type": "create_feed", "name": None},
+        {"type": "set_topics", "add": ["Cooking", "Travel"], "remove": []},
+    ]
+
+
+def test_new_mode_adds_topics_the_current_feed_already_has():
+    body = ask_new("add AI")
+    assert body["actions"] == [{"type": "create_feed", "name": None}, {"type": "set_topics", "add": ["AI"], "remove": []}]
+
+
+@pytest.mark.parametrize(
+    ("text", "reply"),
+    [
+        ("something to learn", "What do you want to learn about? Try naming one, like AI, Programming or MCP."),
+        ("asdfgh", "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."),
+    ],
+)
+def test_new_mode_without_a_topic_only_replies(text, reply):
+    body = ask_new(text)
     assert body["actions"] == []
-    assert body["reply"] == "This tab builds itself, so I can't change it. Try one of your own feeds."
+    assert body["reply"] == reply
 
 
 def test_less_of_a_topic_already_hidden_is_a_no_op():
     body = ask("no wrestling", muted=["Wrestling"])
     assert body["actions"] == []
     assert body["reply"] == "Already in this feed."
+
+
+@pytest.mark.parametrize(
+    ("text", "question", "items"),
+    [
+        ("something to learn", "What do you want to learn about?", ["MCP", "Product design"]),
+        ("some sport", "Which sports?", ["Premier League", "Tennis", "Cricket", "Wrestling"]),
+        ("help me relax", "What helps you wind down?", ["Podcasts", "Live music", "Cooking", "Travel"]),
+    ],
+)
+def test_broad_requests_ask_with_chips_for_topics_not_in_the_feed(text, question, items):
+    body = ask(text)
+    assert body["actions"] == [{"type": "ask_user", "kind": "chips", "question": question, "items": items}]
+    assert body.get("reply") is None
+
+
+def test_a_broad_request_whose_topics_are_all_in_the_feed_falls_through_to_videos():
+    body = ask("something to learn", topics=["AI", "Programming", "MCP", "Product design", "Economics"], explore=EXPLORE)
+    assert [a["kind"] for a in body["actions"]] == ["videos"]
+
+
+EXPLORE = [
+    {"id": "demo-5", "title": "Five set final", "topic": "Tennis", "channel": "Tennis Today"},
+    {"id": "demo-6", "title": "Pasta night", "topic": "Cooking", "channel": "Home Kitchen"},
+    {"id": "demo-7", "title": "Lisbon in a day", "topic": "Travel", "channel": "Slow Trips"},
+    {"id": "demo-8", "title": "Late show", "topic": "Podcasts", "channel": "Talk Room"},
+    {"id": "demo-9", "title": "Derby day", "topic": "Premier League", "channel": "Match Room"},
+]
+
+
+def test_an_unmatched_request_offers_four_videos_from_topics_not_in_the_feed():
+    body = ask("asdfgh", explore=EXPLORE)
+    assert body["actions"] == [
+        {
+            "type": "ask_user",
+            "kind": "videos",
+            "question": "Pick the ones you're feeling and I'll add more like them.",
+            "items": ["demo-5", "demo-6", "demo-7", "demo-8"],
+        }
+    ]
+    assert body.get("reply") is None
+
+
+def test_an_unmatched_request_with_nothing_to_explore_gets_a_reply():
+    body = ask("asdfgh", explore=[])
+    assert body["actions"] == []
+    assert body["reply"] == "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."

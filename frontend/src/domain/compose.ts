@@ -1,4 +1,6 @@
+import { blendOrder, isBlendOn } from "./blend";
 import { activeItems } from "./feedList";
+import { isConnectedClaude } from "./fromClaude";
 import { hash } from "./hash";
 import { HOURS_PER_YEAR } from "./time";
 import type { ComposeInput, Composition, CompositionFilters, Feed, Video } from "./types";
@@ -51,7 +53,10 @@ function matchesKind(video: Video, input: ComposeInput): boolean {
       return video.ageHours <= input.topMaxAgeHours && limitedToTopic(feed, video.topic);
     case "news":
       return video.topic === "News" && (feed.newsCategory === "All" || video.newsCategory === feed.newsCategory);
+    case "blend":
+      return isBlendOn(feed) && feed.topics.includes(video.topic) && video.ageHours < HOURS_PER_YEAR;
     case "claude":
+      return isConnectedClaude(feed) && feed.topics.includes(video.topic) && video.ageHours < HOURS_PER_YEAR;
     case "topics":
       return feed.topics.includes(video.topic) && video.ageHours < HOURS_PER_YEAR;
   }
@@ -82,6 +87,8 @@ function order(pool: readonly Video[], input: ComposeInput): Video[] {
       return feed.seed ? shuffled(pool, feed.seed) : [...pool].sort((a, b) => a.ageHours - b.ageHours);
     case "news":
       return [...pool].sort((a, b) => Number(b.live) - Number(a.live) || a.ageHours - b.ageHours);
+    case "blend":
+      return blendOrder(shuffled(pool, feed.seed), input.myTopics, feed.partner?.topics ?? []);
     case "claude":
     case "topics": {
       const mixed = shuffled(pool, feed.seed);

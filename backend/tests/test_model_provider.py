@@ -178,3 +178,40 @@ def test_an_answer_that_isnt_json_falls_back_to_the_rules():
     http = httpx.Client(transport=httpx.MockTransport(html))
     client = TestClient(create_app(assistant=OpenAICompatibleModel(GROQ, http=http)))
     assert ask(client)["answeredBy"] == "rules"
+
+
+def ask_note(client: TestClient, question: str = "Is this for beginners?") -> dict:
+    res = client.post("/api/assistant/answer", json={"videoId": "demo-0", "question": question})
+    assert res.status_code == 200, res.text
+    assert KEY not in res.text
+    return res.json()["data"]
+
+
+def test_note_questions_are_answered_by_the_model_from_the_videos_details():
+    provider = FakeProvider(completion("It walks through it step by step.\nNo transcript, though."))
+    body = ask_note(app_with(provider))
+    assert body == {"answer": "It walks through it step by step. No transcript, though.", "answeredBy": "model"}
+    sent = provider.sent()
+    said = json.dumps(sent["messages"])
+    assert "Is this for beginners?" in said and "Build an AI agent with tool use" in said
+    assert "tools" not in sent
+
+
+@pytest.mark.parametrize("answer", [completion(None), {"choices": []}])
+def test_an_empty_or_broken_note_answer_falls_back_to_the_rules(answer):
+    assert ask_note(app_with(FakeProvider(answer)))["answeredBy"] == "rules"
+
+
+def test_a_provider_error_on_a_note_question_falls_back_to_the_rules():
+    assert ask_note(app_with(FakeProvider({}, status=500)))["answeredBy"] == "rules"
+
+
+def test_question_cards_offer_catalog_topics_and_the_videos_sent():
+    explore = [{"id": "demo-30", "title": "Knife skills", "topic": "Cooking", "channel": "Pen and Pocket"}]
+    chips = {"type": "ask_user", "kind": "videos", "question": "Pick some", "items": ["demo-30"]}
+    provider = FakeProvider(completion(None, tool_call("ask_user", {k: v for k, v in chips.items() if k != "type"})))
+    client = app_with(provider)
+    res = client.post("/api/assistant/request", json=request("something fun", explore=explore))
+    assert res.json()["data"]["actions"] == [chips]
+    items = tool(provider.sent(), "ask_user")["parameters"]["properties"]["items"]["items"]["enum"]
+    assert "demo-30" in items and "Cooking" in items and "demo-22" in items

@@ -76,6 +76,21 @@ def test_valid_question_cards_pass_through():
     assert post(client, request("sport")).json()["data"]["actions"] == [chips, videos]
 
 
+def test_question_card_videos_may_come_from_the_explore_videos_but_nowhere_else():
+    explore = [{"id": "demo-9", "title": "Derby day", "topic": "Premier League", "channel": "Match Room"}]
+    shown = {"type": "ask_user", "kind": "videos", "question": "Pick some", "items": ["demo-9", "demo-0"]}
+    unseen = {"type": "ask_user", "kind": "videos", "question": "Pick some", "items": ["demo-77"]}
+    client, _ = client_answering(shown, unseen)
+    assert post(client, request("anything", explore=explore)).json()["data"]["actions"] == [shown]
+
+
+def test_feedback_cards_may_only_name_catalog_topics():
+    good = {"type": "ask_user", "kind": "feedback", "question": "Look right?", "items": ["Tennis"]}
+    bad = {"type": "ask_user", "kind": "feedback", "question": "Look right?", "items": ["Knitting"]}
+    client, _ = client_answering(good, bad)
+    assert post(client, request("anything")).json()["data"]["actions"] == [good]
+
+
 def test_create_feed_is_kept_in_new_mode():
     client, _ = client_answering({"type": "create_feed", "name": "Cooking"})
     body = post(client, request("cooking", mode="new")).json()["data"]
