@@ -195,7 +195,7 @@ describe("the Claude bar on a built-in feed", () => {
   it("asks in new mode and never edits the built-in feed", async () => {
     const assistant = renderWith(
       scriptedAssistant(() => ({
-        actions: [{ type: "set_topics", add: ["Tennis"], remove: [] }],
+        actions: [],
         reply: "This tab builds itself, so I can't change it. Try one of your own feeds.",
         answeredBy: "rules",
       })),
@@ -217,7 +217,9 @@ describe("the Claude bar's controls", () => {
     await openTab("Learn");
     bar().focus();
     await userEvent.tab();
+    expect(screen.getByRole("switch", { name: "New feed mode" })).toHaveFocus();
+    await userEvent.tab();
     expect(sendButton()).toHaveFocus();
-    expect(bar()).toHaveAttribute("placeholder", "Tell Claude what you want to watch");
+    expect(bar()).toHaveAttribute("placeholder", "Tell Claude what to change in Learn");
   });
 });

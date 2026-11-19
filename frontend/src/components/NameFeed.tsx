@@ -1,4 +1,4 @@
-import { IconCheck } from "@tabler/icons-react";
+import { IconAsterisk, IconCheck } from "@tabler/icons-react";
 import { useState, type FormEvent } from "react";
 
 type Props = Readonly<{
@@ -40,6 +40,9 @@ export function NameFeed({ onName }: Props) {
           {message}
         </p>
       )}
+      <p className="name-feed-hint">
+        <IconAsterisk className="cbar-mark" size={13} aria-hidden="true" /> Or tell Claude what you want in the bar above. Either one creates the feed.
+      </p>
     </form>
   );
 }
