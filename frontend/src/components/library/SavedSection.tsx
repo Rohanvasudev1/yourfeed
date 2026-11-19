@@ -26,7 +26,7 @@ export function SavedSection(props: LibraryProps) {
   };
 
   return (
-    <LibrarySection name="Saved" icon={IconBookmark} summary={`${folderCount(folders.length)} · ${videoCount(total)}`}>
+    <LibrarySection name="Saved" icon={IconBookmark} summary={`${folderCount(folders.length)} · ${videoCount(total)}`} control={props.control}>
       <div className="library-toolbar">
         <span className="muted small">Use + to add a saved video to this session</span>
         <button

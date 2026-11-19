@@ -88,6 +88,7 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
     setError(null);
     if (awaitsConnection(feed)) return showReply(CONNECT_FIRST);
     setThinking(true);
+    dispatch({ type: "see_provider_notice" });
     questions.close();
     const asked = feed;
     const askedMode = mode;

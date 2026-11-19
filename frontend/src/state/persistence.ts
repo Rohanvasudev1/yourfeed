@@ -84,6 +84,8 @@ const stateSchema = z
     barMode: z.enum(BAR_MODES).catch("edit"),
     blends: z.array(partnerSchema),
     inbox: inboxSchema,
+    // Saved before the provider notice existed, or not a yes or no: show it again rather than discarding the save.
+    providerNoticeSeen: z.boolean().catch(false),
   })
   .refine((s) => new Set(s.feeds.map((f) => f.name.toLowerCase())).size === s.feeds.length, "feed names must be unique")
   .refine((s) => s.feeds.some((f) => f.name === s.currentFeed), "the open feed must exist") satisfies z.ZodType<AppState>;

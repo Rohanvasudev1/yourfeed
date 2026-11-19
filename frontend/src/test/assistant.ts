@@ -1,5 +1,6 @@
 import type { AssistantResult, BarMode, FeedAction, FeedContext } from "../domain/assistant";
 import type { AnswerResult } from "../domain/askNotes";
+import type { AssistantInfo } from "../domain/assistantInfo";
 import type { AssistantPort } from "../ports";
 
 export type AssistantCall = Readonly<{ text: string; mode: BarMode; context: FeedContext }>;
@@ -12,12 +13,16 @@ type NoteAnswer = AnswerResult | Promise<AnswerResult>;
 type Script = Readonly<{
   /** Answers each question asked in a video's notes. */
   answerQuestion?: (question: string, videoId: string) => NoteAnswer;
+  /** Says which assistant answers; a model via Groq unless a test says otherwise. */
+  info?: () => AssistantInfo | Promise<AssistantInfo>;
 }>;
+
+export const GROQ_INFO: AssistantInfo = { answeredBy: "model", provider: "Groq", model: "gpt-oss-20b" };
 
 /** A stand-in assistant: answers each request with `answer(text)` and records every call and question. */
 export function scriptedAssistant(
   answer: (text: string) => Answer = () => replyWith("OK."),
-  { answerQuestion = () => answerWith("A scripted answer.") }: Script = {},
+  { answerQuestion = () => answerWith("A scripted answer."), info = () => GROQ_INFO }: Script = {},
 ): AssistantPort & { calls: AssistantCall[]; questions: QuestionCall[] } {
   const calls: AssistantCall[] = [];
   const questions: QuestionCall[] = [];
@@ -32,6 +37,7 @@ export function scriptedAssistant(
       questions.push({ videoId, question });
       return answerQuestion(question, videoId);
     },
+    info: async () => info(),
   };
 }
 

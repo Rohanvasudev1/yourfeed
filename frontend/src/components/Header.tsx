@@ -7,10 +7,12 @@ type Props = Readonly<{
   onUndoRefresh: (() => void) | null;
   /** The search box, which sits right after the refresh undo. */
   search: ReactNode;
+  /** The account avatar and its menu, at the end of the header. */
+  account: ReactNode;
 }>;
 
 /** The logo loads a new set for the open feed; the round undo button sits in a fixed slot by the search box so nothing shifts. */
-export function Header({ onRefresh, onUndoRefresh, search }: Props) {
+export function Header({ onRefresh, onUndoRefresh, search, account }: Props) {
   return (
     <header className="app-header">
       <button
@@ -37,6 +39,7 @@ export function Header({ onRefresh, onUndoRefresh, search }: Props) {
         )}
       </div>
       {search}
+      {account}
     </header>
   );
 }
