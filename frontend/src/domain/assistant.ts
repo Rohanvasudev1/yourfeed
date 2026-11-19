@@ -48,15 +48,29 @@ export type FeedContext = Readonly<{
   session: Feed["session"];
   pinned: readonly string[];
   upNext: readonly ContextVideo[];
+  /** Videos from topics the feed doesn't have, one per topic, that a question card may offer. */
+  explore: readonly ContextVideo[];
 }>;
 
 /** Only your own feeds can be edited; requests on built-in feeds start a new one. */
 export const barModeFor = (feed: Feed): BarMode => (feed.kind === "topics" ? "edit" : "new");
 
-export function feedContext(feed: Feed, upNext: readonly Video[]): FeedContext {
+const contextVideo = ({ id, title, topic, channel }: Video): ContextVideo => ({ id, title, topic, channel });
+
+export function feedContext(feed: Feed, upNext: readonly Video[], explore: readonly Video[] = []): FeedContext {
   const { kind, name, topics, channels, muted, length, session, pinned } = feed;
-  const shown = upNext.slice(0, CONTEXT_VIDEOS).map(({ id, title, topic, channel }) => ({ id, title, topic, channel }));
-  return { kind, name, topics, channels, muted, length, session, pinned, upNext: shown };
+  return {
+    kind,
+    name,
+    topics,
+    channels,
+    muted,
+    length,
+    session,
+    pinned,
+    upNext: upNext.slice(0, CONTEXT_VIDEOS).map(contextVideo),
+    explore: explore.map(contextVideo),
+  };
 }
 
 const withAll = (items: readonly string[], added: readonly string[]) => [...items, ...added.filter((x) => !items.includes(x))];
