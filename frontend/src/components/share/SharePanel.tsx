@@ -23,6 +23,8 @@ type Props = Readonly<{
   videos: readonly Video[];
   notes: Readonly<Record<string, string>>;
   filters: GlobalFilters;
+  /** People the visitor blends with, offered as one-tap quick-send chips. */
+  quickSend: readonly string[];
   onClose: () => void;
 }>;
 
@@ -31,7 +33,7 @@ const notesFor = (picked: readonly Video[], notes: Readonly<Record<string, strin
   Object.fromEntries(picked.flatMap((v) => (notes[v.id]?.trim() ? [[v.id, notes[v.id]]] : [])));
 
 /** "Share this feed": pick videos, maybe include notes, then copy a working link or (demo only) send it. */
-export function SharePanel({ id, feedName, videos, notes, filters, onClose }: Props) {
+export function SharePanel({ id, feedName, videos, notes, filters, quickSend, onClose }: Props) {
   const headingId = useId();
   const [unticked, setUnticked] = useState<ReadonlySet<string>>(new Set());
   const [includeNotes, setIncludeNotes] = useState(false);
@@ -83,7 +85,7 @@ export function SharePanel({ id, feedName, videos, notes, filters, onClose }: Pr
       </div>
       <Flash message={flash} />
 
-      <ShareSend disabled={!encoded.ok} />
+      <ShareSend disabled={!encoded.ok} quickSend={quickSend} />
 
       {notedCount > 0 && (
         <div className="share-notes">

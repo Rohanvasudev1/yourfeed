@@ -1,0 +1,37 @@
+/* The Blend feed's panel and Previous blends, after the mockup's #extra block for kind "blend". */
+:root { --bg-partner: #f5c4b3; --text-partner: #712b13; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg-partner: #712b13; --text-partner: #f5c4b3; }
+}
+.blend-panel { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; padding: 18px; border-radius: 12px; background: var(--surface-0); border: 0.5px solid var(--border-strong); }
+.blend-icon { flex: none; color: var(--text-secondary); }
+.blend-body { flex: 1; min-width: 0; }
+.blend-body h3 { margin: 0 0 4px; font-size: 15px; font-weight: 500; }
+.blend-body p { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.blend-body .field-error { margin: 6px 0 0; }
+.blend-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.blend-row input { flex: 1; min-width: 0; font-size: 13px; }
+.blend-demo { border-style: dashed; }
+
+.blend-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 2px 12px; }
+.blend-header h3 { margin: 0; font-size: 14px; font-weight: 500; }
+.blend-change { margin-left: auto; }
+.blend-avatars { display: flex; }
+.blend-avatar { width: 28px; height: 28px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; border: 2px solid var(--surface-1); }
+.blend-avatar.you { background: var(--bg-accent); color: var(--text-accent); }
+.blend-avatar.them { background: var(--bg-partner); color: var(--text-partner); }
+.blend-avatars .them { margin-left: -8px; }
+.blend-score { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+.blend-score-bar { position: relative; display: inline-block; width: 48px; height: 3px; border-radius: 2px; overflow: hidden; background: var(--fill-control); }
+.blend-score-bar span { position: absolute; inset: 0 auto 0 0; background: var(--text-muted); }
+
+.blend-history { margin-bottom: 12px; }
+.blend-list { list-style: none; display: flex; flex-direction: column; gap: 6px; margin: 2px 0 0; padding: 0 0 0 22px; }
+.blend-item { display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 10px; border: 0.5px solid var(--border); background: var(--surface-2); }
+.blend-item.on { border-color: var(--border-accent); background: var(--bg-accent-muted); }
+.blend-open { flex: 1; min-width: 0; height: auto; display: flex; align-items: center; gap: 10px; padding: 4px 6px; border: none; background: none; text-align: left; }
+.blend-open .blend-avatar { border: none; }
+.blend-open-text { flex: 1; min-width: 0; }
+.blend-open-name { font-size: 13px; font-weight: 500; }
+.blend-open-desc { display: block; font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.blend-badge { flex: none; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: var(--bg-accent); color: var(--text-accent); }

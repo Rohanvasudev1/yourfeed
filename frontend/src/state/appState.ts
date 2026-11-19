@@ -1,5 +1,6 @@
 import { insertAnswer } from "../domain/askNotes";
 import { applyFeedActions, type FeedAction } from "../domain/assistant";
+import type { BlendPartner } from "../domain/blend";
 import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
 import { appendDictation, type NoteTarget } from "../domain/notes";
@@ -7,6 +8,7 @@ import { forgetWatch, recordWatch, type SavedFolder } from "../domain/library";
 import { finishCurrent, moveBackToUpNext, pinVideo, removeFromSession, startWatching } from "../domain/session";
 import { isTabAction, reduceTabs, type TabAction } from "../domain/tabs";
 import type { Feed, GlobalFilters, NewsCategory, Range, TopRange } from "../domain/types";
+import { isBlendAction, reduceBlend, type BlendAction } from "./blend";
 import { reduceLibrary, type LibraryAction } from "./library";
 import { isSearchAction, reduceSearch, type SearchAction } from "./search";
 
@@ -29,6 +31,8 @@ export type AppState = Readonly<{
   view: View;
   /** The visitor's searches, newest first, normalized. */
   recentSearches: readonly string[];
+  /** People the visitor has blended with, newest first; Share offers them as quick-send chips. */
+  blends: readonly BlendPartner[];
 }>;
 
 export type Action =
@@ -64,6 +68,7 @@ export type Action =
   | Readonly<{ type: "mark_watched"; video: string }>
   | LibraryAction
   | SearchAction
+  | BlendAction
   /** Loads (or, for undo, restores) a feed set. */
   | Readonly<{ type: "set_feed_set"; set: FeedSet }>
   /** Every feed action of one Claude bar request, applied together so they make one undo step. */
@@ -93,6 +98,7 @@ export function makeReducer(seed: AppState) {
       return tabs.feeds === state.feeds && tabs.currentFeed === state.currentFeed ? state : { ...state, ...tabs };
     }
     if (isSearchAction(action)) return reduceSearch(state, action);
+    if (isBlendAction(action)) return reduceBlend(state, action);
     switch (action.type) {
       case "reset":
         return seed;
