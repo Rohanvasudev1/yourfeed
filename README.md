@@ -4,7 +4,7 @@ What if you chose your YouTube feed instead of the recommendation engine choosin
 
 > Not affiliated with YouTube or Google.
 
-**Status:** early. The original clickable mockup is in [`prototype/index.html`](prototype/index.html) and is being ported. See [PROJECT.md](PROJECT.md) for the design and research, [CONTEXT.md](CONTEXT.md) for the vocabulary, and [docs/adr](docs/adr) for decisions.
+**Status:** demo mode is complete: the React app covers everything the original clickable mockup did, so [`prototype/index.html`](prototype/index.html) is retired and kept only as a historical reference. See [PROJECT.md](PROJECT.md) for the design and research, [CONTEXT.md](CONTEXT.md) for the vocabulary, and [docs/adr](docs/adr) for decisions.
 
 ## Run it locally
 
@@ -22,11 +22,18 @@ Open http://localhost:5173.
 
 ### AI for the Claude bar (optional, free)
 
-With no AI set up, the Claude bar answers with simple keyword rules. To use a real model, copy [`.env.example`](.env.example) to `backend/.env`, fill in one of the options below, and start the backend with `--env-file .env`. The key stays on the backend; the browser never sees it.
+Nothing here needs a paid key. Three variables choose the model: `AI_BASE_URL`, `AI_API_KEY` and `AI_MODEL` (see [ADR 0004](docs/adr/0004-provider-agnostic-ai.md) and [ADR 0006](docs/adr/0006-free-models-groq-and-ollama.md)). Keys stay on the backend and never reach the browser: the browser only talks to the backend's `/api/assistant/*` endpoints, and `GET /api/assistant/info` reports the model's name, never the key.
 
-- **Groq** (default, free tier, nothing to install): get a free key at console.groq.com and set `AI_API_KEY`. The model is `openai/gpt-oss-20b` unless you set `AI_MODEL`.
-- **Ollama** (offline, no key): `ollama pull qwen3:4b`, then set `AI_BASE_URL=http://localhost:11434/v1` and `AI_MODEL=qwen3:4b`. Small enough for 8 GB of RAM, weaker at tool calling.
+- **No key** (the default): leave all three empty. The Claude bar and Ask in notes answer with simple keyword rules ported from the mockup, so the demo always works.
+- **Groq** (free tier, nothing to install): get a free key at console.groq.com and set only `AI_API_KEY`. The base URL defaults to Groq and the model to `openai/gpt-oss-20b`.
+- **Ollama** (local, offline, no key): install Ollama, pull a model, then set `AI_BASE_URL=http://localhost:11434/v1` and `AI_MODEL` to it. `qwen3:4b` fits in 8 GB of RAM but is weaker at tool calling; `qwen3:8b` is better with 16 GB; `gpt-oss:20b` needs about 16 GB. Leave `AI_API_KEY` empty.
 - **Anything else OpenAI-compatible**: set `AI_BASE_URL`, `AI_API_KEY` and `AI_MODEL`.
+
+To set one up, copy [`.env.example`](.env.example) to `backend/.env`, fill in one option, and start the backend with the file. For Ollama, pull the model first:
+
+```bash
+ollama pull qwen3:4b
+```
 
 ```bash
 cd backend && uv run uvicorn app.main:app --reload --port 8000 --env-file .env
@@ -46,6 +53,12 @@ cd backend && uv run --env-file .env python -m scripts.eval_model
 cd backend && uv run pytest
 ```
 
+Backend coverage on the assistant modules (`app/assistant`), measured through the API tests. It fails below 80% (`fail_under` in `backend/pyproject.toml`):
+
+```bash
+cd backend && uv run pytest --cov=app.assistant
+```
+
 ```bash
 cd frontend && npm test
 ```
@@ -56,7 +69,7 @@ Frontend coverage, measured through the whole-app tests and the `composeFeed` un
 cd frontend && npm run coverage
 ```
 
-End-to-end smoke test with Playwright. It starts the real backend (port 8010) and the app (port 5183) itself, then loads the app, opens Most viewed from Explore, changes the video length range, reloads and checks the change was kept. It needs `uv` on your path; the first time, install the browser:
+End-to-end smoke test with Playwright. It starts the real backend (port 8010, with no AI key so the keyword rules answer) and the app (port 5183) itself, then runs two flows: open Most viewed from Explore, change the video length range, reload and check the change was kept; and send "add cooking" from the Claude bar on Learn, see Cooking in the feed's topics, then undo it. It needs `uv` on your path; the first time, install the browser:
 
 ```bash
 cd frontend && npx playwright install chromium
@@ -70,7 +83,7 @@ cd frontend && npm run e2e
 
 - `backend/`: FastAPI. Catalogs (demo and YouTube), persistence, OAuth, AI.
 - `frontend/`: Vite + React + TypeScript. `src/domain/compose.ts` turns a catalog plus a feed's settings into Up next.
-- `prototype/`: the original single-file mockup, kept as the design reference.
+- `prototype/`: the original single-file mockup. Retired: the React app replaces it; kept as a historical reference.
 
 ## License
 

@@ -4,6 +4,15 @@ const settingsLine = (page: Page) => page.getByRole("group", { name: "Feed setti
 const upNextCards = (page: Page) => page.getByRole("list", { name: "Up next" }).getByRole("heading", { level: 3 });
 const lengthPhrase = (page: Page) => settingsLine(page).getByRole("button", { name: /^Video length/ });
 const mostViewedTab = (page: Page) => page.getByRole("button", { name: "Most viewed, Explore feeds" });
+const topicsPhrase = (page: Page) => settingsLine(page).getByRole("button", { name: /topics/ });
+
+/** Opens the topics popup from the settings line and returns it. */
+async function openTopics(page: Page) {
+  await topicsPhrase(page).click();
+  const popup = page.getByRole("dialog", { name: "Topics in this feed" });
+  await expect(popup).toBeVisible();
+  return popup;
+}
 
 test("a length range set on an Explore feed is still there after a reload", async ({ page }) => {
   await page.goto("/");
@@ -27,4 +36,27 @@ test("a length range set on an Explore feed is still there after a reload", asyn
   await expect(mostViewedTab(page)).toHaveAttribute("aria-current", "page");
   await expect(lengthPhrase(page)).toHaveAccessibleName("Video length, 5–30 min");
   await expect(upNextCards(page).first()).toBeVisible();
+});
+
+test("with no AI key, the keyword rules add Cooking from the Claude bar and undo takes it back", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("navigation", { name: "Feeds" }).getByRole("button", { name: "Learn", exact: true }).click();
+  await expect(upNextCards(page).first()).toBeVisible();
+  const topicsBefore = (await topicsPhrase(page).textContent()) ?? "";
+  await expect(await openTopics(page)).not.toContainText("Cooking");
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("textbox", { name: "Tell Claude what to change" }).fill("add cooking");
+  await page.getByRole("button", { name: "Send to Claude" }).click();
+
+  const undo = page.getByRole("button", { name: /^Undo last change/ });
+  await expect(undo).toBeVisible();
+  await expect(topicsPhrase(page)).not.toHaveText(topicsBefore);
+  await expect(await openTopics(page)).toContainText("Cooking");
+  await page.keyboard.press("Escape");
+
+  await undo.click();
+  await expect(topicsPhrase(page)).toHaveText(topicsBefore);
+
+  await expect(await openTopics(page)).not.toContainText("Cooking");
 });

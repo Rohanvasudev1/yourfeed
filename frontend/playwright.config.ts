@@ -17,6 +17,8 @@ export default defineConfig({
     {
       command: `uv run uvicorn app.main:app --host 127.0.0.1 --port ${API_PORT}`,
       cwd: "../backend",
+      /** No AI key, so the keyword rules answer the Claude bar whatever the shell has set. */
+      env: { AI_BASE_URL: "", AI_API_KEY: "", AI_MODEL: "" },
       url: `http://127.0.0.1:${API_PORT}/api/health`,
       timeout: SERVER_START_TIMEOUT_MS,
       reuseExistingServer: false,
