@@ -3,20 +3,24 @@ import { useState, type FormEvent } from "react";
 import { cleanUsername, usernameProblem } from "../../domain/username";
 
 /** "Send to someone on Yourfeed": checks the username and lists who it went to. Demo only: nothing leaves the browser. */
-export function ShareSend({ disabled }: Readonly<{ disabled: boolean }>) {
+export function ShareSend({ disabled, quickSend }: Readonly<{ disabled: boolean; quickSend: readonly string[] }>) {
   const [name, setName] = useState("");
   const [sent, setSent] = useState<readonly string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const send = (event: FormEvent) => {
-    event.preventDefault();
+  const sendTo = (typed: string) => {
     if (disabled) return;
-    const username = cleanUsername(name);
+    const username = cleanUsername(typed);
     const problem = usernameProblem(username, sent);
     setError(problem);
     if (problem) return;
     setSent([...sent, username]);
     setName("");
+  };
+
+  const send = (event: FormEvent) => {
+    event.preventDefault();
+    sendTo(name);
   };
 
   return (
@@ -38,6 +42,15 @@ export function ShareSend({ disabled }: Readonly<{ disabled: boolean }>) {
           Send
         </button>
       </div>
+      {quickSend.length > 0 && (
+        <div className="share-quick">
+          {quickSend.map((n) => (
+            <button key={n} type="button" className="share-chip" aria-label={`Send to @${n}`} disabled={disabled} onClick={() => sendTo(n)}>
+              @{n}
+            </button>
+          ))}
+        </div>
+      )}
       {error && (
         <p className="field-error" role="alert">
           {error}
