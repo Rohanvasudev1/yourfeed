@@ -31,3 +31,5 @@
 .share-demo { margin: 12px 0 0; font-size: 11px; }
 .share-panel button:disabled { opacity: 0.45; cursor: not-allowed; }
 .share-panel button.primary:disabled:hover { background: var(--fill-accent); }
+.share-quick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.share-chip { height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12px; }
