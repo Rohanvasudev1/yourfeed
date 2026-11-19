@@ -1,3 +1,4 @@
+import { insertAnswer } from "../domain/askNotes";
 import { applyFeedActions, type FeedAction } from "../domain/assistant";
 import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
@@ -53,6 +54,8 @@ export type Action =
   | Readonly<{ type: "set_note"; target: NoteTarget; text: string }>
   /** Adds words heard by voice typing to the end of a note. */
   | Readonly<{ type: "add_dictation"; target: NoteTarget; heard: string }>
+  /** Puts an answer under its question in a video's notes; nothing changes if the question is gone. */
+  | Readonly<{ type: "insert_answer"; video: string; question: string; answer: string }>
   /** Adds a video to the session by hand, first in Up next. */
   | Readonly<{ type: "pin_video"; feed: string; video: string }>
   /** Unpins a video and keeps it out of the feed's Up next. */
@@ -136,6 +139,10 @@ export function makeReducer(seed: AppState) {
         return writeNote(state, action.target, () => action.text);
       case "add_dictation":
         return writeNote(state, action.target, (note) => appendDictation(note, action.heard));
+      case "insert_answer": {
+        const note = insertAnswer(state.notes[action.video] ?? "", action.question, action.answer);
+        return note === null ? state : { ...state, notes: { ...state.notes, [action.video]: note } };
+      }
       case "set_feed_set":
         return updateFeed(state, action.set.feed, { seed: action.set.seed, skipped: action.set.skipped });
       case "apply_request":

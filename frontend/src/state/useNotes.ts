@@ -1,8 +1,10 @@
 import type { Dispatch } from "react";
 import { noteKey, notesMarkdown, type NoteTarget } from "../domain/notes";
 import type { Feed, Video } from "../domain/types";
+import type { AssistantPort } from "../ports";
 import type { Action } from "./appState";
 import { copyText, type CopyMessages } from "./copyText";
+import { useAskNotes, type AskBinding } from "./useAskNotes";
 import { useVoiceTyping } from "./useVoiceTyping";
 
 const COPY_MESSAGES: CopyMessages = {
@@ -18,6 +20,8 @@ export type NoteBinding = Readonly<{
   onChange: (text: string) => void;
   listening: boolean;
   onToggleVoice: () => void;
+  /** Ask in notes, on video notes only. */
+  ask?: AskBinding;
 }>;
 
 type Input = Readonly<{
@@ -25,13 +29,15 @@ type Input = Readonly<{
   /** The feed's session videos, Finished first, then Watching now. */
   videos: readonly Video[];
   notes: Readonly<Record<string, string>>;
+  assistant: AssistantPort;
   dispatch: Dispatch<Action>;
   /** Shows a short message in the app's one flash, replacing whatever it showed. */
   showFlash: (message: string) => void;
 }>;
 
-/** Notes on the open feed's videos and on the feed itself: typing, voice typing and copying. */
-export function useNotes({ feed, videos, notes, dispatch, showFlash }: Input) {
+/** Notes on the open feed's videos and on the feed itself: typing, voice typing, asking and copying. */
+export function useNotes({ feed, videos, notes, assistant, dispatch, showFlash }: Input) {
+  const askFor = useAskNotes({ assistant, notes, dispatch });
   const voice = useVoiceTyping<NoteTarget>({
     keyOf: noteKey,
     continuous: true,
@@ -50,7 +56,7 @@ export function useNotes({ feed, videos, notes, dispatch, showFlash }: Input) {
   const copy = () => copyText(notesMarkdown({ feed, videos, notes }), COPY_MESSAGES, showFlash);
 
   return {
-    forVideo: (id: string) => bind({ video: id }, notes[id] ?? ""),
+    forVideo: (id: string): NoteBinding => ({ ...bind({ video: id }, notes[id] ?? ""), ask: askFor(id) }),
     forFeed: bind({ feed: feed.name }, feed.note),
     copy,
   };

@@ -1,21 +1,41 @@
 import type { AssistantResult, BarMode, FeedAction, FeedContext } from "../domain/assistant";
+import type { AnswerResult } from "../domain/askNotes";
 import type { AssistantPort } from "../ports";
 
 export type AssistantCall = Readonly<{ text: string; mode: BarMode; context: FeedContext }>;
 
-type Answer = AssistantResult | Promise<AssistantResult>;
+export type QuestionCall = Readonly<{ videoId: string; question: string }>;
 
-/** A stand-in assistant: answers each request with `answer(text)` and records every call. */
-export function scriptedAssistant(answer: (text: string) => Answer = () => replyWith("OK.")): AssistantPort & { calls: AssistantCall[] } {
+type Answer = AssistantResult | Promise<AssistantResult>;
+type NoteAnswer = AnswerResult | Promise<AnswerResult>;
+
+type Script = Readonly<{
+  /** Answers each question asked in a video's notes. */
+  answerQuestion?: (question: string, videoId: string) => NoteAnswer;
+}>;
+
+/** A stand-in assistant: answers each request with `answer(text)` and records every call and question. */
+export function scriptedAssistant(
+  answer: (text: string) => Answer = () => replyWith("OK."),
+  { answerQuestion = () => answerWith("A scripted answer.") }: Script = {},
+): AssistantPort & { calls: AssistantCall[]; questions: QuestionCall[] } {
   const calls: AssistantCall[] = [];
+  const questions: QuestionCall[] = [];
   return {
     calls,
+    questions,
     request: async (text, mode, context) => {
       calls.push({ text, mode, context });
       return answer(text);
     },
+    answer: async (videoId, question) => {
+      questions.push({ videoId, question });
+      return answerQuestion(question, videoId);
+    },
   };
 }
+
+export const answerWith = (answer: string): AnswerResult => ({ answer, answeredBy: "model" });
 
 export const actionsResult = (...actions: FeedAction[]): AssistantResult => ({ actions, answeredBy: "model" });
 
