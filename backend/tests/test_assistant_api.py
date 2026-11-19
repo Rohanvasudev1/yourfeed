@@ -84,6 +84,13 @@ def test_question_card_videos_may_come_from_the_explore_videos_but_nowhere_else(
     assert post(client, request("anything", explore=explore)).json()["data"]["actions"] == [shown]
 
 
+def test_feedback_cards_may_only_name_catalog_topics():
+    good = {"type": "ask_user", "kind": "feedback", "question": "Look right?", "items": ["Tennis"]}
+    bad = {"type": "ask_user", "kind": "feedback", "question": "Look right?", "items": ["Knitting"]}
+    client, _ = client_answering(good, bad)
+    assert post(client, request("anything")).json()["data"]["actions"] == [good]
+
+
 def test_create_feed_is_kept_in_new_mode():
     client, _ = client_answering({"type": "create_feed", "name": "Cooking"})
     body = post(client, request("cooking", mode="new")).json()["data"]

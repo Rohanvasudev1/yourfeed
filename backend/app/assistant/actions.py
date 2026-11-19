@@ -98,12 +98,10 @@ def _checked(action: FeedAction, mode: BarMode, context: FeedContext, topics: fr
             return action.model_copy(update={"min": lo, "max": hi})
         case PinVideo(id=video):
             return action if video in shown else None
-        case AskUser(kind="chips", items=items):
+        case AskUser(kind="chips" | "feedback", items=items):
             return action if set(items) <= topics else None
         case AskUser(kind="videos", items=items):
             return action if set(items) <= shown else None
-        case AskUser():
-            return action
         case CreateFeed():
             return action if mode == "new" else None
 

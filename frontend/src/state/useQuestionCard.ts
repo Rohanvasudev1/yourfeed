@@ -1,6 +1,6 @@
 import { useState, type Dispatch } from "react";
-import { applyFeedActions, type FeedAction } from "../domain/assistant";
-import { cardForAnswer, feedbackCard, PICK_FIRST, togglePick, topicsToAdd, type QuestionCard } from "../domain/questionCard";
+import type { FeedAction } from "../domain/assistant";
+import { cardForAnswer, PICK_FIRST, togglePick, topicsToAdd, type QuestionCard } from "../domain/questionCard";
 import type { Feed, Video } from "../domain/types";
 import type { Action } from "./appState";
 
@@ -42,7 +42,7 @@ export function useQuestionCard({ feed, scope, byId, dispatch }: Input) {
       if (open.picked.length === 0) return setCard({ ...open, error: PICK_FIRST });
       const change = { type: "set_topics", add: topicsToAdd(open, byId), remove: [] } as const;
       applyTopics(change);
-      setCard(feedbackCard(feed, applyFeedActions(feed, [change])));
+      setCard(cardForAnswer(feed, [change], true));
     },
     feedback: (good: boolean) => {
       if (open && !good) applyTopics({ type: "set_topics", add: [], remove: open.items });

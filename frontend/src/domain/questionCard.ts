@@ -38,10 +38,10 @@ export function exploreVideos(catalog: readonly Video[], feed: Feed, request: st
   const ordered = catalog
     .filter((v) => !v.clickbait && !feed.topics.includes(v.topic))
     .map((v) => ({ v, rank: hash(v.id + request) }))
-    .sort((a, b) => a.rank - b.rank)
-    .map(({ v }) => v);
-  const firstOfTopic = ordered.filter((v, i) => ordered.findIndex((w) => w.topic === v.topic) === i);
-  return firstOfTopic.slice(0, EXPLORE_VIDEOS);
+    .sort((a, b) => a.rank - b.rank);
+  const firstOfTopic = new Map<string, Video>();
+  for (const { v } of ordered) if (!firstOfTopic.has(v.topic)) firstOfTopic.set(v.topic, v);
+  return [...firstOfTopic.values()].slice(0, EXPLORE_VIDEOS);
 }
 
 const listPhrase = (items: readonly string[]) =>
