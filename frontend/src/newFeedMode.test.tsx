@@ -138,6 +138,8 @@ describe("a request in new mode", () => {
     ["a feed you already have", adding("Cooking"), "Cooking 2"],
     ["a built-in tab", [{ type: "create_feed", name: "news" }, ...adding("News").slice(1)] as FeedAction[], "news picks"],
     ["the name the assistant gave", [{ type: "create_feed", name: "  Weekend sport  " }, ...adding("Tennis").slice(1)] as FeedAction[], "Weekend sport"],
+    ["a long built-in name", [{ type: "create_feed", name: "Subscriptions" }, ...adding("Tennis").slice(1)] as FeedAction[], "Subscriptions picks"],
+    ["a name past 24 characters", [{ type: "create_feed", name: "Matches from every league" }, ...adding("Tennis").slice(1)] as FeedAction[], "Matches from every leagu"],
   ])("names it uniquely when it would match %s", async (_, actions, name) => {
     renderWith(scriptedAssistant(() => actionsResult(...actions)));
     await ask("something");
@@ -172,6 +174,14 @@ describe("a request in new mode", () => {
     await userEvent.click(screen.getByRole("button", { name: "All tabs" }));
     const shelved = screen.getByRole("region", { name: "Only in All tabs" });
     expect(within(shelved).getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toContain("Tennis");
+  });
+
+  it("says it landed in All tabs even when the assistant also replied", async () => {
+    renderWith(scriptedAssistant(() => ({ ...actionsResult(...adding("Tennis")), reply: "Here's a tennis feed." })));
+    for (const name of ["A", "B", "C", "D"]) await newDraft(name);
+    await openTab("Everything (home)");
+    await ask("tennis");
+    await waitFor(() => expect(reply()).toHaveTextContent("Here's a tennis feed. The tab bar is full, so Tennis is in All tabs."));
   });
 
   it("is one undo step: undo removes the new feed and redo brings it back with its topics", async () => {
@@ -228,6 +238,14 @@ describe("a request in new mode", () => {
 });
 
 describe("a new feed's draft", () => {
+  it("stays a draft when the request adds no topic", async () => {
+    renderWith(scriptedAssistant(() => actionsResult({ type: "set_length_range", min: 1, max: 15 })));
+    await newDraft();
+    await ask("short ones");
+    await waitFor(() => expect(reply()).toHaveTextContent("Name a topic to start a new feed."));
+    expect(screen.getByRole("textbox", { name: "Feed name" })).toBeInTheDocument();
+  });
+
   it("says the bar can make it too, and a request there names the draft from what it added", async () => {
     const assistant = scriptedAssistant(() => actionsResult({ type: "set_topics", add: ["Tennis"], remove: [] }));
     renderWith(assistant);

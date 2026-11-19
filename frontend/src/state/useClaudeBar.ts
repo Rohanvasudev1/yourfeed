@@ -45,8 +45,9 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, chosenMode, dispa
     const made = createFromRequest({ feeds: before, currentFeed: asked.name }, asked.name, result.actions);
     const created = made.feeds === before ? undefined : made.feeds.find((f) => f.name === made.currentFeed);
     if (created) dispatch({ type: "create_from_request", from: asked.name, actions: result.actions });
+    // A shelved feed is out of sight, so say where it went even after the assistant's own reply.
     const notice = created ? (created.shelved ? shelvedNotice(created.name) : null) : NOTHING_TO_START;
-    const message = result.reply ?? notice;
+    const message = created ? [result.reply, notice].filter(Boolean).join(" ") : (result.reply ?? notice);
     if (message) showReply(message);
   };
 

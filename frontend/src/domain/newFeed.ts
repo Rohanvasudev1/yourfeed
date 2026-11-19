@@ -1,6 +1,6 @@
 import { applyFeedActions, type FeedAction } from "./assistant";
 import { isBuiltIn, makeFeed } from "./feed";
-import { DRAFT_LENGTH, DRAFT_NAME, DRAFT_SESSION, fitsInBar, MAX_NAME_LENGTH, uniqueName, type Tabs } from "./tabs";
+import { DRAFT_LENGTH, DRAFT_NAME, DRAFT_SESSION, fitsInBar, MAX_NAME_LENGTH, type Tabs } from "./tabs";
 import type { Feed } from "./types";
 
 /** How many added topics a new feed's name lists. */
@@ -11,25 +11,33 @@ const BUILT_IN_SUFFIX = " picks";
 /** The empty feed a request fills: a draft's starting ranges, nothing else. */
 const blankFeed = (color: number): Feed => makeFeed({ color, length: DRAFT_LENGTH, session: DRAFT_SESSION });
 
-/** Whether the actions put anything into a new feed. Replies, questions and `create_feed` alone don't. */
-export const startsFeed = (actions: readonly FeedAction[]): boolean => {
-  const blank = blankFeed(0);
-  return JSON.stringify(applyFeedActions(blank, actions)) !== JSON.stringify(blank);
-};
+/** Whether the actions add a topic, which a new feed needs (as in the mockup). Ranges or pins alone don't start one. */
+export const startsFeed = (actions: readonly FeedAction[]): boolean => actions.some((a) => a.type === "set_topics" && a.add.length > 0);
+
+/** `base` plus `suffix`, cutting `base` so the whole stays within the name limit. */
+const fitted = (base: string, suffix: string) => `${base.slice(0, MAX_NAME_LENGTH - suffix.length).trim()}${suffix}`;
 
 /** The name the assistant gave, else the first topics it added, else "New feed". */
 function baseName(actions: readonly FeedAction[]): string {
   const given = actions.flatMap((a) => (a.type === "create_feed" && a.name?.trim() ? [a.name.trim()] : []))[0];
   const added = actions.flatMap((a) => (a.type === "set_topics" ? a.add : []));
   const fromTopics = [...new Set(added)].slice(0, NAMED_TOPICS).join(" & ");
-  return (given ?? fromTopics).slice(0, MAX_NAME_LENGTH).trim() || DRAFT_NAME;
+  return fitted(given ?? fromTopics, "") || DRAFT_NAME;
 }
 
 /** A name for the new feed by the usual rules: never a built-in tab's name, never one already taken (ignoring case). */
 export function newFeedName(feeds: readonly Feed[], actions: readonly FeedAction[]): string {
-  const base = baseName(actions);
-  const builtIn = feeds.some((f) => isBuiltIn(f) && f.name.toLowerCase() === base.toLowerCase());
-  return uniqueName(feeds, builtIn ? `${base}${BUILT_IN_SUFFIX}` : base);
+  const name = baseName(actions);
+  const builtIn = feeds.some((f) => isBuiltIn(f) && f.name.toLowerCase() === name.toLowerCase());
+  return uniqueName(feeds, builtIn ? fitted(name, BUILT_IN_SUFFIX) : name);
+}
+
+/** `base`, or `base 2`, `base 3`… until no feed has that name (ignoring case), always within the name limit. */
+function uniqueName(feeds: readonly Feed[], base: string): string {
+  const taken = (n: string) => feeds.some((f) => f.name.toLowerCase() === n.toLowerCase());
+  let name = base;
+  for (let i = 2; taken(name); i++) name = fitted(base, ` ${i}`);
+  return name;
 }
 
 /** Adds `feed` as a tab, shelved in All tabs when the bar is full, under a name no other feed has. */
