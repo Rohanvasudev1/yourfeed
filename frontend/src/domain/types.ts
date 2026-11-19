@@ -13,7 +13,7 @@ export type Video = Readonly<{
   newsCategory: string | null;
 }>;
 
-export const FEED_KINDS = ["home", "subs", "top", "news", "claude", "topics"] as const;
+export const FEED_KINDS = ["home", "subs", "top", "news", "claude", "shared", "topics"] as const;
 export type FeedKind = (typeof FEED_KINDS)[number];
 
 export type Range = readonly [min: number, max: number];

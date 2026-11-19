@@ -2,10 +2,12 @@ import { applyFeedActions, type FeedAction } from "../domain/assistant";
 import { listKeyOf } from "../domain/feedList";
 import type { FeedSet } from "../domain/refresh";
 import { appendDictation, type NoteTarget } from "../domain/notes";
+import type { Inbox } from "../domain/inbox";
 import { forgetWatch, recordWatch, type SavedFolder } from "../domain/library";
 import { finishCurrent, moveBackToUpNext, pinVideo, removeFromSession, startWatching } from "../domain/session";
 import { isTabAction, reduceTabs, type TabAction } from "../domain/tabs";
 import type { Feed, GlobalFilters, NewsCategory, Range, TopRange } from "../domain/types";
+import { closeShareOnLeave, isInboxAction, reduceInbox, type InboxAction } from "./inbox";
 import { reduceLibrary, type LibraryAction } from "./library";
 import { isSearchAction, reduceSearch, type SearchAction } from "./search";
 
@@ -28,6 +30,8 @@ export type AppState = Readonly<{
   view: View;
   /** The visitor's searches, newest first, normalized. */
   recentSearches: readonly string[];
+  /** Shared with you. */
+  inbox: Inbox;
 }>;
 
 export type Action =
@@ -61,6 +65,7 @@ export type Action =
   | Readonly<{ type: "mark_watched"; video: string }>
   | LibraryAction
   | SearchAction
+  | InboxAction
   /** Loads (or, for undo, restores) a feed set. */
   | Readonly<{ type: "set_feed_set"; set: FeedSet }>
   /** Every feed action of one Claude bar request, applied together so they make one undo step. */
@@ -87,9 +92,10 @@ export function makeReducer(seed: AppState) {
   return (state: AppState, action: Action): AppState => {
     if (isTabAction(action)) {
       const tabs = reduceTabs(state, action);
-      return tabs.feeds === state.feeds && tabs.currentFeed === state.currentFeed ? state : { ...state, ...tabs };
+      return tabs.feeds === state.feeds && tabs.currentFeed === state.currentFeed ? state : closeShareOnLeave(state, { ...state, ...tabs });
     }
     if (isSearchAction(action)) return reduceSearch(state, action);
+    if (isInboxAction(action)) return closeShareOnLeave(state, reduceInbox(state, action));
     switch (action.type) {
       case "reset":
         return seed;

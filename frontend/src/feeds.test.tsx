@@ -59,6 +59,7 @@ describe("the Explore menu", () => {
       "SubscriptionsNewest from your channels",
       "Most viewedRanked by views",
       "NewsLatest from news channels",
+      "Shared with youFeeds people sent you2 unread",
     ]);
     expect(exploreButton()).toHaveAttribute("aria-expanded", "true");
   });
@@ -104,9 +105,9 @@ describe("the Explore menu", () => {
   it("closes when focus tabs out of it", async () => {
     renderFeeds();
     await userEvent.click(exploreButton());
-    await userEvent.tab();
-    await userEvent.tab();
-    await userEvent.tab();
+    // Focus starts on the first feed; one Tab per feed leaves the menu.
+    const feeds = within(screen.getByRole("dialog", { name: "Explore feeds" })).getAllByRole("button");
+    for (let i = 0; i < feeds.length; i++) await userEvent.tab();
     expect(screen.queryByRole("dialog", { name: "Explore feeds" })).not.toBeInTheDocument();
     expect(within(tabBar()).getByRole("button", { name: "Learn" })).toHaveFocus();
   });

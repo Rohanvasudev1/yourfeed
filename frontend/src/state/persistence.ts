@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { RECENT_LIMIT } from "../domain/search";
+import { SHARE_LIMITS } from "../domain/share";
 import { FEED_KINDS, NEWS_CATEGORIES, TOP_RANGES } from "../domain/types";
 import { VIEWS, type AppState } from "./appState";
 
 /** Bump when AppState changes shape. Saved state from any other version is ignored. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 const ids = z.array(z.string());
 const range = z.tuple([z.number(), z.number()]).refine(([min, max]) => min <= max, "min must not exceed max");
@@ -32,6 +33,24 @@ const feedSchema = z.object({
   note: z.string().default(""),
 });
 
+const shareSchema = z
+  .object({
+    id: z.string().min(1),
+    from: z.string().min(1).nullable(),
+    title: z.string().min(1).max(SHARE_LIMITS.title),
+    videos: z.array(z.string().min(1)).min(1).max(SHARE_LIMITS.videos),
+    message: z.string().max(SHARE_LIMITS.message),
+    notes: z.record(z.string(), z.string()),
+    received: z.number(),
+    unread: z.boolean(),
+  })
+  .refine((s) => Object.values(s.notes).reduce((sum, n) => sum + n.length, 0) <= SHARE_LIMITS.notes, "notes are too long");
+
+const inboxSchema = z
+  .object({ shares: z.array(shareSchema), open: z.string().nullable(), last: z.string().nullable() })
+  .refine((i) => new Set(i.shares.map((s) => s.id)).size === i.shares.length, "share ids must be unique")
+  .refine((i) => i.open === null || i.shares.some((s) => s.id === i.open), "the open share must exist");
+
 const stateSchema = z
   .object({
     feeds: z.array(feedSchema).min(1),
@@ -50,6 +69,7 @@ const stateSchema = z
     view: z.enum(VIEWS),
     // Saved before search existed: start with no recent searches rather than discarding the save.
     recentSearches: z.array(z.string().min(1)).max(RECENT_LIMIT).default([]),
+    inbox: inboxSchema,
   })
   .refine((s) => new Set(s.feeds.map((f) => f.name.toLowerCase())).size === s.feeds.length, "feed names must be unique")
   .refine((s) => s.feeds.some((f) => f.name === s.currentFeed), "the open feed must exist") satisfies z.ZodType<AppState>;

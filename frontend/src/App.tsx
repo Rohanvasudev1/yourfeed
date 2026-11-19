@@ -9,6 +9,7 @@ import { Flash } from "./components/Flash";
 import { EditBar } from "./components/EditBar";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
+import { SharedWithYouView } from "./components/inbox/SharedWithYouView";
 import { HistorySection } from "./components/library/HistorySection";
 import { SavedSection } from "./components/library/SavedSection";
 import { NameFeed } from "./components/NameFeed";
@@ -41,6 +42,7 @@ import { useRefresh } from "./state/useRefresh";
 import { useSearch } from "./state/useSearch";
 import { useNotes } from "./state/useNotes";
 import { useSession } from "./state/useSession";
+import { useSharedWithYou } from "./state/useSharedWithYou";
 import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
 
@@ -68,7 +70,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
       ready && { catalog: ready, feed, filters: state.filters, watched: state.watched, topMaxAgeHours: TOP_RANGE_HOURS[feed.topRange] },
     [ready, feed, state.filters, state.watched],
   );
-  const composition = useMemo(() => input && composeFeed(input), [input]);
+  const composed = useMemo(() => input && composeFeed(input), [input]);
   const byId = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const session = useSession(feed, byId, dispatch);
   const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
@@ -78,10 +80,12 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);
+  const shared = useSharedWithYou({ state, feed, catalog: ready, byId, dispatch, openFeed: tabs.open });
+  const composition = feed.kind === "shared" ? shared.composition : composed;
   const shareToggle = useShareToggle(feed.name);
   const shareVideos = shareStartingVideos(sessionVideos, pinned, composition?.upNext ?? NO_VIDEOS);
   // With nothing to share the panel has nothing to show, so the button never claims it's open.
-  const share = { ...shareToggle, open: shareToggle.open && shareVideos.length > 0 };
+  const share = { ...shareToggle, open: shareToggle.open && shareVideos.length > 0 && !shared.inInbox };
   const upNext = [...pinned, ...(composition?.upNext ?? [])];
   const claudeBar = useClaudeBar({ assistant, feeds: state.feeds, feed, upNext, dispatch });
   const edit = useEditMode(state.feeds, dispatch);
@@ -116,9 +120,9 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
           />
         }
       />
-      <TabBar feeds={state.feeds} current={feed} tabs={tabs} edit={edit} />
+      <TabBar feeds={state.feeds} current={feed} tabs={tabs} edit={edit} unread={shared.unread} />
       {edit.editing && <EditBar edit={edit} onAllTabs={tabs.page === "all"} />}
-      <Flash message={tabs.flash ?? search.flash} />
+      <Flash message={tabs.flash ?? search.flash ?? shared.flash} />
       <main>
         {tabs.page === "all" ? (
           <AllTabsPage feeds={state.feeds} tabs={tabs} edit={edit} />
@@ -154,24 +158,28 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
               <NameFeed onName={tabs.name} />
             ) : (
               <>
-                <SettingsLine
-                  // Each feed opens with its popups closed, so one never shows another feed's options.
-                  key={feed.name}
-                  feed={feed}
-                  tabOptions={tabs}
-                  filters={state.filters}
-                  topicActions={{
-                    onAdd: (item) => dispatch({ type: "add_to_feed", feed: feed.name, item }),
-                    onRemove: (item) => dispatch({ type: "remove_from_feed", feed: feed.name, item }),
-                    onMute: (topic) => dispatch({ type: "mute_topic", feed: feed.name, topic }),
-                    onUnmute: (topic) => dispatch({ type: "unmute_topic", feed: feed.name, topic }),
-                  }}
-                  rangeActions={{
-                    onLength: (range) => dispatch({ type: "set_length_range", feed: feed.name, range }),
-                    onSession: (range) => dispatch({ type: "set_session_range", feed: feed.name, range }),
-                  }}
-                  onToggleFilter={(filter) => dispatch({ type: "toggle_filter", filter })}
-                />
+                {feed.kind === "shared" ? (
+                  <SharedWithYouView shared={shared} shares={state.inbox.shares} byId={byId} filters={state.filters} />
+                ) : (
+                  <SettingsLine
+                    // Each feed opens with its popups closed, so one never shows another feed's options.
+                    key={feed.name}
+                    feed={feed}
+                    tabOptions={tabs}
+                    filters={state.filters}
+                    topicActions={{
+                      onAdd: (item) => dispatch({ type: "add_to_feed", feed: feed.name, item }),
+                      onRemove: (item) => dispatch({ type: "remove_from_feed", feed: feed.name, item }),
+                      onMute: (topic) => dispatch({ type: "mute_topic", feed: feed.name, topic }),
+                      onUnmute: (topic) => dispatch({ type: "unmute_topic", feed: feed.name, topic }),
+                    }}
+                    rangeActions={{
+                      onLength: (range) => dispatch({ type: "set_length_range", feed: feed.name, range }),
+                      onSession: (range) => dispatch({ type: "set_session_range", feed: feed.name, range }),
+                    }}
+                    onToggleFilter={(filter) => dispatch({ type: "toggle_filter", filter })}
+                  />
+                )}
                 <FeedControls
                   feed={feed}
                   onTopRange={(range) => dispatch({ type: "set_top_range", feed: feed.name, range })}
@@ -180,7 +188,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                 {catalog.status === "loading" && <p className="muted">Loading…</p>}
                 {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
                 <Flash message={session.flash} />
-                {session.finished.length > 0 && (
+                {!shared.inInbox && session.finished.length > 0 && (
                   <FinishedSection
                     videos={session.finished}
                     filters={state.filters}
@@ -189,7 +197,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                     onMoveBack={session.moveBack}
                   />
                 )}
-                {session.current && (
+                {!shared.inInbox && session.current && (
                   <WatchingNow
                     video={session.current}
                     filters={state.filters}
@@ -231,7 +239,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                     cardActions={cardActions}
                   />
                 )}
-                <FeedNotes feed={feed} videos={sessionVideos} filters={state.filters} notes={notes} onPlay={session.play} />
+                {!shared.inInbox && <FeedNotes feed={feed} videos={sessionVideos} filters={state.filters} notes={notes} onPlay={session.play} />}
                 <div className="library">
                   <SavedSection library={library} filters={state.filters} onPlay={session.play} />
                   <HistorySection library={library} filters={state.filters} onPlay={session.play} />

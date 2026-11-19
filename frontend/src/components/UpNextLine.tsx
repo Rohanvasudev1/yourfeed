@@ -14,6 +14,8 @@ function planNote(feed: Feed, hidden: number): string | null {
       return "most views first";
     case "news":
       return "newest first";
+    case "shared":
+      return "in the sender's order";
     case "claude":
     case "topics":
       return `${hidden} hidden by your rules`;

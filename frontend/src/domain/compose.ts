@@ -54,6 +54,9 @@ function matchesKind(video: Video, input: ComposeInput): boolean {
     case "claude":
     case "topics":
       return feed.topics.includes(video.topic) && video.ageHours < HOURS_PER_YEAR;
+    case "shared":
+      // An open share's videos come from the share itself (composeShared), never the catalog.
+      return false;
   }
 }
 
@@ -88,6 +91,8 @@ function order(pool: readonly Video[], input: ComposeInput): Video[] {
       if (!filters.boostSmallCreators) return mixed;
       return mixed.sort((a, b) => Number(isSmall(b)) - Number(isSmall(a)));
     }
+    case "shared":
+      return [...pool];
   }
 }
 

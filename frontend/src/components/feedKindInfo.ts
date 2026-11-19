@@ -1,4 +1,4 @@
-import { IconAsterisk, IconFlame, IconHome, IconNews, IconUserCheck, type Icon } from "@tabler/icons-react";
+import { IconAsterisk, IconFlame, IconHome, IconInbox, IconNews, IconUserCheck, type Icon } from "@tabler/icons-react";
 import type { FeedKind } from "../domain/types";
 
 type BuiltInKind = Exclude<FeedKind, "topics">;
@@ -10,6 +10,7 @@ export const FEED_KIND_INFO: Readonly<Record<BuiltInKind, Readonly<{ icon: Icon;
   top: { icon: IconFlame, description: "Ranked by views" },
   news: { icon: IconNews, description: "Latest from news channels" },
   claude: { icon: IconAsterisk, description: "From your Claude work" },
+  shared: { icon: IconInbox, description: "Feeds people sent you" },
 };
 
 export const kindInfo = (kind: FeedKind) => (kind === "topics" ? null : FEED_KIND_INFO[kind]);

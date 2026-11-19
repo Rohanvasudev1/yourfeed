@@ -5,10 +5,10 @@ export type ListKey = "topics" | "channels";
 
 export const listKeyOf = (feed: Feed): ListKey => (feed.kind === "subs" ? "channels" : "topics");
 
-/** Every feed kind except News has a topic (or channel) list the settings line can edit. */
-export type ListedKind = Exclude<FeedKind, "news">;
+/** Every feed kind except News and Shared with you has a topic (or channel) list the settings line can edit. */
+export type ListedKind = Exclude<FeedKind, "news" | "shared">;
 export type ListedFeed = Feed & Readonly<{ kind: ListedKind }>;
-export const hasItemList = (feed: Feed): feed is ListedFeed => feed.kind !== "news";
+export const hasItemList = (feed: Feed): feed is ListedFeed => feed.kind !== "news" && feed.kind !== "shared";
 
 /**
  * The feed's topics or channels that aren't muted. Muting a topic keeps it in `topics`, so
@@ -33,6 +33,7 @@ export function topicsPhrase(feed: Feed): string {
       case "news":
         return feed.newsCategory === "All" ? "all news" : `${feed.newsCategory} news`;
       case "claude":
+      case "shared":
       case "topics":
         return plural(n, "topic");
     }
