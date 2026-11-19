@@ -97,7 +97,16 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   const share = { ...shareToggle, open: shareToggle.open && shareVideos.length > 0 };
   const upNext = [...pinned, ...(composition?.upNext ?? [])];
   const questions = useQuestionCard({ feed, scope: `${tabs.page}:${feed.name}`, byId, dispatch });
-  const claudeBar = useClaudeBar({ assistant, feeds: state.feeds, feed, upNext, catalog: ready ?? NO_VIDEOS, questions, dispatch });
+  const claudeBar = useClaudeBar({
+    assistant,
+    feeds: state.feeds,
+    feed,
+    upNext,
+    catalog: ready ?? NO_VIDEOS,
+    questions,
+    chosenMode: state.barMode,
+    dispatch,
+  });
   const edit = useEditMode(state.feeds, dispatch);
   const blend = useBlend(state.feeds, feed, ready ?? NO_VIDEOS, dispatch);
   const search = useSearch({
@@ -164,7 +173,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                 <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
               </div>
             </div>
-            {!feed.draft && <ClaudeBar bar={claudeBar} />}
+            <ClaudeBar bar={claudeBar} />
             {feed.draft ? (
               <NameFeed onName={tabs.name} />
             ) : (
