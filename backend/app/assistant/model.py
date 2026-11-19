@@ -66,3 +66,10 @@ class Assistant(Protocol):
     answered_by: AnsweredBy
 
     def handle(self, text: str, mode: BarMode, context: FeedContext) -> Proposal: ...
+
+
+class Model(Assistant, Protocol):
+    """An assistant backed by a real model, named for the account menu (never with its key or URL)."""
+
+    model_name: str
+    provider: str

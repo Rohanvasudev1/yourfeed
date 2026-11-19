@@ -26,10 +26,20 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input
   const [error, setError] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
   const [reply, showReply] = useTimedValue<string>(REPLY_MS);
+  const [notice, setNotice] = useState<string | null>(null);
+  const noticeShown = useRef(false);
   const latestFeeds = useRef(feeds);
   useEffect(() => {
     latestFeeds.current = feeds;
   }, [feeds]);
+
+  /** The rules' notice shows once a visit: it stays while they keep answering and goes when the model is back. */
+  const noteNotice = (result: AssistantResult) => {
+    if (!result.notice) return setNotice(null);
+    if (noticeShown.current) return;
+    noticeShown.current = true;
+    setNotice(result.notice);
+  };
 
   /** Applies the answer to the feed that asked, which may no longer be open and may have changed meanwhile. */
   const settle = (askedName: string, result: AssistantResult) => {
@@ -50,7 +60,9 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input
     setThinking(true);
     const asked = feed;
     try {
-      settle(asked.name, await assistant.request(request, barModeFor(asked), feedContext(asked, upNext)));
+      const result = await assistant.request(request, barModeFor(asked), feedContext(asked, upNext));
+      noteNotice(result);
+      settle(asked.name, result);
       setText("");
     } catch (err) {
       console.error("Claude bar request failed", err);
@@ -60,7 +72,7 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input
     }
   };
 
-  return { text, setText, error, thinking, reply, send };
+  return { text, setText, error, thinking, reply, notice, send };
 }
 
 export type ClaudeBarState = ReturnType<typeof useClaudeBar>;
