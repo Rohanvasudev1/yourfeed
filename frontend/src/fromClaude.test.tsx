@@ -47,6 +47,7 @@ describe("From Claude", () => {
     expect(connectPanel()).toHaveTextContent("Demo only");
     expect(sentence()).toBe(EMPTY_LINE);
     expect(await feedTitles()).toEqual([]);
+    expect(screen.getByRole("note", { name: "Session plan" })).not.toHaveTextContent("short of your minimum");
   });
 
   it("fills the feed with the summary's topics when you connect, and lists the work with its topics", async () => {

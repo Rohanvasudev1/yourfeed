@@ -14,14 +14,17 @@ export const CLAUDE_WORK: readonly ClaudeWork[] = [
 export const CLAUDE_SUGGESTIONS = ["More MCP tutorials", "Something to learn tonight", "Surprise me"] as const;
 
 /** Every topic the summary names, once each, in order. */
-export const claudeTopics = (work: readonly ClaudeWork[]): readonly string[] => [...new Set(work.flatMap((w) => w.topics))];
+const CLAUDE_TOPICS: readonly string[] = [...new Set(CLAUDE_WORK.flatMap((w) => w.topics))];
 
 /** Connecting fills the topics from the summary; disconnecting clears them. Mutes are kept either way. */
 export const withClaudeConnection = (feed: Feed, connected: boolean): Feed => ({
   ...feed,
   connected,
-  topics: connected ? claudeTopics(CLAUDE_WORK) : [],
+  topics: connected ? CLAUDE_TOPICS : [],
 });
+
+/** A From Claude feed that has been connected: it shows videos and the Claude bar edits it. */
+export const isConnectedClaude = (feed: Feed): boolean => feed.kind === "claude" && feed.connected;
 
 /** A From Claude feed that hasn't been connected yet: it shows the connect step and takes no requests. */
 export const awaitsConnection = (feed: Feed): boolean => feed.kind === "claude" && !feed.connected;

@@ -1,6 +1,7 @@
 import { IconAlertTriangle } from "@tabler/icons-react";
 import type { ReactNode } from "react";
 import { minutesText, videoCount } from "../domain/format";
+import { awaitsConnection } from "../domain/fromClaude";
 import type { Composition, Feed } from "../domain/types";
 
 /** The few words after the minutes: how this kind of feed orders Up next, or how much its rules hide. */
@@ -35,7 +36,8 @@ type Props = Readonly<{
 export function UpNextLine({ feed, composition, pinnedCount, actions }: Props) {
   const { upNext, hidden, usedMinutes } = composition;
   const note = planNote(feed, hidden);
-  const short = feed.session[0] - usedMinutes;
+  // A From Claude feed waiting to connect has nothing to plan yet, so it isn't short of anything.
+  const short = awaitsConnection(feed) ? 0 : feed.session[0] - usedMinutes;
   return (
     <div className="up-next-line" role="note" aria-label="Session plan">
       <span>
