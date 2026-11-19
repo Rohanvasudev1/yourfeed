@@ -60,6 +60,7 @@ describe("the Explore menu", () => {
       "Most viewedRanked by views",
       "NewsLatest from news channels",
       "From ClaudeFrom your Claude work",
+      "BlendMixed with a friend",
     ]);
     expect(exploreButton()).toHaveAttribute("aria-expanded", "true");
   });
@@ -105,10 +106,7 @@ describe("the Explore menu", () => {
   it("closes when focus tabs out of it", async () => {
     renderFeeds();
     await userEvent.click(exploreButton());
-    await userEvent.tab();
-    await userEvent.tab();
-    await userEvent.tab();
-    await userEvent.tab();
+    for (let i = 0; i < 5; i++) await userEvent.tab();
     expect(screen.queryByRole("dialog", { name: "Explore feeds" })).not.toBeInTheDocument();
     expect(within(tabBar()).getByRole("button", { name: "Learn" })).toHaveFocus();
   });

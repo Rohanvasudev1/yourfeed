@@ -22,6 +22,7 @@ export const DEFAULT_FEED: Feed = {
   seed: 0,
   note: "",
   connected: false,
+  partner: null,
 };
 
 export const makeFeed = (overrides: Partial<Feed> = {}): Feed => ({ ...DEFAULT_FEED, ...overrides });
