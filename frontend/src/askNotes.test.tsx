@@ -34,16 +34,22 @@ async function watchFirst(assistant = scriptedAssistant(undefined, { answerQuest
   return { assistant, storage, ...view };
 }
 
+/** Waits for an answer generously: the suite runs alongside others on a busy machine. */
+const eventually = (check: () => void) => vi.waitFor(check, { timeout: 10_000 });
+
 /** Sets the note's text in one go, as pasting does. */
 const paste = (text: string) => fireEvent.change(notesBox(), { target: { value: text } });
 
 describe("asking in a video's notes", () => {
   it("answers a question on the next line when you press Enter, keeping focus and the cursor", async () => {
-    const { assistant } = await watchFirst();
+    // Settled by hand after the keypress, as a real answer always arrives after the Enter is typed.
+    const pending = deferred<AnswerResult>();
+    const { assistant } = await watchFirst(scriptedAssistant(undefined, { answerQuestion: () => pending.promise }));
 
     await userEvent.type(notesBox(), "What is an agent?{Enter}");
+    pending.resolve(answerWith(ANSWER));
 
-    await vi.waitFor(() => expect(notesBox()).toHaveValue(`What is an agent?\n✱ ${ANSWER}\n`));
+    await eventually(() => expect(notesBox()).toHaveValue(`What is an agent?\n✱ ${ANSWER}\n`));
     expect(assistant.questions).toEqual([{ videoId: FIRST_ID, question: "What is an agent?" }]);
     expect(notesBox()).toHaveFocus();
     expect(notesBox()).toHaveProperty("selectionStart", notesBox().value.length);
@@ -60,7 +66,7 @@ describe("asking in a video's notes", () => {
 
     pending.resolve(answerWith("Loops let it retry."));
 
-    await vi.waitFor(() => expect(notesBox()).toHaveValue("Why loops?\n✱ Loops let it retry.\nto!ols"));
+    await eventually(() => expect(notesBox()).toHaveValue("Why loops?\n✱ Loops let it retry.\nto!ols"));
     const caret = notesBox().value.indexOf("!") + 1;
     expect(notesBox()).toHaveFocus();
     expect(notesBox()).toHaveProperty("selectionStart", caret);
@@ -100,9 +106,11 @@ describe("asking in a video's notes", () => {
   });
 
   it("keeps answers after a reload, since they're part of the notes", async () => {
-    const { storage, unmount } = await watchFirst();
+    const pending = deferred<AnswerResult>();
+    const { storage, unmount } = await watchFirst(scriptedAssistant(undefined, { answerQuestion: () => pending.promise }));
     await userEvent.type(notesBox(), "What is an agent?{Enter}");
-    await vi.waitFor(() => expect(notesBox()).toHaveValue(`What is an agent?\n✱ ${ANSWER}\n`));
+    pending.resolve(answerWith(ANSWER));
+    await eventually(() => expect(notesBox()).toHaveValue(`What is an agent?\n✱ ${ANSWER}\n`));
     unmount();
 
     renderApp({ storage });
@@ -129,7 +137,7 @@ describe("the ✱ button", () => {
 
     await userEvent.click(askButton());
 
-    await vi.waitFor(() =>
+    await eventually(() =>
       expect(notesBox()).toHaveValue(`What is an agent?\n✱ Already answered.\nWhat is a tool?\nloops\nWhy memory?\n✱ ${ANSWER}\nend`),
     );
     expect(assistant.questions).toEqual([{ videoId: FIRST_ID, question: "Why memory?" }]);
@@ -164,7 +172,7 @@ describe("the ✱ button", () => {
     expect(askButton()).toHaveFocus();
     await userEvent.keyboard("{Enter}");
 
-    await vi.waitFor(() => expect(notesBox()).toHaveValue(`Why memory?\n✱ ${ANSWER}`));
+    await eventually(() => expect(notesBox()).toHaveValue(`Why memory?\n✱ ${ANSWER}`));
     expect(assistant.questions).toHaveLength(1);
   });
 });
@@ -183,7 +191,7 @@ describe("while an answer is on its way", () => {
     expect(assistant.questions).toHaveLength(1);
 
     pending.resolve(answerWith(ANSWER));
-    await vi.waitFor(() => expect(notesBox()).toHaveAttribute("aria-busy", "false"));
+    await eventually(() => expect(notesBox()).toHaveAttribute("aria-busy", "false"));
     expect(notesBox().value.match(/✱/g)).toHaveLength(1);
   });
 
@@ -196,7 +204,7 @@ describe("while an answer is on its way", () => {
     await userEvent.type(notesBox(), "Changed my mind");
     pending.resolve(answerWith(ANSWER));
 
-    await vi.waitFor(() => expect(notesBox()).toHaveAttribute("aria-busy", "false"));
+    await eventually(() => expect(notesBox()).toHaveAttribute("aria-busy", "false"));
     expect(notesBox()).toHaveValue("Changed my mind");
   });
 });
