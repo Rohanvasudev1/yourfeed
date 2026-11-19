@@ -47,3 +47,9 @@ def load_catalog(source: Source) -> tuple[Video, ...]:
     if source is Source.DEMO:
         return demo_catalog()
     raise SignInRequired("Sign in with Google to load your YouTube catalog.")
+
+
+@cache
+def catalog_topics() -> frozenset[str]:
+    """Every topic the demo catalog's videos have: the only topics an assistant may add or mute."""
+    return frozenset(v.topic for v in demo_catalog())

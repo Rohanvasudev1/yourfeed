@@ -47,6 +47,9 @@ export function ClaudeBar({ bar }: Readonly<{ bar: ClaudeBarState }>) {
           </p>
         )}
       </div>
+      <div role="status" aria-label="AI busy notice">
+        {bar.busyNotice && <p className="cbar-notice">{bar.busyNotice}</p>}
+      </div>
     </div>
   );
 }

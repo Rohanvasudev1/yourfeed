@@ -84,3 +84,10 @@ class Assistant(Protocol):
     def answer(self, question: str, video: Video) -> str:
         """At most two sentences about the video, from its catalog entry only, saying what it can't know."""
         ...
+
+
+class Model(Assistant, Protocol):
+    """An assistant backed by a real model, named for the account menu (never with its key or URL)."""
+
+    model_name: str
+    provider: str

@@ -38,12 +38,22 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
   const [error, setError] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
   const [reply, showReply] = useTimedValue<string>(REPLY_MS);
+  const [busyNotice, setBusyNotice] = useState<string | null>(null);
+  const busyNoticeShown = useRef(false);
   const latestFeeds = useRef(feeds);
   useEffect(() => {
     latestFeeds.current = feeds;
   }, [feeds]);
 
   const mode = barModeFor(feed, chosenMode);
+
+  /** The rules' notice shows once a visit: it stays while they keep answering and goes when the model is back. */
+  const noteBusyNotice = (result: AssistantResult) => {
+    if (!result.notice) return setBusyNotice(null);
+    if (busyNoticeShown.current) return;
+    busyNoticeShown.current = true;
+    setBusyNotice(result.notice);
+  };
 
   /** Makes a feed from the answer. Its name and place are worked out here the same way the reducer will. */
   const create = (asked: Feed, result: AssistantResult) => {
@@ -83,7 +93,9 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
     const askedMode = mode;
     const context = feedContext(asked, upNext, exploreVideos(catalog, asked, request));
     try {
-      settle(asked.name, askedMode, await assistant.request(request, askedMode, context));
+      const result = await assistant.request(request, askedMode, context);
+      noteBusyNotice(result);
+      settle(asked.name, askedMode, result);
       if (suggestion === undefined) setText("");
     } catch (err) {
       console.error("Claude bar request failed", err);
@@ -99,6 +111,7 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
     error,
     thinking,
     reply,
+    busyNotice,
     send,
     mode,
     feedName: feed.name,
