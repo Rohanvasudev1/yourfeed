@@ -8,7 +8,7 @@ import { LibrarySection, type LibraryProps } from "./LibrarySection";
 export function HistorySection(props: LibraryProps) {
   const { history } = props.library;
   return (
-    <LibrarySection name="Watch history" icon={IconHistory} summary={videoCount(history.length)}>
+    <LibrarySection name="Watch history" icon={IconHistory} summary={videoCount(history.length)} control={props.control}>
       <div className="library-toolbar">
         <span className="muted small">Most recent first. Everything uses this to recommend videos.</span>
         {history.length > 0 && <ClearHistory onClear={props.library.clearHistory} />}

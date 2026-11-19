@@ -1,8 +1,8 @@
 import { IconChevronDown, IconChevronRight, IconCopy, IconNotebook } from "@tabler/icons-react";
-import { useState } from "react";
 import { displayTitle, videoCount } from "../domain/format";
 import type { Feed, GlobalFilters, Video } from "../domain/types";
 import type { Notes } from "../state/useNotes";
+import type { SectionControl } from "../state/useSections";
 import { NoteBox } from "./NoteBox";
 import { PlayableThumbnail, PlayableTitle } from "./Playable";
 import { SessionMeta } from "./Session";
@@ -14,17 +14,17 @@ type Props = Readonly<{
   filters: GlobalFilters;
   notes: Notes;
   onPlay: (video: Video) => void;
+  control: SectionControl;
 }>;
 
 /** The collapsed Feed notes section: a note on the whole feed plus every session video's notes. */
-export function FeedNotes({ feed, videos, filters, notes, onPlay }: Props) {
-  const [open, setOpen] = useState(false);
+export function FeedNotes({ feed, videos, filters, notes, onPlay, control: { open, onToggle, toggleId } }: Props) {
   const Chevron = open ? IconChevronDown : IconChevronRight;
   const withNotes = videos.filter((v) => notes.forVideo(v.id).value.trim()).length;
   return (
     <section className="feed-notes" aria-label="Feed notes">
       <h2 className="section-label">
-        <button type="button" className="section-toggle" aria-expanded={open} aria-controls="feed-notes-body" onClick={() => setOpen(!open)}>
+        <button type="button" id={toggleId} className="section-toggle" aria-expanded={open} aria-controls="feed-notes-body" onClick={onToggle}>
           <Chevron size={16} aria-hidden="true" />
           <IconNotebook size={18} aria-hidden="true" />
           <span className="section-toggle-name feed-notes-name">Feed notes</span>

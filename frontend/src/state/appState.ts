@@ -41,6 +41,8 @@ export type AppState = Readonly<{
   blends: readonly BlendPartner[];
   /** Shared with you. */
   inbox: Inbox;
+  /** Whether a request has gone to the assistant yet; until then the provider notice shows under the Claude bar. */
+  providerNoticeSeen: boolean;
 }>;
 
 export type Action =
@@ -85,6 +87,8 @@ export type Action =
   /** A new-mode request (or one asked on a draft): makes a feed from its actions and opens it. */
   | Readonly<{ type: "create_from_request"; from: string; actions: readonly FeedAction[] }>
   | Readonly<{ type: "set_bar_mode"; mode: BarMode }>
+  /** The first request went to the assistant, so the provider notice moves to the account menu only. */
+  | Readonly<{ type: "see_provider_notice" }>
   /** Connects From Claude (filling its topics from the summary) or disconnects it (clearing them). */
   | Readonly<{ type: "set_claude_connection"; feed: string; connected: boolean }>;
 
@@ -176,6 +180,8 @@ export function makeReducer(seed: AppState) {
       }
       case "set_bar_mode":
         return state.barMode === action.mode ? state : { ...state, barMode: action.mode };
+      case "see_provider_notice":
+        return state.providerNoticeSeen ? state : { ...state, providerNoticeSeen: true };
       default:
         return reduceLibrary(state, action);
     }

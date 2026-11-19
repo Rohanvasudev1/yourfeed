@@ -7,7 +7,15 @@ const placeholderFor = (bar: ClaudeBarState) =>
   bar.mode === "edit" && bar.hasSwitch ? `Tell Claude what to change in ${bar.feedName}` : "Tell Claude what you want to watch";
 
 /** The plain-language command box: a request goes to the assistant and its feed actions land on this feed. */
-export function ClaudeBar({ bar }: Readonly<{ bar: ClaudeBarState }>) {
+type Props = Readonly<{
+  bar: ClaudeBarState;
+  /** Where requests go, shown until the first one is sent; `null` once it has been. */
+  providerNotice: string | null;
+}>;
+
+const describedBy = (...ids: (string | false)[]) => ids.filter(Boolean).join(" ") || undefined;
+
+export function ClaudeBar({ bar, providerNotice }: Props) {
   return (
     <div className="claude">
       <form
@@ -21,7 +29,7 @@ export function ClaudeBar({ bar }: Readonly<{ bar: ClaudeBarState }>) {
         <input
           type="text"
           aria-label="Tell Claude what to change"
-          aria-describedby={bar.error ? "cbar-error" : undefined}
+          aria-describedby={describedBy(!!bar.error && "cbar-error", !!providerNotice && "cbar-provider")}
           aria-invalid={bar.error ? true : undefined}
           placeholder={placeholderFor(bar)}
           value={bar.text}
@@ -47,6 +55,11 @@ export function ClaudeBar({ bar }: Readonly<{ bar: ClaudeBarState }>) {
           </p>
         )}
       </div>
+      {providerNotice && (
+        <p id="cbar-provider" className="cbar-notice" role="note" aria-label="Provider notice">
+          {providerNotice}
+        </p>
+      )}
       <div role="status" aria-label="AI busy notice">
         {bar.busyNotice && <p className="cbar-notice">{bar.busyNotice}</p>}
       </div>

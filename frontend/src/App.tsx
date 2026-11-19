@@ -1,4 +1,5 @@
 import { useMemo, useReducer } from "react";
+import { AccountMenu } from "./components/account/AccountMenu";
 import { AllTabsPage } from "./components/AllTabsPage";
 import { BlendPanel } from "./components/blend/BlendPanel";
 import { CatalogError } from "./components/CatalogError";
@@ -33,9 +34,12 @@ import { shareStartingVideos } from "./domain/share";
 import type { ComposeInput, Video } from "./domain/types";
 import type { AssistantPort, CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
+import { providerNotice } from "./domain/assistantInfo";
 import { startHistory, withHistory } from "./state/history";
 import { restoreState } from "./state/persistence";
 import { DEMO_SEED } from "./state/seed";
+import { useAccountJumps } from "./state/useAccountJumps";
+import { useAssistantInfo } from "./state/useAssistantInfo";
 import { useBlend } from "./state/useBlend";
 import { useCardActions } from "./state/useCardActions";
 import { useCatalog } from "./state/useCatalog";
@@ -47,6 +51,7 @@ import { useRefresh } from "./state/useRefresh";
 import { useSearch } from "./state/useSearch";
 import { useNotes } from "./state/useNotes";
 import { useQuestionCard } from "./state/useQuestionCard";
+import { sectionControl, useSections } from "./state/useSections";
 import { useSession } from "./state/useSession";
 import { useSharedWithYou } from "./state/useSharedWithYou";
 import { useShareToggle } from "./state/useShareToggle";
@@ -114,6 +119,9 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   });
   const edit = useEditMode(state.feeds, dispatch);
   const blend = useBlend(state.feeds, feed, ready ?? NO_VIDEOS, dispatch);
+  const info = useAssistantInfo(assistant);
+  const sections = useSections();
+  const jump = useAccountJumps({ feeds: state.feeds, current: feed, tabs, sections, dispatch });
   const search = useSearch({
     catalog: ready ?? NO_VIDEOS,
     recent: state.recentSearches,
@@ -142,6 +150,20 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
             onSearch={search.search}
             onForget={search.forget}
             onMessage={search.showFlash}
+          />
+        }
+        account={
+          <AccountMenu
+            counts={{
+              feeds: state.feeds.length,
+              saved: library.folders.reduce((sum, f) => sum + f.videos.length, 0),
+              history: library.history.length,
+              shared: state.inbox.shares.length,
+              blends: state.blends.length,
+            }}
+            claudeConnected={state.feeds.some((f) => f.kind === "claude" && f.connected)}
+            info={info}
+            onJump={jump}
           />
         }
       />
@@ -178,7 +200,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                 <ViewToggle view={state.view} onChange={(view) => dispatch({ type: "setView", view })} />
               </div>
             </div>
-            <ClaudeBar bar={claudeBar} />
+            <ClaudeBar bar={claudeBar} providerNotice={state.providerNoticeSeen ? null : providerNotice(info)} />
             {feed.draft ? (
               <NameFeed onName={tabs.name} />
             ) : (
@@ -275,10 +297,10 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                     cardActions={cardActions}
                   />
                 )}
-                {!shared.inInbox && <FeedNotes feed={feed} videos={sessionVideos} filters={state.filters} notes={notes} onPlay={session.play} />}
+                {!shared.inInbox && <FeedNotes feed={feed} videos={sessionVideos} filters={state.filters} notes={notes} onPlay={session.play} control={sectionControl(sections, "notes")} />}
                 <div className="library">
-                  <SavedSection library={library} filters={state.filters} onPlay={session.play} />
-                  <HistorySection library={library} filters={state.filters} onPlay={session.play} />
+                  <SavedSection library={library} filters={state.filters} onPlay={session.play} control={sectionControl(sections, "saved")} />
+                  <HistorySection library={library} filters={state.filters} onPlay={session.play} control={sectionControl(sections, "history")} />
                 </div>
               </>
             )}

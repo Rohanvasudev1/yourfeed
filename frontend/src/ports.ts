@@ -1,5 +1,6 @@
 import type { AnswerResult } from "./domain/askNotes";
 import type { AssistantResult, BarMode, FeedContext } from "./domain/assistant";
+import type { AssistantInfo } from "./domain/assistantInfo";
 import type { Video } from "./domain/types";
 
 /** Loads the catalog the feeds are built from. Production calls the backend; tests pass a fixed list. */
@@ -15,4 +16,6 @@ export type StateStorage = Readonly<{
 export type AssistantPort = Readonly<{
   request: (text: string, mode: BarMode, context: FeedContext) => Promise<AssistantResult>;
   answer: (videoId: string, question: string) => Promise<AnswerResult>;
+  /** Which assistant answers, for the account menu and the provider notice. */
+  info: () => Promise<AssistantInfo>;
 }>;

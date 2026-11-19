@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FeedContext } from "../domain/assistant";
-import { answerQuestion, requestAssistant } from "./assistant";
+import { answerQuestion, assistantInfo, requestAssistant } from "./assistant";
 
 const CONTEXT: FeedContext = {
   kind: "topics",
@@ -63,5 +63,21 @@ describe("the note answer API client", () => {
   it("rejects an empty answer", async () => {
     vi.stubGlobal("fetch", answer(200, { success: true, data: { answer: "", answeredBy: "rules" }, error: null }));
     await expect(answerQuestion("demo-0", "Why?")).rejects.toThrow("didn't match the contract");
+  });
+
+  it("gets which assistant answers", async () => {
+    const data = { answeredBy: "model", provider: "Groq", model: "gpt-oss-20b" };
+    const fetch = answer(200, { success: true, data, error: null });
+    vi.stubGlobal("fetch", fetch);
+
+    expect(await assistantInfo()).toEqual(data);
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/assistant/info");
+    expect(init.method).toBe("GET");
+  });
+
+  it("rejects info naming a model with no provider", async () => {
+    vi.stubGlobal("fetch", answer(200, { success: true, data: { answeredBy: "model", provider: null, model: "x" }, error: null }));
+    await expect(assistantInfo()).rejects.toThrow("didn't match the contract");
   });
 });
