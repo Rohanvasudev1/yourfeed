@@ -1,7 +1,8 @@
-import { applyFeedActions, type FeedAction } from "../domain/assistant";
+import { applyFeedActions, type BarMode, type FeedAction } from "../domain/assistant";
 import type { BlendPartner } from "../domain/blend";
 import { listKeyOf } from "../domain/feedList";
 import { withClaudeConnection } from "../domain/fromClaude";
+import { createFromRequest } from "../domain/newFeed";
 import type { FeedSet } from "../domain/refresh";
 import { appendDictation, type NoteTarget } from "../domain/notes";
 import { forgetWatch, recordWatch, type SavedFolder } from "../domain/library";
@@ -31,6 +32,8 @@ export type AppState = Readonly<{
   view: View;
   /** The visitor's searches, newest first, normalized. */
   recentSearches: readonly string[];
+  /** The Claude bar's mode on your own feeds. Built-in feeds and drafts have a fixed mode. */
+  barMode: BarMode;
   /** People the visitor has blended with, newest first; Share offers them as quick-send chips. */
   blends: readonly BlendPartner[];
 }>;
@@ -71,6 +74,9 @@ export type Action =
   | Readonly<{ type: "set_feed_set"; set: FeedSet }>
   /** Every feed action of one Claude bar request, applied together so they make one undo step. */
   | Readonly<{ type: "apply_request"; feed: string; actions: readonly FeedAction[] }>
+  /** A new-mode request (or one asked on a draft): makes a feed from its actions and opens it. */
+  | Readonly<{ type: "create_from_request"; from: string; actions: readonly FeedAction[] }>
+  | Readonly<{ type: "set_bar_mode"; mode: BarMode }>
   /** Connects From Claude (filling its topics from the summary) or disconnects it (clearing them). */
   | Readonly<{ type: "set_claude_connection"; feed: string; connected: boolean }>;
 
@@ -151,6 +157,12 @@ export function makeReducer(seed: AppState) {
         return mapFeed(state, action.feed, (f) => applyFeedActions(f, action.actions));
       case "set_claude_connection":
         return mapFeed(state, action.feed, (f) => (f.kind === "claude" ? withClaudeConnection(f, action.connected) : f));
+      case "create_from_request": {
+        const tabs = createFromRequest(state, action.from, action.actions);
+        return tabs.feeds === state.feeds ? state : { ...state, ...tabs };
+      }
+      case "set_bar_mode":
+        return state.barMode === action.mode ? state : { ...state, barMode: action.mode };
       default:
         return reduceLibrary(state, action);
     }

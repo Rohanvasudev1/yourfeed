@@ -126,6 +126,17 @@ describe("From Claude", () => {
     expect((await feedTitles()).sort()).toEqual(["Fresh agent build", "Learning economics", "Older ledger story"]);
   });
 
+  it("lets you switch the bar between editing it and making a new feed only once connected", async () => {
+    renderFromClaude();
+    await openFromClaude();
+    const modeSwitch = () => screen.getByRole("switch", { name: "New feed mode" });
+    expect(modeSwitch()).toHaveAttribute("aria-disabled", "true");
+
+    await userEvent.click(connectButton());
+    expect(modeSwitch()).not.toHaveAttribute("aria-disabled");
+    expect(modeSwitch()).toHaveAttribute("aria-checked", "false");
+  });
+
   it("keeps what you typed in the Claude bar when you tap a suggestion", async () => {
     renderFromClaude();
     await openFromClaude();

@@ -101,11 +101,37 @@ def test_from_claude_once_connected_is_edited_like_your_own_feeds():
     assert body["actions"] == [{"type": "set_topics", "add": ["Cooking"], "remove": []}]
 
 
-def test_new_mode_is_not_supported_yet():
-    res = client.post("/api/assistant/request", json=request("add cooking", mode="new"))
-    body = res.json()["data"]
+def ask_new(text: str, **context_changes) -> dict:
+    res = client.post("/api/assistant/request", json=request(text, mode="new", **context_changes))
+    assert res.status_code == 200, res.text
+    return res.json()["data"]
+
+
+@pytest.mark.parametrize("kind", ["topics", "home", "news"])
+def test_new_mode_starts_a_feed_with_the_topics_asked_for(kind):
+    body = ask_new("cooking and travel", kind=kind)
+    assert body["actions"] == [
+        {"type": "create_feed", "name": None},
+        {"type": "set_topics", "add": ["Cooking", "Travel"], "remove": []},
+    ]
+
+
+def test_new_mode_adds_topics_the_current_feed_already_has():
+    body = ask_new("add AI")
+    assert body["actions"] == [{"type": "create_feed", "name": None}, {"type": "set_topics", "add": ["AI"], "remove": []}]
+
+
+@pytest.mark.parametrize(
+    ("text", "reply"),
+    [
+        ("something to learn", "What do you want to learn about? Try naming one, like AI, Programming or MCP."),
+        ("asdfgh", "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."),
+    ],
+)
+def test_new_mode_without_a_topic_only_replies(text, reply):
+    body = ask_new(text)
     assert body["actions"] == []
-    assert body["reply"] == "This tab builds itself, so I can't change it. Try one of your own feeds."
+    assert body["reply"] == reply
 
 
 def test_less_of_a_topic_already_hidden_is_a_no_op():
