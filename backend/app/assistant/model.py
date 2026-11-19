@@ -5,6 +5,8 @@ from typing import Annotated, Literal, Protocol
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 from pydantic.alias_generators import to_camel
 
+from app.catalog import Video
+
 MAX_REQUEST_CHARS = 300
 MAX_UP_NEXT = 20
 MAX_EXPLORE = 8
@@ -14,6 +16,8 @@ AnsweredBy = Literal["model", "rules"]
 FeedKind = Literal["home", "subs", "top", "news", "claude", "blend", "shared", "topics"]
 
 RequestText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_REQUEST_CHARS)]
+MIN_QUESTION_CHARS = 3
+QuestionText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=MIN_QUESTION_CHARS, max_length=MAX_REQUEST_CHARS)]
 Minutes = tuple[int, int]
 
 
@@ -56,6 +60,13 @@ class AssistantRequest(_Frozen):
     context: FeedContext
 
 
+class AnswerRequest(_Frozen):
+    """A question from a video's notes (Ask in notes). The backend looks the video up itself."""
+
+    video_id: str
+    question: QuestionText
+
+
 class Proposal(_Frozen):
     """What an assistant wants to do, before the backend checks it: raw actions, as a model would return them."""
 
@@ -64,8 +75,12 @@ class Proposal(_Frozen):
 
 
 class Assistant(Protocol):
-    """Turns one Claude bar request into proposed feed actions and an optional reply."""
+    """Turns one Claude bar request into proposed feed actions and an optional reply, and answers questions in notes."""
 
     answered_by: AnsweredBy
 
     def handle(self, text: str, mode: BarMode, context: FeedContext) -> Proposal: ...
+
+    def answer(self, question: str, video: Video) -> str:
+        """At most two sentences about the video, from its catalog entry only, saying what it can't know."""
+        ...

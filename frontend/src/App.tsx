@@ -86,7 +86,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   const byId = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const session = useSession(feed, byId, dispatch);
   const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
-  const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, dispatch, showFlash: session.showFlash });
+  const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, assistant, dispatch, showFlash: session.showFlash });
   const library = useLibrary(state, feed, byId, dispatch);
   const cardActions = useCardActions(state, feed, ready ?? NO_VIDEOS, dispatch);
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);

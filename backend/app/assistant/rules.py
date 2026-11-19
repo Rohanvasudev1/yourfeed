@@ -3,7 +3,9 @@
 import re
 from collections.abc import Callable
 
+from app.assistant.answers import answer_for
 from app.assistant.model import AnsweredBy, BarMode, FeedContext, Proposal
+from app.catalog import Video
 
 TOPIC_RX: dict[str, re.Pattern[str]] = {
     name: re.compile(rx)
@@ -204,3 +206,6 @@ class KeywordRules:
             if answer := rule(lowered, context):
                 return answer
         return _add(lowered, context)
+
+    def answer(self, question: str, video: Video) -> str:
+        return answer_for(video, question)
