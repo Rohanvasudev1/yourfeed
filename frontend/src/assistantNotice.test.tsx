@@ -35,7 +35,7 @@ describe("the AI busy notice", () => {
     await openLearn();
     await ask("tennis");
 
-    expect(screen.getByRole("status", { name: "AI notice" })).toHaveTextContent(BUSY);
+    expect(screen.getByRole("status", { name: "AI busy notice" })).toHaveTextContent(BUSY);
     expect(settingsLine()).toHaveTextContent("Showing 5 topics");
   });
 

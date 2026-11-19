@@ -88,7 +88,7 @@ def main() -> int:
         passed += ok
         print(f"{'PASS' if ok else 'FAIL'}  {case.text!r} -> {body['answeredBy']}: {body['actions']} {body['reply'] or ''}")
     print(f"\n{passed}/{len(CASES)} passed")
-    return 0
+    return 0 if passed == len(CASES) else 1
 
 
 if __name__ == "__main__":

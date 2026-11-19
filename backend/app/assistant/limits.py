@@ -16,9 +16,13 @@ def _env_count(env: Mapping[str, str], name: str, default: int) -> int:
     raw = env.get(name, "").strip()
     if not raw:
         return default
-    if not raw.isdigit():
+    try:
+        count = int(raw)
+    except ValueError:
+        count = -1
+    if count < 0:
         raise ValueError(f"{name} must be a whole number of requests, got {raw!r}")
-    return int(raw)
+    return count
 
 
 @dataclass(frozen=True)

@@ -32,7 +32,7 @@ With no AI set up, the Claude bar answers with simple keyword rules. To use a re
 cd backend && uv run uvicorn app.main:app --reload --port 8000 --env-file .env
 ```
 
-If the model errors, takes over 15 seconds, or a visitor or the whole site passes its AI limit (`AI_LIMIT_PER_MINUTE`, `AI_LIMIT_PER_DAY`, `AI_LIMIT_SITE_PER_DAY`), the keyword rules answer and the bar says "Using simple rules for now. AI is busy." `GET /api/assistant/info` says which assistant is answering.
+If the model errors, takes over 15 seconds, or a visitor or the whole site passes its AI limit (`AI_LIMIT_PER_MINUTE`, `AI_LIMIT_PER_DAY`, `AI_LIMIT_SITE_PER_DAY`), the keyword rules answer and the bar says "Using simple rules for now. AI is busy." `GET /api/assistant/info` says which assistant is answering. Per-visitor limits key on the client IP: behind a reverse proxy, start uvicorn with `--proxy-headers --forwarded-allow-ips <proxy IP>` so each visitor gets their own limit.
 
 To compare models, run a fixed set of requests against the one you set up. It calls the real model, so it isn't part of the tests or CI:
 

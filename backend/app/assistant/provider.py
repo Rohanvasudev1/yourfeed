@@ -18,6 +18,8 @@ log = logging.getLogger("yourfeed")
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 DEFAULT_MODEL = "openai/gpt-oss-20b"
 MODEL_TIMEOUT_S = 15.0
+TEMPERATURE = 0.2
+MAX_FEED_NAME = 40
 OLLAMA_PORT = 11434
 KNOWN_PROVIDERS = {"api.groq.com": "Groq", "openrouter.ai": "OpenRouter"}
 
@@ -107,7 +109,7 @@ def _tools(mode: BarMode, context: FeedContext, topics: frozenset[str]) -> list[
         video = {"type": "string", "enum": [v.id for v in context.up_next]}
         tools.append(_function("pin_video", "Put one of the listed videos first in Up next.", {"id": video}, ["id"]))
     if mode == "new":
-        name = {"type": "string", "maxLength": 40}
+        name = {"type": "string", "maxLength": MAX_FEED_NAME}
         tools.append(_function("create_feed", "Start a new feed; then add its topics with set_topics.", {"name": name}, []))
     return tools
 
@@ -152,7 +154,7 @@ class OpenAICompatibleModel:
             "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": _user_message(text, mode, context)}],
             "tools": _tools(mode, context, catalog_topics()),
             "tool_choice": "auto",
-            "temperature": 0.2,
+            "temperature": TEMPERATURE,
         }
         try:
             message = _Completion.model_validate(self._post(body)).choices[0].message

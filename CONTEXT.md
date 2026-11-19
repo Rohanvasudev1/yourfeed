@@ -40,6 +40,7 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Ask in notes**: a note line of 3–300 characters ending in `?` is a **question**; pressing Enter after it (or the ✱ button) asks the assistant about that video. The assistant only knows the video's details and description, never a transcript, and answers in at most two sentences on the next line, starting with ✱.
 - **Provider notice**: the line saying requests and note questions are sent to the named provider. Nothing is sent until the user presses send or asks a question.
 - **AI limits**: per visitor, about 10 requests a minute and 100 a day, plus one daily cap for the whole site. Past a limit the keyword rules answer instead.
+- **Busy notice**: the one quiet line "Using simple rules for now. AI is busy." shown once a visit when the keyword rules answer in place of a set-up model (a limit, an error or a timeout). Not the provider notice.
 
 ## Search and sharing
 

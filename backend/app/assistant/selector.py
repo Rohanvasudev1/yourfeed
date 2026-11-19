@@ -53,6 +53,7 @@ class AssistantSelector:
             return Answer(future.result(timeout=self._timeout), self._model.answered_by)
         except FutureTimeout:
             log.warning("%s took over %ss; the rules answer", self._model.provider, self._timeout)
-        except Exception:
-            log.exception("%s failed; the rules answer", self._model.provider)
+        except Exception as exc:
+            # The type only: httpx messages carry the request URL, which may hold credentials.
+            log.warning("%s failed (%s); the rules answer", self._model.provider, type(exc).__name__)
         return self._rules_answer(text, mode, context, BUSY_NOTICE)
