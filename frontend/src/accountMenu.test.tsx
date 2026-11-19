@@ -2,11 +2,10 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { AssistantInfo } from "./domain/assistantInfo";
-import { replyWith, scriptedAssistant } from "./test/assistant";
-import { memoryStorage } from "./test/fixtures";
+import { actionsResult, answerWith, GROQ_INFO, scriptedAssistant } from "./test/assistant";
+import { EVERYTHING_ORDER, memoryStorage } from "./test/fixtures";
 import { cardFor, feedTitles, openFeedTitle, renderApp } from "./test/renderApp";
 
-const GROQ: AssistantInfo = { answeredBy: "model", provider: "Groq", model: "gpt-oss-20b" };
 const RULES: AssistantInfo = { answeredBy: "rules", provider: null, model: null };
 const GROQ_NOTICE = "Requests and note questions go to Groq. Don't include anything private.";
 const RULES_NOTICE = "Requests and note questions go to Yourfeed's server, where simple rules answer them. Don't include anything private.";
@@ -18,8 +17,10 @@ const barNotice = () => screen.queryByRole("note", { name: "Provider notice" });
 /** A menu jump: its button's name is the label followed by its count, if any. */
 const item = (label: string) => within(menu()).getByRole("button", { name: new RegExp(`^${label}`) });
 
-function renderWith({ info = GROQ, storage = memoryStorage() }: { info?: AssistantInfo | Error; storage?: ReturnType<typeof memoryStorage> } = {}) {
-  const assistant = scriptedAssistant(() => replyWith("OK."), { info: () => (info instanceof Error ? Promise.reject(info) : info) });
+function renderWith({ info = GROQ_INFO, storage = memoryStorage() }: { info?: AssistantInfo | Error; storage?: ReturnType<typeof memoryStorage> } = {}) {
+  const assistant = scriptedAssistant(() => actionsResult({ type: "set_length_range", min: 5, max: 20 }), {
+    answerQuestion: () => answerWith("An answer."),
+    info: () => (info instanceof Error ? Promise.reject(info) : info) });
   const view = renderApp({ storage, assistant });
   return { ...view, assistant, storage };
 }
@@ -107,7 +108,7 @@ describe("the account menu", () => {
   });
 
   it("names the model and provider answering", async () => {
-    renderWith({ info: GROQ });
+    renderWith({ info: GROQ_INFO });
     await openMenu();
     expect(await within(menu()).findByText("Answers by gpt-oss-20b via Groq")).toBeInTheDocument();
     expect(menu()).toHaveTextContent(GROQ_NOTICE);
@@ -144,6 +145,28 @@ describe("the provider notice", () => {
 
     await userEvent.click(avatar());
     expect(menu()).toHaveTextContent(GROQ_NOTICE);
+  });
+
+  it("doesn't come back when the first request is undone", async () => {
+    renderWith();
+    await feedTitles();
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Feeds" })).getByRole("button", { name: "Learn" }));
+    await userEvent.type(bar(), "short ones{Enter}");
+    await waitFor(() => expect(bar()).toHaveValue(""));
+    await userEvent.click(screen.getByRole("button", { name: /^Undo last change/ }));
+    expect(barNotice()).not.toBeInTheDocument();
+  });
+
+  it("goes once a question in notes is asked", async () => {
+    vi.stubGlobal("open", vi.fn(() => ({}) as Window));
+    const { assistant } = renderWith();
+    const [first] = EVERYTHING_ORDER;
+    await userEvent.click(within(await cardFor(first)).getByRole("button", { name: first }));
+    const notes = within(screen.getByRole("region", { name: "Watching now" })).getByRole("textbox", { name: `Notes on ${first}` });
+    await userEvent.type(notes, "What is it?{Enter}");
+    await waitFor(() => expect(assistant.questions).toHaveLength(1));
+    expect(barNotice()).not.toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 
   it("isn't shown again after a reload", async () => {

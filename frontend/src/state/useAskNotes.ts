@@ -54,6 +54,7 @@ export function useAskNotes({ assistant, notes, dispatch }: Input) {
     if (busy.includes(question) || !unansweredQuestions(notes[video] ?? "").includes(question)) return;
     say(video, null);
     setSent(video, [...busy, question]);
+    dispatch({ type: "see_provider_notice" });
     assistant
       .answer(video, question)
       .then(({ answer }) => {

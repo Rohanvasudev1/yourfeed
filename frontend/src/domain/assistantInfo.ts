@@ -14,7 +14,7 @@ const PRIVATE = "Don't include anything private.";
 export const answeredByLabel = (info: AssistantInfo): string =>
   info.answeredBy === "model" ? `Answers by ${info.model} via ${info.provider}` : "Answers by simple rules";
 
-/** Where requests and note questions go; `null` while the server hasn't said who answers. */
+/** Where requests and note questions go. With no `info` (the server hasn't said who answers) it names only Yourfeed's server. */
 export function providerNotice(info: AssistantInfo | null): string {
   if (info === null) return `Requests and note questions go to Yourfeed's server. ${PRIVATE}`;
   if (info.answeredBy === "rules") return `Requests and note questions go to Yourfeed's server, where simple rules answer them. ${PRIVATE}`;
