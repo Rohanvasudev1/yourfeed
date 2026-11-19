@@ -51,6 +51,8 @@ BUILT_IN_REPLY = "This tab builds itself, so I can't change it. Try one of your 
 PICK_VIDEOS = "Pick the ones you're feeling and I'll add more like them."
 VIDEO_CHOICES = 4
 NO_MATCH_REPLY = "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."
+# Your own feeds, and From Claude, which the frontend only sends in edit mode once it's connected.
+EDITABLE_KINDS = frozenset({"topics", "claude"})
 SHORT_LENGTH = (1, 15)
 LONG_LENGTH = (20, 120)
 SESSION_SLACK = 10
@@ -196,7 +198,7 @@ class KeywordRules:
             return answer
         if mode == "new":
             return _new_feed(lowered, context)
-        if context.kind != "topics":
+        if context.kind not in EDITABLE_KINDS:
             return _reply(BUILT_IN_REPLY)
         for rule in EDIT_RULES:
             if answer := rule(lowered, context):

@@ -51,6 +51,8 @@ export type Feed = Readonly<{
   seed: number;
   /** The visitor's note on the whole feed, shown in Feed notes. */
   note: string;
+  /** From Claude only: whether the visitor connected Claude, which fills the feed's topics. */
+  connected: boolean;
   /** Blend only: who the visitor invited or blends with, or null before an invite. */
   partner: Blend | null;
 }>;

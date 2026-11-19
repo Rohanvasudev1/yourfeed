@@ -1,6 +1,7 @@
 import { applyFeedActions, type BarMode, type FeedAction } from "../domain/assistant";
 import type { BlendPartner } from "../domain/blend";
 import { listKeyOf } from "../domain/feedList";
+import { withClaudeConnection } from "../domain/fromClaude";
 import { createFromRequest } from "../domain/newFeed";
 import type { FeedSet } from "../domain/refresh";
 import { appendDictation, type NoteTarget } from "../domain/notes";
@@ -75,7 +76,9 @@ export type Action =
   | Readonly<{ type: "apply_request"; feed: string; actions: readonly FeedAction[] }>
   /** A new-mode request (or one asked on a draft): makes a feed from its actions and opens it. */
   | Readonly<{ type: "create_from_request"; from: string; actions: readonly FeedAction[] }>
-  | Readonly<{ type: "set_bar_mode"; mode: BarMode }>;
+  | Readonly<{ type: "set_bar_mode"; mode: BarMode }>
+  /** Connects From Claude (filling its topics from the summary) or disconnects it (clearing them). */
+  | Readonly<{ type: "set_claude_connection"; feed: string; connected: boolean }>;
 
 const mapFeed = (state: AppState, name: string, change: (feed: Feed) => Feed): AppState => ({
   ...state,
@@ -152,6 +155,8 @@ export function makeReducer(seed: AppState) {
         return updateFeed(state, action.set.feed, { seed: action.set.seed, skipped: action.set.skipped });
       case "apply_request":
         return mapFeed(state, action.feed, (f) => applyFeedActions(f, action.actions));
+      case "set_claude_connection":
+        return mapFeed(state, action.feed, (f) => (f.kind === "claude" ? withClaudeConnection(f, action.connected) : f));
       case "create_from_request": {
         const tabs = createFromRequest(state, action.from, action.actions);
         return tabs.feeds === state.feeds ? state : { ...state, ...tabs };

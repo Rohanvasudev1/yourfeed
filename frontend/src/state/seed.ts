@@ -42,6 +42,7 @@ const DEMO_FEEDS: readonly Feed[] = [
     }),
     makeFeed({ name: "Most viewed", kind: "top", color: 4 }),
     makeFeed({ name: "News", kind: "news", color: 0 }),
+    makeFeed({ name: "From Claude", kind: "claude", length: [5, 60], session: [20, 90], color: 5 }),
     makeFeed({ name: "Blend", kind: "blend", length: [5, 60], session: [20, 120], color: 3 }),
     makeFeed({ name: "Learn", topics: ["AI", "Programming", "Economics", "Careers"], length: [10, 60], session: [30, 90], color: 0 }),
     makeFeed({ name: "Sport", topics: ["Premier League", "Tennis", "Cricket", "Wrestling"], length: [3, 20], session: [20, 60], color: 1 }),

@@ -1,5 +1,6 @@
 import { blendOrder, isBlendOn } from "./blend";
 import { activeItems } from "./feedList";
+import { isConnectedClaude } from "./fromClaude";
 import { hash } from "./hash";
 import { HOURS_PER_YEAR } from "./time";
 import type { ComposeInput, Composition, CompositionFilters, Feed, Video } from "./types";
@@ -55,6 +56,7 @@ function matchesKind(video: Video, input: ComposeInput): boolean {
     case "blend":
       return isBlendOn(feed) && feed.topics.includes(video.topic) && video.ageHours < HOURS_PER_YEAR;
     case "claude":
+      return isConnectedClaude(feed) && feed.topics.includes(video.topic) && video.ageHours < HOURS_PER_YEAR;
     case "topics":
       return feed.topics.includes(video.topic) && video.ageHours < HOURS_PER_YEAR;
   }

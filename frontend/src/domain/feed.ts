@@ -21,6 +21,7 @@ export const DEFAULT_FEED: Feed = {
   newsCategory: "All",
   seed: 0,
   note: "",
+  connected: false,
   partner: null,
 };
 

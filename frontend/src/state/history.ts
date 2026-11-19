@@ -6,11 +6,11 @@ import { toggleFeed, type FeedToggle } from "./feedToggle";
 /** Most steps kept each way. */
 export const UNDO_LIMIT = 10;
 
-const FEED_SETTING_KEYS = ["topics", "channels", "muted", "length", "session", "partner"] as const;
+const FEED_SETTING_KEYS = ["topics", "channels", "muted", "length", "session", "partner", "connected"] as const;
 type FeedSettings = Pick<Feed, (typeof FEED_SETTING_KEYS)[number]>;
 
 /**
- * What undo covers: every feed's topics, channels, mutes and ranges, a Blend's partner (its topics come from it), plus the
+ * What undo covers: every feed's topics, channels, mutes and ranges, a Blend's partner (its topics come from it), From Claude's connection (likewise), plus the
  * global filters and the visitor's blends (approving or removing one moves both). Sessions, sets and tabs are left alone.
  */
 type Settings = Readonly<{ feeds: ReadonlyMap<string, FeedSettings>; filters: GlobalFilters; blends: readonly BlendPartner[] }>;

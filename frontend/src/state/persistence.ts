@@ -7,7 +7,7 @@ import { USERNAME_PATTERN } from "../domain/username";
 import { VIEWS, type AppState } from "./appState";
 
 /** Bump when AppState changes shape. Saved state from any other version is ignored. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 const ids = z.array(z.string());
 const range = z.tuple([z.number(), z.number()]).refine(([min, max]) => min <= max, "min must not exceed max");
@@ -39,6 +39,7 @@ const feedSchema = z.object({
   seed: z.number().int(),
   // Saved before feed notes existed: start with an empty note rather than discarding the save.
   note: z.string().default(""),
+  connected: z.boolean(),
   partner: partnerSchema.extend({ status: z.enum(BLEND_STATUSES) }).nullable(),
 });
 

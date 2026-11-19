@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isBuiltIn } from "./feed";
+import { isConnectedClaude } from "./fromClaude";
 import { pinVideo } from "./session";
 import type { Feed, FeedKind, Video } from "./types";
 
@@ -56,11 +57,14 @@ export type FeedContext = Readonly<{
 
 /**
  * The bar's mode on `feed`: a draft is the new feed already, so it's edited; built-in feeds can't
- * be edited, so they're always new; your own feeds follow the visitor's choice.
+ * be edited, so they're always new, except From Claude once connected, whose topics are yours to add to;
+ * your own feeds (and a connected From Claude) follow the visitor's choice.
  */
+export const isLockedToNew = (feed: Feed): boolean => isBuiltIn(feed) && !isConnectedClaude(feed);
+
 export function barModeFor(feed: Feed, chosen: BarMode = "edit"): BarMode {
   if (feed.draft) return "edit";
-  return isBuiltIn(feed) ? "new" : chosen;
+  return isLockedToNew(feed) ? "new" : chosen;
 }
 
 const contextVideo = ({ id, title, topic, channel }: Video): ContextVideo => ({ id, title, topic, channel });

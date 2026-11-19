@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type Dispatch } from "react";
-import { barModeFor, changesFeed, feedContext, MAX_REQUEST_CHARS, type AssistantResult, type BarMode } from "../domain/assistant";
-import { isBuiltIn } from "../domain/feed";
+import { barModeFor, changesFeed, feedContext, MAX_REQUEST_CHARS, type AssistantResult, type BarMode, isLockedToNew } from "../domain/assistant";
+import { awaitsConnection } from "../domain/fromClaude";
 import { createFromRequest } from "../domain/newFeed";
 import { exploreVideos } from "../domain/questionCard";
 import type { Feed, Video } from "../domain/types";
@@ -14,6 +14,7 @@ const EMPTY_REQUEST = "Type something first";
 const TOO_LONG = `Keep requests under ${MAX_REQUEST_CHARS} characters`;
 const UNREACHABLE = "Couldn't reach Claude. Try again.";
 const ALREADY = "Already in this feed.";
+const CONNECT_FIRST = "Connect Claude first, then tell me what to add.";
 const NOTHING_TO_START = "Name a topic to start a new feed.";
 const shelvedNotice = (name: string) => `The tab bar is full, so ${name} is in All tabs.`;
 
@@ -68,12 +69,14 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
     if (message) showReply(message);
   };
 
-  const send = async () => {
-    const request = text.trim();
+  /** Sends what's typed, or `suggestion` (a From Claude chip) while leaving what's typed alone. */
+  const send = async (suggestion?: string) => {
+    const request = (suggestion ?? text).trim();
     if (thinking) return;
     if (!request) return setError(EMPTY_REQUEST);
     if (request.length > MAX_REQUEST_CHARS) return setError(TOO_LONG);
     setError(null);
+    if (awaitsConnection(feed)) return showReply(CONNECT_FIRST);
     setThinking(true);
     questions.close();
     const asked = feed;
@@ -81,7 +84,7 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
     const context = feedContext(asked, upNext, exploreVideos(catalog, asked, request));
     try {
       settle(asked.name, askedMode, await assistant.request(request, askedMode, context));
-      setText("");
+      if (suggestion === undefined) setText("");
     } catch (err) {
       console.error("Claude bar request failed", err);
       setError(UNREACHABLE);
@@ -102,7 +105,7 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
     /** Whether the switch is shown: a draft is always the new feed, so it has none. */
     hasSwitch: !feed.draft,
     /** Built-in feeds are always in new mode. */
-    modeLocked: isBuiltIn(feed),
+    modeLocked: isLockedToNew(feed),
     setMode: (next: BarMode) => dispatch({ type: "set_bar_mode", mode: next }),
   };
 }
