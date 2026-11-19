@@ -1,8 +1,9 @@
-import { IconAsterisk, IconMicrophone, IconPlayerStop } from "@tabler/icons-react";
-import { useLayoutEffect, useRef, type KeyboardEvent } from "react";
+import { IconMicrophone, IconPlayerStop } from "@tabler/icons-react";
+import { useLayoutEffect, useRef, type KeyboardEvent, type RefObject } from "react";
 import { questionBeforeCaret } from "../domain/askNotes";
 import type { AskBinding } from "../state/useAskNotes";
 import type { NoteBinding } from "../state/useNotes";
+import { AskButton, AskHint } from "./AskControls";
 import { NoteMirror } from "./NoteMirror";
 import { useKeptSelection } from "./useKeptSelection";
 import "./notes.css";
@@ -14,21 +15,19 @@ type Props = Readonly<{
   note: NoteBinding;
 }>;
 
-const ASK_HINT = "Ask Claude: end a line with ? and press Enter. The answer appears on the next line.";
-
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 
-/** Enter (not Shift+Enter) at the end of a question line asks it; the newline is typed as usual. */
+/** Enter (not Shift+Enter, nor one that ends an IME composition) at the end of a question line asks it; the newline is typed as usual. */
 function askOnEnter(ask: AskBinding) {
   return (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key !== "Enter" || e.shiftKey) return;
+    if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
     const question = questionBeforeCaret(e.currentTarget.value, e.currentTarget.selectionStart);
-    if (question) ask.ask(question);
+    if (question) ask.askQuestion(question);
   };
 }
 
 /** Grows the text box with its text, so the mirror under it never has to scroll. */
-function useAutoGrow(ref: React.RefObject<HTMLTextAreaElement | null>, value: string, on: boolean) {
+function useAutoGrow(ref: RefObject<HTMLTextAreaElement | null>, value: string, on: boolean) {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!on || !el) return;
@@ -55,6 +54,7 @@ export function NoteBox({ label, placeholder, note }: Props) {
       rows={2}
       aria-label={label}
       aria-busy={ask ? ask.waiting.length > 0 : undefined}
+      // As in the mockup, video notes say how to ask right in the empty box.
       placeholder={ask ? `${placeholder}. End a line with ? to ask.` : placeholder}
       value={note.value}
       onChange={(e) => {
@@ -80,17 +80,7 @@ export function NoteBox({ label, placeholder, note }: Props) {
           textarea
         )}
         <div className="note-tools">
-          {ask && (
-            <button
-              type="button"
-              className="icon-button"
-              aria-label={`Answer my last question in ${lowerFirst(label)}`}
-              title="Answer my last question"
-              onClick={ask.askLast}
-            >
-              <IconAsterisk size={16} className="answer-mark" aria-hidden="true" />
-            </button>
-          )}
+          {ask && <AskButton ask={ask} subject={lowerFirst(label)} />}
           <button
             type="button"
             className={note.listening ? "icon-button recording" : "icon-button"}
@@ -103,18 +93,7 @@ export function NoteBox({ label, placeholder, note }: Props) {
           </button>
         </div>
       </div>
-      {ask && (
-        <p className={ask.message ? "note-hint error" : "note-hint"} aria-live="polite">
-          {ask.message ?? (
-            <>
-              <span className="answer-mark" aria-hidden="true">
-                ✱{" "}
-              </span>
-              <span>{ASK_HINT}</span>
-            </>
-          )}
-        </p>
-      )}
+      {ask && <AskHint message={ask.message} />}
     </div>
   );
 }

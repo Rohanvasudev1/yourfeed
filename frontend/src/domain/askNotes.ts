@@ -7,13 +7,15 @@ export const ANSWER_MARK = "✱";
 export const MIN_QUESTION_CHARS = 3;
 /** Longest question the notes send, as for a Claude bar request (ADR 0006). */
 export const MAX_QUESTION_CHARS = MAX_REQUEST_CHARS;
+/** How long each word of a new answer waits after the one before it as it inks in. */
+export const INK_WORD_MS = 45;
 
 export const answerResultSchema = z.object({ answer: z.string().min(1), answeredBy: z.enum(["model", "rules"]) }).readonly();
 export type AnswerResult = z.infer<typeof answerResultSchema>;
 
 export const isAnswerLine = (line: string): boolean => line.trimStart().startsWith(ANSWER_MARK);
 
-/** A line of at least 3 characters ending in `?` that isn't itself an answer. Length past 300 is checked when it's asked. */
+/** A line of at least MIN_QUESTION_CHARS ending in `?` that isn't itself an answer. The upper limit is checked when it's asked. */
 export const isQuestionLine = (line: string): boolean => {
   const text = line.trim();
   return !isAnswerLine(line) && text.length >= MIN_QUESTION_CHARS && text.endsWith("?");
@@ -40,8 +42,10 @@ export function questionBeforeCaret(note: string, caret: number): string | null 
   return isQuestionLine(line) ? line.trim() : null;
 }
 
-/** Answers are one line, so whatever the assistant sends fits after the mark. */
-const answerLine = (answer: string) => `${ANSWER_MARK} ${answer.replace(/\s*\n\s*/g, " ").trim()}`;
+/** An answer as its ✱ line shows it: one line, so whatever the assistant sends fits after the mark. */
+export const oneLine = (answer: string): string => answer.replace(/\s*\n\s*/g, " ").trim();
+
+const answerLine = (answer: string) => `${ANSWER_MARK} ${oneLine(answer)}`;
 
 /**
  * The note with `answer` on the line after the first unanswered `question`, or null when that

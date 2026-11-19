@@ -1,6 +1,5 @@
 import { Fragment } from "react";
-import { ANSWER_MARK, isAnswerLine, isQuestionLine } from "../domain/askNotes";
-import { INK_WORD_MS } from "../state/useAskNotes";
+import { ANSWER_MARK, INK_WORD_MS, isAnswerLine, isQuestionLine } from "../domain/askNotes";
 
 type Props = Readonly<{
   value: string;
