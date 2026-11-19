@@ -49,6 +49,8 @@ export type Feed = Readonly<{
   seed: number;
   /** The visitor's note on the whole feed, shown in Feed notes. */
   note: string;
+  /** From Claude only: whether the visitor connected Claude, which fills the feed's topics. */
+  connected: boolean;
 }>;
 
 export const NEWS_CATEGORIES = ["All", "World", "Business", "Tech", "Science"] as const;

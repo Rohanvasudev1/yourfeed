@@ -50,8 +50,11 @@ export type FeedContext = Readonly<{
   upNext: readonly ContextVideo[];
 }>;
 
-/** Only your own feeds can be edited; requests on built-in feeds start a new one. */
-export const barModeFor = (feed: Feed): BarMode => (feed.kind === "topics" ? "edit" : "new");
+/**
+ * Your own feeds can be edited, and so can From Claude once connected, since its topics are yours to add to.
+ * Requests on other built-in feeds start a new one.
+ */
+export const barModeFor = (feed: Feed): BarMode => (feed.kind === "topics" || (feed.kind === "claude" && feed.connected) ? "edit" : "new");
 
 export function feedContext(feed: Feed, upNext: readonly Video[]): FeedContext {
   const { kind, name, topics, channels, muted, length, session, pinned } = feed;

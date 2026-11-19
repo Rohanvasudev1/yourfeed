@@ -4,10 +4,11 @@ import type { Action, AppState } from "./appState";
 /** Most steps kept each way. */
 export const UNDO_LIMIT = 10;
 
-const FEED_SETTING_KEYS = ["topics", "channels", "muted", "length", "session"] as const;
+// `connected` comes with From Claude's topics, so undoing a connection takes both back.
+const FEED_SETTING_KEYS = ["topics", "channels", "muted", "length", "session", "connected"] as const;
 type FeedSettings = Pick<Feed, (typeof FEED_SETTING_KEYS)[number]>;
 
-/** What undo covers: every feed's topics, channels, mutes and ranges, plus the global filters. Sessions, sets and tabs are left alone. */
+/** What undo covers: every feed's topics, channels, mutes, ranges and Claude connection, plus the global filters. Sessions, sets and tabs are left alone. */
 type Settings = Readonly<{ feeds: ReadonlyMap<string, FeedSettings>; filters: GlobalFilters }>;
 
 const RANGE_KEYS = ["length", "session"] as const;

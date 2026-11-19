@@ -96,6 +96,12 @@ def test_built_in_feeds_cannot_be_edited(kind):
     assert body["reply"] == "This tab builds itself, so I can't change it. Try one of your own feeds."
 
 
+def test_from_claude_once_connected_is_edited_like_your_own_feeds():
+    """The frontend sends From Claude in edit mode only once it's connected."""
+    body = ask("add cooking", kind="claude", topics=["MCP", "AI"])
+    assert body["actions"] == [{"type": "set_topics", "add": ["Cooking"], "remove": []}]
+
+
 def test_new_mode_is_not_supported_yet():
     res = client.post("/api/assistant/request", json=request("add cooking", mode="new"))
     body = res.json()["data"]

@@ -8,6 +8,7 @@ import { FeedView } from "./components/FeedView";
 import { Flash } from "./components/Flash";
 import { EditBar } from "./components/EditBar";
 import { Footer } from "./components/Footer";
+import { FromClaudePanel } from "./components/fromClaude/FromClaudePanel";
 import { Header } from "./components/Header";
 import { HistorySection } from "./components/library/HistorySection";
 import { SavedSection } from "./components/library/SavedSection";
@@ -177,6 +178,14 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                   onTopRange={(range) => dispatch({ type: "set_top_range", feed: feed.name, range })}
                   onNewsCategory={(category) => dispatch({ type: "set_news_category", feed: feed.name, category })}
                 />
+                {feed.kind === "claude" && (
+                  <FromClaudePanel
+                    connected={feed.connected}
+                    onConnect={(connected) => dispatch({ type: "set_claude_connection", feed: feed.name, connected })}
+                    onSuggest={(request) => void claudeBar.send(request)}
+                    thinking={claudeBar.thinking}
+                  />
+                )}
                 {catalog.status === "loading" && <p className="muted">Loading…</p>}
                 {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
                 <Flash message={session.flash} />

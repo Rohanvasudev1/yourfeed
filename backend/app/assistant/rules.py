@@ -49,6 +49,8 @@ ALREADY = "Already in this feed."
 CANT_DO_REPLY = "I can change this feed's topics, video length and session time. Filters, tabs and saved videos are yours to change."
 BUILT_IN_REPLY = "This tab builds itself, so I can't change it. Try one of your own feeds."
 NO_MATCH_REPLY = "I couldn't match that to a topic. Try one like Cooking, Travel or Tennis."
+# Your own feeds, and From Claude, which the frontend only sends in edit mode once it's connected.
+EDITABLE_KINDS = frozenset({"topics", "claude"})
 SHORT_LENGTH = (1, 15)
 LONG_LENGTH = (20, 120)
 SESSION_SLACK = 10
@@ -165,7 +167,7 @@ class KeywordRules:
         lowered = text.lower()
         if answer := _why(lowered, context):
             return answer
-        if mode == "new" or context.kind != "topics":
+        if mode == "new" or context.kind not in EDITABLE_KINDS:
             return _reply(BUILT_IN_REPLY)
         for rule in EDIT_RULES:
             if answer := rule(lowered, context):

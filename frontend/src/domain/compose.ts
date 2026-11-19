@@ -52,6 +52,7 @@ function matchesKind(video: Video, input: ComposeInput): boolean {
     case "news":
       return video.topic === "News" && (feed.newsCategory === "All" || video.newsCategory === feed.newsCategory);
     case "claude":
+      return feed.connected && feed.topics.includes(video.topic) && video.ageHours < HOURS_PER_YEAR;
     case "topics":
       return feed.topics.includes(video.topic) && video.ageHours < HOURS_PER_YEAR;
   }

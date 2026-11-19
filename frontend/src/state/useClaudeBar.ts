@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type Dispatch } from "react";
 import { barModeFor, changesFeed, feedContext, MAX_REQUEST_CHARS, type AssistantResult } from "../domain/assistant";
+import { awaitsConnection } from "../domain/fromClaude";
 import type { Feed, Video } from "../domain/types";
 import type { AssistantPort } from "../ports";
 import type { Action } from "./appState";
@@ -10,6 +11,7 @@ const EMPTY_REQUEST = "Type something first";
 const TOO_LONG = `Keep requests under ${MAX_REQUEST_CHARS} characters`;
 const UNREACHABLE = "Couldn't reach Claude. Try again.";
 const ALREADY = "Already in this feed.";
+const CONNECT_FIRST = "Connect Claude first, then tell me what to add.";
 
 type Input = Readonly<{
   assistant: AssistantPort;
@@ -41,17 +43,19 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, dispatch }: Input
     if (message) showReply(message);
   };
 
-  const send = async () => {
-    const request = text.trim();
+  /** Sends what's typed, or `suggestion` (a From Claude chip) while leaving what's typed alone. */
+  const send = async (suggestion?: string) => {
+    const request = (suggestion ?? text).trim();
     if (thinking) return;
     if (!request) return setError(EMPTY_REQUEST);
     if (request.length > MAX_REQUEST_CHARS) return setError(TOO_LONG);
     setError(null);
+    if (awaitsConnection(feed)) return showReply(CONNECT_FIRST);
     setThinking(true);
     const asked = feed;
     try {
       settle(asked.name, await assistant.request(request, barModeFor(asked), feedContext(asked, upNext)));
-      setText("");
+      if (suggestion === undefined) setText("");
     } catch (err) {
       console.error("Claude bar request failed", err);
       setError(UNREACHABLE);

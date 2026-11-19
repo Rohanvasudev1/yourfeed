@@ -59,6 +59,7 @@ describe("the Explore menu", () => {
       "SubscriptionsNewest from your channels",
       "Most viewedRanked by views",
       "NewsLatest from news channels",
+      "From ClaudeFrom your Claude work",
     ]);
     expect(exploreButton()).toHaveAttribute("aria-expanded", "true");
   });
@@ -104,6 +105,7 @@ describe("the Explore menu", () => {
   it("closes when focus tabs out of it", async () => {
     renderFeeds();
     await userEvent.click(exploreButton());
+    await userEvent.tab();
     await userEvent.tab();
     await userEvent.tab();
     await userEvent.tab();
