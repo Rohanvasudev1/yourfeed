@@ -84,7 +84,7 @@ def _clamp(limits: Limits, a: int, b: int) -> tuple[int, int]:
 
 def _checked(action: FeedAction, mode: BarMode, context: FeedContext, topics: frozenset[str]) -> FeedAction | None:
     """The action as it may be applied (ranges clamped), or None when it breaks a rule."""
-    shown = {v.id for v in context.up_next}
+    shown = {v.id for v in (*context.up_next, *context.explore)}
     match action:
         case SetTopics(add=add, remove=remove):
             return action if (add or remove) and set(add) | set(remove) <= topics else None
@@ -98,12 +98,10 @@ def _checked(action: FeedAction, mode: BarMode, context: FeedContext, topics: fr
             return action.model_copy(update={"min": lo, "max": hi})
         case PinVideo(id=video):
             return action if video in shown else None
-        case AskUser(kind="chips", items=items):
+        case AskUser(kind="chips" | "feedback", items=items):
             return action if set(items) <= topics else None
         case AskUser(kind="videos", items=items):
             return action if set(items) <= shown else None
-        case AskUser():
-            return action
         case CreateFeed():
             return action if mode == "new" else None
 

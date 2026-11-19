@@ -13,6 +13,7 @@ import { Header } from "./components/Header";
 import { HistorySection } from "./components/library/HistorySection";
 import { SavedSection } from "./components/library/SavedSection";
 import { NameFeed } from "./components/NameFeed";
+import { QuestionCard } from "./components/QuestionCard";
 import { SearchBox } from "./components/search/SearchBox";
 import { SearchPage } from "./components/search/SearchPage";
 import { SettingsLine } from "./components/SettingsLine";
@@ -43,6 +44,7 @@ import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
 import { useSearch } from "./state/useSearch";
 import { useNotes } from "./state/useNotes";
+import { useQuestionCard } from "./state/useQuestionCard";
 import { useSession } from "./state/useSession";
 import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
@@ -94,7 +96,8 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   // With nothing to share the panel has nothing to show, so the button never claims it's open.
   const share = { ...shareToggle, open: shareToggle.open && shareVideos.length > 0 };
   const upNext = [...pinned, ...(composition?.upNext ?? [])];
-  const claudeBar = useClaudeBar({ assistant, feeds: state.feeds, feed, upNext, dispatch });
+  const questions = useQuestionCard({ feed, scope: `${tabs.page}:${feed.name}`, byId, dispatch });
+  const claudeBar = useClaudeBar({ assistant, feeds: state.feeds, feed, upNext, catalog: ready ?? NO_VIDEOS, questions, dispatch });
   const edit = useEditMode(state.feeds, dispatch);
   const blend = useBlend(state.feeds, feed, ready ?? NO_VIDEOS, dispatch);
   const search = useSearch({
@@ -192,6 +195,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
                 {feed.kind === "blend" && <BlendPanel partner={feed.partner} blends={state.blends} controls={blend} />}
                 {catalog.status === "loading" && <p className="muted">Loading…</p>}
                 {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
+                <QuestionCard questions={questions} byId={byId} filters={state.filters} />
                 <Flash message={session.flash} />
                 {session.finished.length > 0 && (
                   <FinishedSection
