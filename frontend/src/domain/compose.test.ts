@@ -23,7 +23,7 @@ const video = (o: Partial<Video> = {}): Video => ({
 const filters: CompositionFilters = { hideClickbait: true, boostSmallCreators: false, includeShorts: false };
 
 const compose = (o: Partial<ComposeInput>) =>
-  composeFeed({ catalog: [], feed: makeFeed(), filters, watched: [], topMaxAgeHours: Infinity, ...o });
+  composeFeed({ catalog: [], feed: makeFeed(), filters, watched: [], topMaxAgeHours: Infinity, myTopics: [], ...o });
 
 const ids = (r: ReturnType<typeof composeFeed>) => r.upNext.map((v) => v.id);
 

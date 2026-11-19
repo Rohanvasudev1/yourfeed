@@ -33,6 +33,7 @@ export function topicsPhrase(feed: Feed): string {
       case "news":
         return feed.newsCategory === "All" ? "all news" : `${feed.newsCategory} news`;
       case "claude":
+      case "blend":
       case "topics":
         return plural(n, "topic");
     }

@@ -1,3 +1,4 @@
+import type { BlendPartner } from "../domain/blend";
 import type { Feed, GlobalFilters } from "../domain/types";
 import type { Action, AppState } from "./appState";
 import { toggleFeed, type FeedToggle } from "./feedToggle";
@@ -5,11 +6,14 @@ import { toggleFeed, type FeedToggle } from "./feedToggle";
 /** Most steps kept each way. */
 export const UNDO_LIMIT = 10;
 
-const FEED_SETTING_KEYS = ["topics", "channels", "muted", "length", "session"] as const;
+const FEED_SETTING_KEYS = ["topics", "channels", "muted", "length", "session", "partner"] as const;
 type FeedSettings = Pick<Feed, (typeof FEED_SETTING_KEYS)[number]>;
 
-/** What undo covers: every feed's topics, channels, mutes and ranges, plus the global filters. Sessions, sets and tabs are left alone. */
-type Settings = Readonly<{ feeds: ReadonlyMap<string, FeedSettings>; filters: GlobalFilters }>;
+/**
+ * What undo covers: every feed's topics, channels, mutes and ranges, a Blend's partner (its topics come from it), plus the
+ * global filters and the visitor's blends (approving or removing one moves both). Sessions, sets and tabs are left alone.
+ */
+type Settings = Readonly<{ feeds: ReadonlyMap<string, FeedSettings>; filters: GlobalFilters; blends: readonly BlendPartner[] }>;
 
 const RANGE_KEYS = ["length", "session"] as const;
 type RangeKey = (typeof RANGE_KEYS)[number];
@@ -36,6 +40,7 @@ const feedSettingsOf = (feed: Feed): FeedSettings =>
 const settingsOf = (state: AppState): Settings => ({
   feeds: new Map(state.feeds.map((f) => [f.name, feedSettingsOf(f)])),
   filters: state.filters,
+  blends: state.blends,
 });
 
 /** Value equality for plain settings data (string lists, ranges, filter flags). */
@@ -57,7 +62,7 @@ function changeBetween(before: Settings, after: Settings, current: string): Chan
     const old = before.feeds.get(name);
     if (old && !sameValue(old, settings)) return { feed: name, range: onlyRangeChanged(old, settings) };
   }
-  return sameValue(before.filters, after.filters) ? null : { feed: current };
+  return sameValue(before.filters, after.filters) && sameValue(before.blends, after.blends) ? null : { feed: current };
 }
 
 /**
@@ -82,6 +87,7 @@ function applySettings(state: AppState, { settings, feed }: Step): AppState {
     ...state,
     feeds,
     filters: settings.filters,
+    blends: settings.blends,
     currentFeed: feeds.some((f) => f.name === feed) ? feed : state.currentFeed,
   };
 }
