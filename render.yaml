@@ -1,0 +1,62 @@
+# Render Blueprint for hosting Yourfeed on free tiers (docs/adr/0012, 0014). The owner creates it with scripts/setup-hosting;
+# nothing here is deployed by CI. Variables marked `sync: false` are asked for once, when the Blueprint is first created.
+#
+# The browser only ever talks to the static site: it rewrites /api/* to the backend, so the session cookie stays
+# first-party (SameSite=Lax) and Google's redirect URI is APP_URL + /api/auth/callback. If Render gives the backend
+# a different address than yourfeed-api.onrender.com, change the rewrite's destination below to match.
+services:
+  - type: web
+    name: yourfeed-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    # Render installs uv itself when it finds uv.lock in rootDir.
+    buildCommand: uv sync --frozen --no-dev
+    # Render's proxy sets X-Forwarded-For, so per-visitor AI limits key on the visitor, not the proxy.
+    # The backend migrates DATABASE_URL to the newest Alembic revision at startup.
+    startCommand: uv run --frozen --no-dev uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*'
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.11
+      # Sign in with Google (all five plus APP_URL and DATABASE_URL, or none for demo only).
+      - key: APP_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      # The Claude bar's model (optional): Groq's free tier needs only AI_API_KEY. Empty means keyword rules.
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_LIMIT_PER_MINUTE
+        value: "5"
+      - key: AI_LIMIT_PER_DAY
+        value: "100"
+      - key: AI_LIMIT_SITE_PER_DAY
+        value: "200"
+
+  - type: web
+    name: yourfeed
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://yourfeed-api.onrender.com/api/*
+      # Every other path is the single-page app (/about included).
+      - type: rewrite
+        source: /*
+        destination: /index.html
