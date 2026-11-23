@@ -1,4 +1,4 @@
-import { MS_PER_HOUR } from "./time";
+import { HOURS_PER_DAY, MS_PER_HOUR } from "./time";
 import type { Feed, Video } from "./types";
 
 /** What the visitor did with a video on a feed. Yourfeed's own data, never YouTube's (ADR 0010). */
@@ -16,11 +16,11 @@ export type Signal = Readonly<{ kind: SignalKind; video: Video; at: number }>;
 
 /** Behaviour older than this many days is dropped and never ranks anything. */
 export const BEHAVIOUR_DAYS = 30;
-export const BEHAVIOUR_WINDOW_MS = BEHAVIOUR_DAYS * 24 * MS_PER_HOUR;
+export const BEHAVIOUR_WINDOW_MS = BEHAVIOUR_DAYS * HOURS_PER_DAY * MS_PER_HOUR;
 /** Most signals kept per feed; the oldest go first. */
 export const BEHAVIOUR_LIMIT = 300;
 /** A video passed over again within a day counts once. */
-const SKIP_REPEAT_MS = 24 * MS_PER_HOUR;
+const SKIP_REPEAT_MS = HOURS_PER_DAY * MS_PER_HOUR;
 
 export const isRecent = (at: number, now: number): boolean => now - at <= BEHAVIOUR_WINDOW_MS;
 
@@ -34,11 +34,11 @@ export function recordSignals(record: BehaviourRecord, kind: SignalKind, videos:
   return [...record, ...added].filter((s) => isRecent(s.at, at)).slice(-BEHAVIOUR_LIMIT);
 }
 
-/** Which signals `forgetSignals` drops: some kinds for one video, or some kinds recorded at one moment. */
-export type Forget = Readonly<{ kinds: readonly SignalKind[] } & ({ video: string } | { at: number })>;
+/** Which signals `forgetSignals` drops: some kinds for one video, some kinds recorded at one moment, or every signal of some kinds. */
+export type Forget = Readonly<{ kinds: readonly SignalKind[] } & ({ video: string } | { at: number } | { all: true })>;
 
 const matches = (s: BehaviourEntry, forget: Forget) =>
-  forget.kinds.includes(s.kind) && ("video" in forget ? s.video === forget.video : s.at === forget.at);
+  forget.kinds.includes(s.kind) && ("video" in forget ? s.video === forget.video : "at" in forget ? s.at === forget.at : true);
 
 export function forgetSignals(record: BehaviourRecord, forget: Forget): BehaviourRecord {
   const kept = record.filter((s) => !matches(s, forget));
@@ -66,8 +66,13 @@ export function withSessionSignals(before: Feed, after: Feed, at: number): Feed 
     ["pinned", added(before.pinned, after.pinned)],
     ["removed", added(before.removed, after.removed)],
   ];
-  const behaviour = changes.reduce((record, [kind, videos]) => recordSignals(record, kind, videos, at), after.behaviour);
-  return behaviour === after.behaviour ? after : { ...after, behaviour };
+  return withBehaviour(after, (record) => changes.reduce((r, [kind, videos]) => recordSignals(r, kind, videos, at), record));
+}
+
+/** The feed with its behaviour record changed by `change`; the same feed when nothing changed. */
+export function withBehaviour(feed: Feed, change: (record: BehaviourRecord) => BehaviourRecord): Feed {
+  const behaviour = change(feed.behaviour);
+  return behaviour === feed.behaviour ? feed : { ...feed, behaviour };
 }
 
 /** The behaviour the Ranker reads for a feed: its own, or every feed's for Everything, which is everything you do. */

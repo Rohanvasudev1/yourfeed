@@ -1,6 +1,7 @@
 import type { Dispatch } from "react";
 import { composeFeed } from "../domain/compose";
 import { feedSetOf, nextFeedSet, type FeedSet } from "../domain/refresh";
+import { hasSessionStarted } from "../domain/session";
 import type { ComposeInput } from "../domain/types";
 import type { Action } from "./appState";
 import { useTimedValue } from "./useTimedValue";
@@ -14,7 +15,7 @@ type Previous = Readonly<{ set: FeedSet; skippedAt: number }>;
 
 /**
  * The logo's refresh: a new set for the open feed, plus `undo` for 5 seconds afterwards (null otherwise).
- * It ends the session, so what Up next showed is recorded skipped; undo forgets that too.
+ * Mid-session it ends the session, so what Up next showed is recorded skipped; undo forgets that too.
  * Does nothing until the catalog has loaded.
  */
 export function useRefresh(input: ComposeInput | null, dispatch: Dispatch<Action>) {
@@ -26,7 +27,7 @@ export function useRefresh(input: ComposeInput | null, dispatch: Dispatch<Action
     const seed = input.feed.seed + 1 + Math.floor(Math.random() * SEED_SPREAD);
     const at = Date.now();
     offerUndo({ set: feedSetOf(input.feed), skippedAt: at });
-    dispatch({ type: "end_session", feed: input.feed.name, videos: composeFeed(input).upNext.map((v) => v.id), at });
+    if (hasSessionStarted(input.feed)) dispatch({ type: "end_session", feed: input.feed.name, videos: composeFeed(input).upNext.map((v) => v.id), at });
     load(nextFeedSet(input, seed));
   };
   const undo =

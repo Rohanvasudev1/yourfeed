@@ -85,7 +85,7 @@ export function feedContext(feed: Feed, upNext: readonly Video[], firstReason: s
     session,
     pinned,
     upNext: upNext.slice(0, CONTEXT_VIDEOS).map(contextVideo),
-    firstReason: firstReason && firstReason.slice(0, MAX_REASON_CHARS),
+    firstReason: firstReason ? firstReason.slice(0, MAX_REASON_CHARS) : null,
     explore: explore.map(contextVideo),
   };
 }

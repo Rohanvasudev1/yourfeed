@@ -16,6 +16,9 @@ export type Reason = Readonly<
   | { kind: "recent" | "pinned" | "mostViewed" | "live" | "latestNews" | "shared" | "catalog" }
 >;
 
+/** The reason for a video nothing else explains. */
+export const CATALOG_REASON: Reason = { kind: "catalog" };
+
 export type Ranked = Readonly<{ video: Video; score: number; reason: Reason }>;
 
 /** Per signal, and how many signals of one kind count at most. Views are never a term. */
@@ -57,8 +60,8 @@ function countSignals(signals: readonly Signal[]): Counts {
 
 function behaviourTerms(video: Video, counts: Counts): Term[] {
   const { topic, channel } = video;
-  const n = (kind: SignalKind, by: "topic" | "channel" | "id") =>
-    Math.min(MAX_COUNTED, counts.get(key(kind, by, by === "topic" ? topic : by === "channel" ? channel : video.id)) ?? 0);
+  const values = { topic, channel, id: video.id } as const;
+  const n = (kind: SignalKind, by: keyof typeof values) => Math.min(MAX_COUNTED, counts.get(key(kind, by, values[by])) ?? 0);
   const byTopic = (kind: "finishedTopic" | "watchedTopic", signal: SignalKind): Term => {
     const c = n(signal, "topic");
     return { score: WEIGHTS[kind] * c, reason: c ? { kind, topic, count: c } : null };
@@ -86,7 +89,7 @@ function recipeTerms(video: Video, feed: Feed, following: readonly string[]): Te
     { score: activeItems(feed).includes(video.topic) ? MATCHES_TOPIC : 0, reason: { kind: "matchesTopic", topic: video.topic } },
     {
       score: followed ? (isNew ? FOLLOWED_NEW : FOLLOWED_OLD) : 0,
-      reason: isNew ? { kind: "newFromSubscription", channel: video.channel } : null,
+      reason: { kind: isNew ? "newFromSubscription" : "followedChannel", channel: video.channel },
     },
     { score: RECENCY * Math.exp(-video.ageHours / HOURS_PER_WEEK), reason: isNew ? { kind: "recent" } : null },
   ];
@@ -98,7 +101,7 @@ function score(video: Video, feed: Feed, counts: Counts, following: readonly str
   const top = terms.filter((t) => t.reason && t.score > 0).reduce<Term | null>((best, t) => (best && best.score >= t.score ? best : t), null);
   const jitter = ((seededRank(video.id, feed.seed) % JITTER_STEPS) / JITTER_STEPS) * JITTER;
   const total = terms.reduce((sum, t) => sum + t.score, jitter);
-  return { video, score: total, reason: top?.reason ?? { kind: "catalog" } };
+  return { video, score: total, reason: top?.reason ?? CATALOG_REASON };
 }
 
 /**

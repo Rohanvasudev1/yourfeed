@@ -1,6 +1,6 @@
 import { insertAnswer } from "../domain/askNotes";
 import { applyFeedActions, type BarMode, type FeedAction } from "../domain/assistant";
-import { forgetSignals, recordSignals, withSessionSignals } from "../domain/behaviour";
+import { forgetSignals, recordSignals, withBehaviour, withSessionSignals, type Forget } from "../domain/behaviour";
 import type { BlendPartner } from "../domain/blend";
 import { listKeyOf } from "../domain/feedList";
 import { withClaudeConnection } from "../domain/fromClaude";
@@ -121,12 +121,10 @@ const writeNote = (state: AppState, target: NoteTarget, write: (note: string) =>
 const sessionChange = (state: AppState, name: string, at: number, change: (feed: Feed) => Feed): AppState =>
   mapFeed(state, name, (f) => withSessionSignals(f, change(f), at));
 
-const forgetWatchSignals = (state: AppState, video: string): AppState => ({
+/** Forgetting watch history forgets the watched signals it put in every feed's behaviour. */
+const forgetEverywhere = (state: AppState, forget: Forget): AppState => ({
   ...state,
-  feeds: state.feeds.map((f) => {
-    const behaviour = forgetSignals(f.behaviour, { kinds: ["watched"], video });
-    return behaviour === f.behaviour ? f : { ...f, behaviour };
-  }),
+  feeds: state.feeds.map((f) => withBehaviour(f, (record) => forgetSignals(record, forget))),
 });
 
 const without = (items: readonly string[], item: string) => items.filter((x) => x !== item);
@@ -190,19 +188,13 @@ export function makeReducer(seed: AppState) {
         return sessionChange(state, action.feed, action.at, (f) => removeFromSession(f, action.video));
       case "mark_watched":
         return {
-          ...mapFeed(state, action.feed, (f) => ({ ...f, behaviour: recordSignals(f.behaviour, "watched", [action.video], action.at) })),
+          ...mapFeed(state, action.feed, (f) => withBehaviour(f, (record) => recordSignals(record, "watched", [action.video], action.at))),
           watched: recordWatch(state.watched, action.video),
         };
       case "end_session":
-        return mapFeed(state, action.feed, (f) => {
-          const behaviour = recordSignals(f.behaviour, "skipped", action.videos, action.at);
-          return behaviour === f.behaviour ? f : { ...f, behaviour };
-        });
+        return mapFeed(state, action.feed, (f) => withBehaviour(f, (record) => recordSignals(record, "skipped", action.videos, action.at)));
       case "forget_skips":
-        return mapFeed(state, action.feed, (f) => {
-          const behaviour = forgetSignals(f.behaviour, { kinds: ["skipped"], at: action.at });
-          return behaviour === f.behaviour ? f : { ...f, behaviour };
-        });
+        return mapFeed(state, action.feed, (f) => withBehaviour(f, (record) => forgetSignals(record, { kinds: ["skipped"], at: action.at })));
       case "set_note":
         return writeNote(state, action.target, () => action.text);
       case "add_dictation":
@@ -229,7 +221,9 @@ export function makeReducer(seed: AppState) {
       case "see_provider_notice":
         return state.providerNoticeSeen ? state : { ...state, providerNoticeSeen: true };
       case "forget_watch":
-        return reduceLibrary(forgetWatchSignals(state, action.video), action);
+        return reduceLibrary(forgetEverywhere(state, { kinds: ["watched"], video: action.video }), action);
+      case "clear_history":
+        return reduceLibrary(forgetEverywhere(state, { kinds: ["watched"], all: true }), action);
       default:
         return reduceLibrary(state, action);
     }

@@ -59,7 +59,7 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Follow-up**: a request read together with the last 3 live lines of the current feed's recipe log, so "more like that" works. Still one undo step.
 - **Ranker**: the function that scores a feed's candidate videos from the recipe, the user's **behaviour**, recency and channel, and gives each a **reason** ("Why this is here"). Views never rank anything outside Most viewed.
 - **Behaviour**: Yourfeed's own record of what the user did (Finished, removed, skipped, pinned, watched, notes). Not YouTube data.
-- **Skipped** (behaviour): an Up next video passed over when a session ended (the logo's new set, or leaving the page mid-session); at most once a day per video. Not the same as a feed set's skipped videos, which only hide a set for now.
+- **Skipped** (behaviour): an Up next video passed over when a session ended (the logo's new set or leaving the page, while something is Watching now or Finished); at most once a day per video. Not the same as a feed set's skipped videos, which only hide a set for now.
 - **Reason**: the short line on a card saying why it's there ("Because you Finished 3 Cooking videos"); the Ranker gives it, and "why is this first?" repeats the first card's.
 - **Recipe mirror**: a card proposing a recipe change when at least 3 behaviour signals in 14 days disagree with the recipe. Accept applies it as one undo step; dismiss hides it for 7 days.
 - **Outside your recipe**: one labelled video per session from topics next to the feed's; can be turned off per feed.

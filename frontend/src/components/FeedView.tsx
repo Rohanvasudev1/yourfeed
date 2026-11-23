@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { displayTitle } from "../domain/format";
-import { reasonText, type Reason } from "../domain/rank";
+import { CATALOG_REASON, reasonText, type Reason } from "../domain/rank";
 import type { FeedKind, GlobalFilters, Video } from "../domain/types";
 import type { View } from "../state/appState";
 import type { CardActions } from "../state/useCardActions";
@@ -68,7 +68,7 @@ export function FeedView({ pinned, upNext, reasons, kind, filters, view, onPlay,
           <VideoCard
             key={video.id}
             video={video}
-            reason={reasonText(reasons.get(video.id) ?? { kind: "catalog" })}
+            reason={reasonText(reasons.get(video.id) ?? CATALOG_REASON)}
             filters={filters}
             view={view}
             rank={ranks.get(video.id)}

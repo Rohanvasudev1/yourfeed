@@ -53,7 +53,7 @@ export function VideoCard(props: Props) {
         <div className="card-meta">
           <TopicWord value={video.topic} popupKey={`topic-${video.id}`} {...wordProps} /> · {ago(video.ageHours)}
         </div>
-        <div className="card-reason" title="Why this is here">
+        <div className="card-reason">
           <span className="visually-hidden">Why this is here: </span>
           {reason}
         </div>

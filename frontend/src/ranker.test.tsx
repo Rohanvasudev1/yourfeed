@@ -17,7 +17,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const reasonOn = async (title: string) => within(await cardFor(title)).getByTitle("Why this is here").textContent?.replace("Why this is here: ", "");
+const LABEL = "Why this is here: ";
+/** The card's reason line: the element holding the visually hidden "Why this is here:" label. */
+const reasonLine = (card: HTMLElement) => within(card).getByText(LABEL.trim()).parentElement!;
+const reasonOn = async (title: string) => reasonLine(await cardFor(title)).textContent?.replace(LABEL, "");
 const bar = () => screen.getByRole("textbox", { name: "Tell Claude what to change" });
 
 async function play(title: string) {
@@ -28,7 +31,7 @@ describe("reasons on cards", () => {
   it("shows every card why it's there", async () => {
     renderApp();
     const cards = within(await upNextList()).getAllByRole("listitem");
-    for (const card of cards) expect(within(card).getByTitle("Why this is here")).toHaveTextContent(/^Why this is here: \S/);
+    for (const card of cards) expect(reasonLine(card)).toHaveTextContent(/^Why this is here: \S/);
     expect(await reasonOn(FIRST)).toBe("New from Agent Workshop, which you follow");
     expect(await reasonOn(SECOND)).toBe("Because you watched an AI video");
   });
@@ -75,26 +78,31 @@ describe("skipped videos", () => {
     expect(next.filter((title) => passedOver.includes(title))).toEqual([]);
   });
 
-  it("records what the logo passed over as skipped, and its undo forgets them", async () => {
+  it("records what the logo passed over mid-session, and its undo forgets it", async () => {
     const logo = () => screen.getByRole("button", { name: "Yourfeed: load a new set of videos for this feed" });
-    const skippedSaved = (storage: ReturnType<typeof memoryStorage>) => {
-      const saved = storage.saved() as ReturnType<typeof toSaved>;
-      return saved.state.feeds.find((f) => f.kind === "home")?.behaviour.filter((s) => s.kind === "skipped").length;
-    };
-    const kept = memoryStorage();
-    const first = renderApp({ loadCatalog: async () => BIG_CATALOG, storage: kept });
+    const storage = memoryStorage();
+    const first = renderApp({ loadCatalog: async () => BIG_CATALOG, storage });
+    await play((await feedTitles())[0]);
     const shown = await feedTitles();
     await userEvent.click(logo());
+    await userEvent.click(screen.getByRole("button", { name: "Bring back the previous set" }));
     first.unmount();
-    expect(skippedSaved(kept)).toBe(shown.length);
 
-    const undone = memoryStorage();
-    const second = renderApp({ loadCatalog: async () => BIG_CATALOG, storage: undone });
-    await feedTitles();
+    // Undo forgot the skips, so the next visit shows the same Up next.
+    renderApp({ loadCatalog: async () => BIG_CATALOG, storage });
+    expect(await feedTitles()).toEqual(shown);
+  });
+
+  it("doesn't record skips when the logo is used before a session starts", async () => {
+    const logo = () => screen.getByRole("button", { name: "Yourfeed: load a new set of videos for this feed" });
+    const storage = memoryStorage();
+    const first = renderApp({ loadCatalog: async () => BIG_CATALOG, storage });
+    const shown = await feedTitles();
     await userEvent.click(logo());
     await userEvent.click(screen.getByRole("button", { name: "Bring back the previous set" }));
-    second.unmount();
-    expect(skippedSaved(undone)).toBe(0);
+    first.unmount();
+    renderApp({ loadCatalog: async () => BIG_CATALOG, storage });
+    expect(await feedTitles()).toEqual(shown);
   });
 
   it("records nothing when you leave before starting a session", async () => {

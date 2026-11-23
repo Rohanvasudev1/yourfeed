@@ -30,7 +30,8 @@ import { UndoRedo } from "./components/UndoRedo";
 import { ViewToggle } from "./components/ViewToggle";
 import { composeFeed } from "./domain/compose";
 import { shareStartingVideos } from "./domain/share";
-import { reasonText, type Reason } from "./domain/rank";
+import { CATALOG_REASON, reasonText, type Reason } from "./domain/rank";
+import { hasSessionStarted } from "./domain/session";
 import type { Video } from "./domain/types";
 import type { AssistantPort, CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
@@ -72,7 +73,7 @@ const PINNED_REASON: Reason = { kind: "pinned" };
 const withPinnedReasons = (pinned: readonly string[], reasons: ReadonlyMap<string, Reason> = new Map()): ReadonlyMap<string, Reason> =>
   new Map([...reasons, ...pinned.map((id) => [id, PINNED_REASON] as const)]);
 
-const reasonOf = (reasons: ReadonlyMap<string, Reason>, id: string): string => reasonText(reasons.get(id) ?? { kind: "catalog" });
+const reasonOf = (reasons: ReadonlyMap<string, Reason>, id: string): string => reasonText(reasons.get(id) ?? CATALOG_REASON);
 
 /** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */
 const restore = (storage: StateStorage) =>
@@ -107,10 +108,9 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   const upNext = [...pinned, ...(composition?.upNext ?? [])];
   const reasons = useMemo(() => withPinnedReasons(feed.pinned, composition?.reasons), [feed.pinned, composition]);
   const firstReason = upNext.length > 0 ? reasonOf(reasons, upNext[0].id) : null;
-  const sessionStarted = feed.current !== null || feed.finished.length > 0;
   useEffect(() => {
-    passedOver.current = sessionStarted && composition ? { feed: feed.name, videos: composition.upNext.map((v) => v.id) } : null;
-  }, [passedOver, sessionStarted, composition, feed.name]);
+    passedOver.current = hasSessionStarted(feed) && composition ? { feed: feed.name, videos: composition.upNext.map((v) => v.id) } : null;
+  }, [passedOver, feed, composition]);
   const questions = useQuestionCard({ feed, scope: `${tabs.page}:${feed.name}`, byId, dispatch });
   const claudeBar = useClaudeBar({
     assistant,
