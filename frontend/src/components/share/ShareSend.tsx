@@ -1,12 +1,10 @@
 import { IconCheck, IconSend } from "@tabler/icons-react";
 import { useState, type FormEvent } from "react";
-import { SEND_TEXT } from "../../domain/sending";
+import { SEND_TEXT, type SendAnswer } from "../../domain/sending";
 import { cleanUsername, usernameProblem } from "../../domain/username";
 
-
-
-/** Sends to a username for real: resolves to the username as the server keeps it, or to why it wasn't sent. */
-export type SendTo = (username: string) => Promise<Readonly<{ ok: true; to: string }> | Readonly<{ ok: false; problem: string }>>;
+/** Sends to a username for real. */
+export type SendTo = (username: string) => Promise<SendAnswer>;
 
 type Props = Readonly<{
   disabled: boolean;

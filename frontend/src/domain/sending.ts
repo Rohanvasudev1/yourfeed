@@ -1,3 +1,5 @@
+import { SHARE_LIMITS } from "./share";
+
 /** A feed another signed-in user sent to this one by username (ADR 0013), as the server keeps it. */
 export type SentShare = Readonly<{
   /** The server's id: the inbox only asks for shares after the newest one it has. */
@@ -15,12 +17,11 @@ export type SentShare = Readonly<{
 export type SendAnswer = Readonly<{ ok: true; to: string }> | Readonly<{ ok: false; problem: string }>;
 
 export const SEND_TEXT = {
-  noOne: "No one has that username.",
   failed: "Couldn't send. Try again.",
 } as const;
 
 /** At most this many ids go in one lookup, like YouTube's videos.list. */
-export const LOOKUP_BATCH = 50;
+export const LOOKUP_BATCH = SHARE_LIMITS.videos;
 
 type Referencing = Readonly<{
   inbox: Readonly<{ shares: readonly Readonly<{ videos: readonly string[] }>[] }>;

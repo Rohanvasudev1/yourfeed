@@ -1,0 +1,35 @@
+"""Per-user daily counts for sharing: YouTube lookups spend the site's shared API quota, and failed sends could list usernames.
+Kept in memory in fixed day windows, so they reset on restart, like the AI limits."""
+
+import threading
+from collections import Counter
+from dataclasses import dataclass, field
+from datetime import datetime
+
+from app.accounts.store import Now
+
+
+@dataclass
+class DailyLimit:
+    """At most `per_day` counted events per user each UTC day."""
+
+    per_day: int
+    now: Now
+    _day: int = -1
+    _counts: Counter[int] = field(default_factory=Counter)
+    _lock: threading.Lock = field(default_factory=threading.Lock)
+
+    def _roll(self, moment: datetime) -> None:
+        day = moment.toordinal()
+        if day != self._day:
+            self._day, self._counts = day, Counter()
+
+    def reached(self, user_id: int) -> bool:
+        with self._lock:
+            self._roll(self.now())
+            return self._counts[user_id] >= self.per_day
+
+    def count(self, user_id: int) -> None:
+        with self._lock:
+            self._roll(self.now())
+            self._counts[user_id] += 1

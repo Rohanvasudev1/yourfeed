@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { SendAnswer, SentShare } from "../domain/sending";
-import { SHARE_LIMITS, type Share } from "../domain/share";
+import { notesFit, sharedContentFields, type Share } from "../domain/share";
 import type { Video } from "../domain/types";
 import type { SharingPort } from "../ports";
 import { isVideo } from "./catalog";
@@ -13,13 +13,11 @@ const sentSchema = z
   .object({
     id: z.number().int().positive(),
     from: z.string().min(1),
-    title: z.string().min(1).max(SHARE_LIMITS.title),
-    videos: z.array(z.string().min(1)).min(1).max(SHARE_LIMITS.videos),
-    message: z.string().max(SHARE_LIMITS.message),
-    notes: z.record(z.string(), z.string()),
+    ...sharedContentFields,
     sentAt: z.iso.datetime({ offset: true }),
   })
-  .refine((s) => Object.values(s.notes).reduce((sum, n) => sum + n.length, 0) <= SHARE_LIMITS.notes, "notes are too long");
+  .refine(notesFit, "notes are too long")
+  .refine((s) => Object.keys(s.notes).every((id) => s.videos.includes(id)), "notes name a video that isn't shared");
 
 const sentToSchema = z.object({ to: z.string().min(1) });
 

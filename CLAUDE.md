@@ -4,7 +4,7 @@ Read `CONTEXT.md` for the vocabulary and `docs/adr/` for decisions before changi
 
 ## Commands
 
-- Backend tests: `cd backend && uv run pytest`; coverage gate (80%): `cd backend && uv run pytest --cov=app.assistant --cov=app.accounts --cov=app.youtube --cov=app.user_state`
+- Backend tests: `cd backend && uv run pytest`; coverage gate (80%): `cd backend && uv run pytest --cov=app.assistant --cov=app.accounts --cov=app.youtube --cov=app.user_state --cov=app.sharing`
 - Frontend tests: `cd frontend && npm test`, typecheck: `cd frontend && npx tsc -b`
 - Frontend coverage gate (80%): `cd frontend && npm run coverage`; Playwright smoke: `cd frontend && npm run e2e`
 

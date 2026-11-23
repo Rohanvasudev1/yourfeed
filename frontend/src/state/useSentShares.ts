@@ -6,7 +6,7 @@ type Options = Readonly<{
   sharing: SharingPort | null;
   /** The newest sent share the inbox has had. */
   cursor: number;
-  /** Shared with you is open: what arrived since is fetched again. */
+  /** Shared with you is open: each time it opens, what arrived since is fetched. */
   looking: boolean;
   dispatch: Dispatch<Action>;
 }>;
@@ -14,21 +14,21 @@ type Options = Readonly<{
 /** Signed in, brings feeds others sent by username into Shared with you: on load, and each time Shared with you opens. */
 export function useSentShares({ sharing, cursor, looking, dispatch }: Options): void {
   const latest = useRef(cursor);
+  const fetched = useRef(false);
   useEffect(() => {
     latest.current = cursor;
   });
 
   useEffect(() => {
-    if (!sharing) return;
-    let live = true;
+    // After the first fetch, only opening Shared with you fetches again, not leaving it.
+    if (!sharing || (fetched.current && !looking)) return;
+    fetched.current = true;
+    // Not cancelled on cleanup: receiving is idempotent, and StrictMode's second run would skip the fetch.
     sharing
       .inbox(latest.current)
       .then((shares) => {
-        if (live && shares.length > 0) dispatch({ type: "receive_sent", shares });
+        if (shares.length > 0) dispatch({ type: "receive_sent", shares });
       })
       .catch((err: unknown) => console.error("Couldn't fetch what others sent you", err));
-    return () => {
-      live = false;
-    };
   }, [sharing, looking, dispatch]);
 }

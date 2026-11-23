@@ -14,6 +14,7 @@ from app.accounts.config import AuthConfig
 from app.main import AuthSetup, create_app
 from tests.fake_google import GOOD_CODE, OTHER_CODE, FakeGoogle
 from tests.fake_youtube import API_KEY, FakeYouTube
+from app.sharing.router import LOOKUPS_PER_DAY, MISSES_PER_DAY
 from tests.signed_in import Clock, csrf, sign_in
 
 NO_ONE = "No one has that username."
@@ -209,3 +210,34 @@ def test_deleting_my_data_deletes_my_inbox(app):
     assert maya.delete("/api/account", headers=csrf(maya)).status_code == 200
     maya = person(app, OTHER_CODE, "maya.k")
     assert inbox(maya) == []
+
+
+def test_lookups_are_capped_per_day(app, clock: Clock):
+    me = person(app, GOOD_CODE, "you.here")
+    for _ in range(LOOKUPS_PER_DAY):
+        assert lookup(me, "pitch-derby").status_code == 200
+    res = lookup(me, "pitch-derby")
+    assert res.status_code == 429
+    assert res.json()["error"] == "You've looked up a lot of videos today. Try again tomorrow."
+    clock.moment += timedelta(days=1)
+    assert lookup(me, "pitch-derby").status_code == 200
+
+
+def test_guessing_usernames_is_capped_per_day(app, clock: Clock):
+    me = person(app, GOOD_CODE, "you.here")
+    person(app, OTHER_CODE, "maya.k")
+    for i in range(MISSES_PER_DAY):
+        assert send(me, f"nobody.{i}").status_code == 404
+    res = send(me, "maya.k")
+    assert res.status_code == 429
+    assert res.json()["error"] == "Too many usernames weren't found today. Try again tomorrow."
+    clock.moment += timedelta(days=1)
+    assert send(me, "maya.k").status_code == 200
+
+
+def test_the_send_cap_applies_before_the_username_is_checked(app):
+    me = person(app, GOOD_CODE, "you.here")
+    person(app, OTHER_CODE, "maya.k")
+    for _ in range(50):
+        send(me, "maya.k")
+    assert send(me, "nobody.here").status_code == 429

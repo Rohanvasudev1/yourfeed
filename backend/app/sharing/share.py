@@ -1,5 +1,6 @@
 """A shared feed as Send carries it: the same limits as share links (ADR 0008, the frontend's `domain/share.ts`)."""
 
+import re
 from datetime import datetime
 from typing import Annotated
 
@@ -9,7 +10,8 @@ from pydantic.alias_generators import to_camel
 TITLE_MAX, VIDEOS_MAX, MESSAGE_MAX, NOTES_MAX = 60, 50, 280, 2000
 
 # YouTube video ids, and the demo catalog's ("demo-12").
-VideoId = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_-]{1,100}$")]
+VIDEO_ID = re.compile(r"[A-Za-z0-9_-]{1,100}")
+VideoId = Annotated[str, StringConstraints(pattern=f"^{VIDEO_ID.pattern}$")]
 
 
 class SharedFeed(BaseModel):

@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import type { SentShare } from "./domain/sending";
@@ -85,6 +85,28 @@ describe("signed in, a share link", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("This share link doesn't work.");
     expect(openFeedTitle()).toBe("Everything");
+  });
+
+  it("opens when the inbox is already looking up the same video", async () => {
+    window.history.replaceState(null, "", `/${linkTo({ title: "Again", videos: ["yt-derby"] })}`);
+    const sharing = fakeSharing({ youtube: ELSEWHERE, sent: [SENT] });
+    renderSignedIn({ sharing });
+
+    expect(await sharedHeader()).toHaveTextContent("Again from a link");
+    expect(await feedTitles()).toEqual(["Derby day tactics"]);
+  });
+
+  it("looks a video up again after a lookup failed", async () => {
+    const sharing = fakeSharing({ youtube: ELSEWHERE });
+    sharing.failNextLookupOf("yt-derby");
+    window.history.replaceState(null, "", `/${linkTo({ title: "Derby prep", videos: ["yt-derby"] })}`);
+    renderSignedIn({ sharing });
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't look up this link's videos. Open it again in a minute.");
+
+    act(() => {
+      window.location.hash = linkTo({ title: "Derby prep", videos: ["yt-derby"] });
+    });
+    expect(await sharedHeader()).toHaveTextContent("Derby prep from a link");
   });
 });
 

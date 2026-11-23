@@ -5,7 +5,7 @@ import { BLEND_STATUSES, MATCH_SCORE } from "../domain/blend";
 import { DISMISSAL_LIMIT, MAX_PROPOSAL_ID_CHARS } from "../domain/mirror";
 import { LOG_LIMIT, MAX_LOG_REPLY_CHARS, MAX_SUMMARY_CHARS } from "../domain/recipeLog";
 import { RECENT_LIMIT } from "../domain/search";
-import { SHARE_LIMITS } from "../domain/share";
+import { notesFit, sharedContentFields } from "../domain/share";
 import { FEED_KINDS, NEWS_CATEGORIES, TOP_RANGES } from "../domain/types";
 import { USERNAME_PATTERN } from "../domain/username";
 import { VIEWS, type AppState } from "./appState";
@@ -78,14 +78,11 @@ const shareSchema = z
   .object({
     id: z.string().min(1),
     from: z.string().min(1).nullable(),
-    title: z.string().min(1).max(SHARE_LIMITS.title),
-    videos: z.array(z.string().min(1)).min(1).max(SHARE_LIMITS.videos),
-    message: z.string().max(SHARE_LIMITS.message),
-    notes: z.record(z.string(), z.string()),
+    ...sharedContentFields,
     received: z.number(),
     unread: z.boolean(),
   })
-  .refine((s) => Object.values(s.notes).reduce((sum, n) => sum + n.length, 0) <= SHARE_LIMITS.notes, "notes are too long");
+  .refine(notesFit, "notes are too long");
 
 const inboxSchema = z
   .object({

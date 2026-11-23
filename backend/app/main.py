@@ -113,7 +113,7 @@ def _signed_in(app: FastAPI, auth: AuthSetup | None) -> tuple[list[APIRouter], S
     return [
         accounts_router(auth.config, auth.google, store, guards),
         state_router(guards, StateStore(engine, auth.now)),
-        sharing_router(guards, store, InboxStore(engine, auth.now), youtube),
+        sharing_router(guards, store, InboxStore(engine, auth.now), youtube, auth.now),
     ], catalog
 
 

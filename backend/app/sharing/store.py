@@ -19,11 +19,6 @@ class InboxStore:
     engine: Engine
     now: Now
 
-    def recipient(self, username: str) -> int | None:
-        """The user with `username` (already clean), if anyone has it."""
-        with Session(self.engine) as db:
-            return db.exec(select(User.id).where(User.username == username)).first()
-
     def sent_today(self, sender_id: int) -> int:
         since = self.now() - SEND_WINDOW
         with Session(self.engine) as db:
@@ -40,14 +35,14 @@ class InboxStore:
         query = (
             select(InboxItem, User.username)
             .join(User, User.id == InboxItem.sender_id)
-            .where(InboxItem.recipient_id == recipient_id, InboxItem.id > cursor)
+            # Only a user with a username can send; a sender's row without one is skipped rather than shown nameless.
+            .where(InboxItem.recipient_id == recipient_id, InboxItem.id > cursor, User.username.is_not(None))
             .order_by(InboxItem.id)
             .limit(limit)
         )
         with Session(self.engine) as db:
             rows = db.exec(query).all()
-        # Only a user with a username can send, so every sender has one.
-        return [_entry(item, sender or "") for item, sender in rows]
+        return [_entry(item, sender) for item, sender in rows if sender]
 
 
 def _entry(item: InboxItem, sender: str) -> InboxEntry:

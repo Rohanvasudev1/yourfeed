@@ -26,6 +26,17 @@ export type Share = Readonly<{
 
 const notesLength = (notes: Readonly<Record<string, string>>) => Object.values(notes).reduce((sum, note) => sum + note.length, 0);
 
+/** Whether a share's notes together fit the limit. */
+export const notesFit = (share: Readonly<{ notes: Readonly<Record<string, string>> }>): boolean => notesLength(share.notes) <= SHARE_LIMITS.notes;
+
+/** What a shared feed holds, as Shared with you keeps it and the server sends it; check `notesFit` on the whole. */
+export const sharedContentFields = {
+  title: z.string().min(1).max(SHARE_LIMITS.title),
+  videos: z.array(z.string().min(1)).min(1).max(SHARE_LIMITS.videos),
+  message: z.string().max(SHARE_LIMITS.message),
+  notes: z.record(z.string(), z.string()),
+};
+
 const shareSchema = z
   .strictObject({
     v: z.literal(FORMAT_VERSION),

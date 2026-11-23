@@ -19,10 +19,16 @@ export function fakeSharing({ youtube = [], people = ["maya.k"], sent = [], down
   const calls = { lookups: [] as (readonly string[])[], sends: [] as { to: string; share: Share }[], inbox: [] as number[] };
   const inbox = [...sent];
   const fail = () => Promise.reject(new Error("The server answered 503."));
+  // Ids whose next lookup fails once.
+  let failing: ReadonlySet<string> = new Set();
   const port: SharingPort = {
     lookupVideos: async (ids) => {
       calls.lookups.push(ids);
       if (down) return fail();
+      if (ids.some((id) => failing.has(id))) {
+        failing = new Set([...failing].filter((id) => !ids.includes(id)));
+        return fail();
+      }
       return youtube.filter((v) => ids.includes(v.id));
     },
     send: async (to, share) => {
@@ -37,5 +43,11 @@ export function fakeSharing({ youtube = [], people = ["maya.k"], sent = [], down
       return inbox.filter((s) => s.id > after);
     },
   };
-  return { ...port, calls, deliver: (share: SentShare) => inbox.push(share) };
+  return {
+    ...port,
+    calls,
+    failNextLookupOf: (id: string) => {
+      failing = new Set([...failing, id]);
+    },
+  };
 }
