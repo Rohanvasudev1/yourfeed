@@ -1,30 +1,54 @@
 import { IconCheck, IconSend } from "@tabler/icons-react";
 import { useState, type FormEvent } from "react";
+import { SEND_TEXT, type SendAnswer } from "../../domain/sending";
 import { cleanUsername, usernameProblem } from "../../domain/username";
 
-/** "Send to someone on Yourfeed": checks the username and lists who it went to. Demo only: nothing leaves the browser. */
-export function ShareSend({ disabled, quickSend }: Readonly<{ disabled: boolean; quickSend: readonly string[] }>) {
+/** Sends to a username for real. */
+export type SendTo = (username: string) => Promise<SendAnswer>;
+
+type Props = Readonly<{
+  disabled: boolean;
+  quickSend: readonly string[];
+  /** Signed in, sends for real (ADR 0013); null in demo mode, where nothing leaves the browser. */
+  sendTo: SendTo | null;
+}>;
+
+/** "Send to someone on Yourfeed": checks the username, sends, and lists who it went to. */
+export function ShareSend({ disabled, quickSend, sendTo }: Props) {
   const [name, setName] = useState("");
   const [sent, setSent] = useState<readonly string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
-  const sendTo = (typed: string) => {
-    if (disabled) return;
+  const delivered = (username: string) => {
+    setSent((before) => [...before, username]);
+    setName("");
+  };
+
+  const send = async (typed: string) => {
+    if (disabled || sending) return;
     const username = cleanUsername(typed);
     const problem = usernameProblem(username, sent);
     setError(problem);
     if (problem) return;
-    setSent([...sent, username]);
-    setName("");
+    if (!sendTo) return delivered(username);
+    setSending(true);
+    const answer = await sendTo(username).catch((err: unknown) => {
+      console.error("Couldn't send a share", err);
+      return { ok: false, problem: SEND_TEXT.failed } as const;
+    });
+    setSending(false);
+    if (answer.ok) delivered(answer.to);
+    else setError(answer.problem);
   };
 
-  const send = (event: FormEvent) => {
+  const submit = (event: FormEvent) => {
     event.preventDefault();
-    sendTo(name);
+    void send(name);
   };
 
   return (
-    <form className="share-send" onSubmit={send}>
+    <form className="share-send" onSubmit={submit} aria-busy={sending}>
       <p className="share-label">Send to someone on Yourfeed</p>
       <div className="share-row">
         <input
@@ -37,7 +61,7 @@ export function ShareSend({ disabled, quickSend }: Readonly<{ disabled: boolean;
             setError(null);
           }}
         />
-        <button type="submit" className="primary text-button" disabled={disabled}>
+        <button type="submit" className="primary text-button" disabled={disabled || sending}>
           <IconSend size={15} aria-hidden="true" />
           Send
         </button>
@@ -45,7 +69,7 @@ export function ShareSend({ disabled, quickSend }: Readonly<{ disabled: boolean;
       {quickSend.length > 0 && (
         <div className="share-quick">
           {quickSend.map((n) => (
-            <button key={n} type="button" className="share-chip" aria-label={`Send to @${n}`} disabled={disabled} onClick={() => sendTo(n)}>
+            <button key={n} type="button" className="share-chip" aria-label={`Send to @${n}`} disabled={disabled || sending} onClick={() => void send(n)}>
               @{n}
             </button>
           ))}

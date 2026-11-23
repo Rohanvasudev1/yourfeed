@@ -98,6 +98,11 @@ class AccountStore:
             user = db.get(User, user_id)
             return None if user is None else user.username
 
+    def user_with_username(self, username: str) -> int | None:
+        """The id of the user with `username` (already clean), if anyone has it."""
+        with Session(self.engine) as db:
+            return db.exec(select(User.id).where(User.username == username)).first()
+
     def set_username(self, user_id: int, username: str) -> bool:
         """Gives the user `username` (already clean); False when another user has it."""
         with Session(self.engine) as db:

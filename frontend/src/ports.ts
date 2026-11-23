@@ -3,6 +3,8 @@ import type { AnswerResult } from "./domain/askNotes";
 import type { AssistantResult, BarMode, FeedContext } from "./domain/assistant";
 import type { AssistantInfo } from "./domain/assistantInfo";
 import type { FollowUp } from "./domain/recipeLog";
+import type { SendAnswer, SentShare } from "./domain/sending";
+import type { Share } from "./domain/share";
 import type { Video } from "./domain/types";
 
 /** Where the catalog comes from: the demo's mock videos, or a signed-in user's YouTube (ADR 0011). */
@@ -46,4 +48,14 @@ export type AccountPort = Readonly<{
   /** Asks the server for `username` (already in the username rules); rejects when it couldn't answer. */
   chooseUsername: (username: string) => Promise<UsernameAnswer>;
   deleteData: () => Promise<DeleteResult>;
+}>;
+
+/** Other people, for real, between signed-in users (ADR 0013). Production calls the backend; tests pass a fake. Demo mode has none. */
+export type SharingPort = Readonly<{
+  /** Videos by id from YouTube, wherever they are, so share links work across catalogs; unknown ids are left out. At most 50 ids. */
+  lookupVideos: (ids: readonly string[]) => Promise<readonly Video[]>;
+  /** Sends a share to a username; rejects when the server couldn't answer. */
+  send: (to: string, share: Share) => Promise<SendAnswer>;
+  /** What was sent to this user after the share with id `after`, oldest first, already checked against the share limits. */
+  inbox: (after: number) => Promise<readonly SentShare[]>;
 }>;

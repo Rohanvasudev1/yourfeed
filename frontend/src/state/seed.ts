@@ -117,7 +117,7 @@ export const DEMO_SEED: AppState = {
   recentSearches: ["mcp server", "premier league highlights"],
   barMode: "edit",
   blends: DEMO_BLENDS.map((name) => tasteOf(name, myTopics(DEMO_FEEDS), DEMO_TOPICS)),
-  inbox: { shares: DEMO_INBOX, open: null, sessionShare: null },
+  inbox: { shares: DEMO_INBOX, open: null, sessionShare: null, sentCursor: 0 },
   providerNoticeSeen: false,
   demoFeedsOffered: false,
 };
