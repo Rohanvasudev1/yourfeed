@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 
 from cryptography.fernet import Fernet
 
-SECRETS = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET", "TOKEN_ENCRYPTION_KEY")
+SECRETS = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET", "TOKEN_ENCRYPTION_KEY", "YOUTUBE_API_KEY")
 MIN_SESSION_SECRET_LENGTH = 32
 DEFAULT_APP_URL = "http://localhost:5173"
 DEFAULT_DATABASE_URL = f"sqlite:///{Path(__file__).resolve().parents[2] / 'yourfeed.db'}"
@@ -26,6 +26,8 @@ class AuthConfig:
     database_url: str
     # Where the frontend is served; Google redirects back to its /api/auth/callback.
     app_url: str
+    # The server's Data API key: uploads and video details, cached and shared across users (ADR 0011).
+    youtube_api_key: str = ""
 
     @property
     def secure_cookies(self) -> bool:
@@ -53,6 +55,7 @@ class AuthConfig:
             token_encryption_key=values["TOKEN_ENCRYPTION_KEY"],
             database_url=env.get("DATABASE_URL", "").strip() or DEFAULT_DATABASE_URL,
             app_url=_app_url(env.get("APP_URL", "").strip() or DEFAULT_APP_URL),
+            youtube_api_key=values["YOUTUBE_API_KEY"],
         )
 
 

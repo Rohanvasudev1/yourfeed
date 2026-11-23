@@ -1,4 +1,5 @@
 import type { Video } from "../domain/types";
+import type { CatalogSource } from "../ports";
 
 type Envelope<T> = { success: boolean; data: T | null; error: string | null };
 
@@ -10,7 +11,7 @@ const isVideo = (x: unknown): x is Video =>
   VIDEO_KEYS.every((k) => typeof (x as Record<string, unknown>)[k] === "string") &&
   typeof (x as Record<string, unknown>).minutes === "number";
 
-export async function fetchCatalog(source: "demo" | "youtube" = "demo"): Promise<readonly Video[]> {
+export async function fetchCatalog(source: CatalogSource = "demo"): Promise<readonly Video[]> {
   let res: Response;
   try {
     res = await fetch(`/api/catalog?source=${source}`);

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Video } from "../domain/types";
-import type { CatalogLoader } from "../ports";
+import type { SourceCatalogLoader } from "../ports";
 
 export type CatalogState =
   | Readonly<{ status: "loading" }>
@@ -10,7 +10,7 @@ export type CatalogState =
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : "Couldn't load videos.");
 
 /** Loads the catalog, and loads it again on `retry`. */
-export function useCatalog(loadCatalog: CatalogLoader): readonly [CatalogState, () => void] {
+export function useCatalog(loadCatalog: SourceCatalogLoader): readonly [CatalogState, () => void] {
   const [catalog, setCatalog] = useState<CatalogState>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
 

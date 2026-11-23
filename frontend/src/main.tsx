@@ -9,7 +9,6 @@ import { apiSession } from "./api/session";
 import { apiServerState } from "./api/state";
 import { browserStorage } from "./state/browserStorage";
 
-const loadCatalog = () => fetchCatalog("demo");
 const storage = browserStorage();
 const session = apiSession();
 const account = apiAccount(session);
@@ -17,6 +16,6 @@ const serverState = apiServerState(session);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AppRoot loadCatalog={loadCatalog} storage={storage} serverState={serverState} assistant={apiAssistant} account={account} />
+    <AppRoot loadCatalog={fetchCatalog} storage={storage} serverState={serverState} assistant={apiAssistant} account={account} />
   </StrictMode>,
 );

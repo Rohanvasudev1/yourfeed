@@ -5,8 +5,14 @@ import type { AssistantInfo } from "./domain/assistantInfo";
 import type { FollowUp } from "./domain/recipeLog";
 import type { Video } from "./domain/types";
 
+/** Where the catalog comes from: the demo's mock videos, or a signed-in user's YouTube (ADR 0011). */
+export type CatalogSource = "demo" | "youtube";
+
 /** Loads the catalog the feeds are built from. Production calls the backend; tests pass a fixed list. */
-export type CatalogLoader = () => Promise<readonly Video[]>;
+export type CatalogLoader = (source: CatalogSource) => Promise<readonly Video[]>;
+
+/** Loads the catalog of the visitor's source, already chosen: their YouTube when signed in, else the demo's. */
+export type SourceCatalogLoader = () => Promise<readonly Video[]>;
 
 /** Keeps app state between visits. `load` returns untrusted data (or null when nothing is saved). */
 export type StateStorage = Readonly<{

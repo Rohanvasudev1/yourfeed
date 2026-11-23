@@ -86,3 +86,27 @@ def test_revoke_posts_the_token():
     [request] = seen
     assert str(request.url) == "https://oauth2.googleapis.com/revoke"
     assert form(request) == {"token": "rt"}
+
+
+def test_access_token_trades_the_refresh_token():
+    google, seen = google_with(happy)
+    assert google.access_token("rt") == "at"
+    assert form(seen[0]) == {"client_id": "cid", "client_secret": "csecret", "refresh_token": "rt", "grant_type": "refresh_token"}
+
+
+def test_a_revoked_refresh_token_is_told_apart_from_other_refusals():
+    from app.accounts.google import GoogleAccessRevoked
+
+    revoked, _ = google_with(lambda r: httpx.Response(400, json={"error": "invalid_grant"}))
+    with pytest.raises(GoogleAccessRevoked):
+        revoked.access_token("rt")
+    down, _ = google_with(lambda r: httpx.Response(500, text="oops"))
+    with pytest.raises(GoogleError) as caught:
+        down.access_token("rt")
+    assert not isinstance(caught.value, GoogleAccessRevoked)
+
+
+def test_a_token_answer_without_an_access_token_is_an_error():
+    google, _ = google_with(lambda r: httpx.Response(200, json={}))
+    with pytest.raises(GoogleError, match="no access token"):
+        google.access_token("rt")
