@@ -17,7 +17,7 @@ MAX_CARD_ITEMS = 8
 EDIT_FEED = "edit_feed"
 EDIT_HELP = "Change the feed. Fill every field the request asks for, all in this one call; leave the rest out."
 NEW_FEED_HELP = "Make the new feed. Fill every field the request asks for, all in this one call; leave the rest out."
-LENGTH_HELP = "Minutes per video. Shorter or quick: 1-15, or a lower max than the feed's length now. Under N: 1-N. Deep dives or long: 20-120."
+LENGTH_HELP = "Minutes per video. Shorter or quick: 1-15. Under N: 1-N. Deep dives or long: 20-120."
 SESSION_HELP = "Total minutes for one sitting; an hour is 50-60."
 ASK_HELP = "Only when the request names no topic, length or time: chips offer topics, videos offer video ids, feedback asks if added topics fit."
 
