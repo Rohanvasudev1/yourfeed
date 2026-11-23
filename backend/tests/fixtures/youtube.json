@@ -1,0 +1,283 @@
+{
+  "subscriptions": {
+    "access-1": [
+      {
+        "nextPageToken": "page-2",
+        "items": [
+          {
+            "snippet": {
+              "title": "Rust Garage",
+              "resourceId": {
+                "kind": "youtube#channel",
+                "channelId": "UC_rust"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "items": [
+          {
+            "snippet": {
+              "title": "Lo-fi Kitchen",
+              "resourceId": {
+                "kind": "youtube#channel",
+                "channelId": "UC_kitchen"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "access-2": [
+      {
+        "items": [
+          {
+            "snippet": {
+              "title": "Lo-fi Kitchen",
+              "resourceId": {
+                "kind": "youtube#channel",
+                "channelId": "UC_kitchen"
+              }
+            }
+          },
+          {
+            "snippet": {
+              "title": "Pitch Side",
+              "resourceId": {
+                "kind": "youtube#channel",
+                "channelId": "UC_pitch"
+              }
+            }
+          },
+          {
+            "snippet": {
+              "title": "Closed Channel",
+              "resourceId": {
+                "kind": "youtube#channel",
+                "channelId": "UC_closed"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "channels": {
+    "UC_rust": {
+      "id": "UC_rust",
+      "snippet": {
+        "title": "Rust Garage"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "likes": "",
+          "uploads": "UU_rust"
+        }
+      },
+      "statistics": {
+        "viewCount": "9100000",
+        "subscriberCount": "48000",
+        "hiddenSubscriberCount": false,
+        "videoCount": "212"
+      },
+      "topicDetails": {
+        "topicCategories": [
+          "https://en.wikipedia.org/wiki/Technology",
+          "https://en.wikipedia.org/wiki/Knowledge"
+        ]
+      }
+    },
+    "UC_kitchen": {
+      "id": "UC_kitchen",
+      "snippet": {
+        "title": "Lo-fi Kitchen"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "likes": "",
+          "uploads": "UU_kitchen"
+        }
+      },
+      "statistics": {
+        "viewCount": "300000",
+        "subscriberCount": "12500",
+        "hiddenSubscriberCount": false,
+        "videoCount": "40"
+      },
+      "topicDetails": {
+        "topicCategories": [
+          "https://en.wikipedia.org/wiki/Lifestyle_(sociology)",
+          "https://en.wikipedia.org/wiki/Food"
+        ]
+      }
+    },
+    "UC_pitch": {
+      "id": "UC_pitch",
+      "snippet": {
+        "title": "Pitch Side"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "likes": "",
+          "uploads": "UU_pitch"
+        }
+      },
+      "statistics": {
+        "viewCount": "5000000",
+        "hiddenSubscriberCount": true,
+        "videoCount": "800"
+      }
+    }
+  },
+  "playlistItems": {
+    "UU_rust": {
+      "items": [
+        {
+          "contentDetails": {
+            "videoId": "rust-borrow",
+            "videoPublishedAt": "2026-11-22T21:00:00Z"
+          }
+        },
+        {
+          "contentDetails": {
+            "videoId": "rust-deleted"
+          }
+        },
+        {
+          "contentDetails": {
+            "videoId": "rust-async",
+            "videoPublishedAt": "2026-11-20T00:00:00Z"
+          }
+        }
+      ]
+    },
+    "UU_kitchen": {
+      "items": [
+        {
+          "contentDetails": {
+            "videoId": "kitchen-live",
+            "videoPublishedAt": "2026-11-22T23:00:00Z"
+          }
+        },
+        {
+          "contentDetails": {
+            "videoId": "kitchen-premiere",
+            "videoPublishedAt": "2026-11-22T22:00:00Z"
+          }
+        }
+      ]
+    },
+    "UU_pitch": {
+      "items": [
+        {
+          "contentDetails": {
+            "videoId": "pitch-derby",
+            "videoPublishedAt": "2026-11-21T12:00:00Z"
+          }
+        }
+      ]
+    }
+  },
+  "videos": {
+    "rust-borrow": {
+      "id": "rust-borrow",
+      "snippet": {
+        "publishedAt": "2026-11-22T21:00:00Z",
+        "channelId": "UC_rust",
+        "title": "The borrow checker, explained with Lego",
+        "channelTitle": "Rust Garage",
+        "categoryId": "28",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT12M30S"
+      },
+      "statistics": {
+        "viewCount": "15400",
+        "likeCount": "900"
+      },
+      "topicDetails": {
+        "topicCategories": [
+          "https://en.wikipedia.org/wiki/Knowledge"
+        ]
+      }
+    },
+    "rust-async": {
+      "id": "rust-async",
+      "snippet": {
+        "publishedAt": "2026-11-20T00:00:00Z",
+        "channelId": "UC_rust",
+        "title": "Async Rust without the tears",
+        "channelTitle": "Rust Garage",
+        "categoryId": "28",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT1H2M"
+      },
+      "statistics": {
+        "viewCount": "80210"
+      }
+    },
+    "kitchen-live": {
+      "id": "kitchen-live",
+      "snippet": {
+        "publishedAt": "2026-11-22T23:00:00Z",
+        "channelId": "UC_kitchen",
+        "title": "Sunday soup, live",
+        "channelTitle": "Lo-fi Kitchen",
+        "categoryId": "26",
+        "liveBroadcastContent": "live"
+      },
+      "contentDetails": {
+        "duration": "P0D"
+      },
+      "statistics": {
+        "viewCount": "310"
+      },
+      "topicDetails": {
+        "topicCategories": [
+          "https://en.wikipedia.org/wiki/Lifestyle_(sociology)",
+          "https://en.wikipedia.org/wiki/Food"
+        ]
+      }
+    },
+    "kitchen-premiere": {
+      "id": "kitchen-premiere",
+      "snippet": {
+        "publishedAt": "2026-11-22T22:00:00Z",
+        "channelId": "UC_kitchen",
+        "title": "Coming soon: bread week",
+        "channelTitle": "Lo-fi Kitchen",
+        "categoryId": "26",
+        "liveBroadcastContent": "upcoming"
+      },
+      "contentDetails": {
+        "duration": "PT0S"
+      },
+      "statistics": {}
+    },
+    "pitch-derby": {
+      "id": "pitch-derby",
+      "snippet": {
+        "publishedAt": "2026-11-21T12:00:00Z",
+        "channelId": "UC_pitch",
+        "title": "Derby day tactics",
+        "channelTitle": "Pitch Side",
+        "categoryId": "17",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT40S"
+      },
+      "statistics": {},
+      "topicDetails": {
+        "topicCategories": [
+          "https://en.wikipedia.org/wiki/Sport",
+          "https://en.wikipedia.org/wiki/Association_football"
+        ]
+      }
+    }
+  }
+}

@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from app.accounts.google import GoogleError, GoogleGrant
+from app.accounts.google import GoogleAccessRevoked, GoogleError, GoogleGrant
 
 GOOD_CODE = "good-code"
 OTHER_CODE = "other-code"
@@ -29,6 +29,8 @@ class FakeGoogle:
         }
     )
     revoke_fails: bool = False
+    # The user removed Yourfeed's access, or the refresh token expired: Google answers invalid_grant.
+    access_revoked: bool = False
     # Runs as Google revokes, so a test can see what the database held at that moment.
     on_revoke: Callable[[], None] | None = None
     exchanges: list[Exchange] = field(default_factory=list)
@@ -43,6 +45,12 @@ class FakeGoogle:
         if grant is None:
             raise GoogleError("Google refused the code.")
         return grant
+
+    def access_token(self, refresh_token: str) -> str:
+        """refresh-1 gives access-1, and so on."""
+        if self.access_revoked:
+            raise GoogleAccessRevoked("Google answered invalid_grant.")
+        return refresh_token.replace("refresh", "access")
 
     def revoke(self, refresh_token: str) -> None:
         if self.on_revoke:

@@ -8,6 +8,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
+SIGN_IN_FOR_CATALOG = "Sign in with Google to load your YouTube catalog."
 DEMO_CATALOG_PATH = Path(__file__).parent / "data" / "demo_catalog.json"
 
 
@@ -46,7 +47,7 @@ def demo_catalog() -> tuple[Video, ...]:
 def load_catalog(source: Source) -> tuple[Video, ...]:
     if source is Source.DEMO:
         return demo_catalog()
-    raise SignInRequired("Sign in with Google to load your YouTube catalog.")
+    raise SignInRequired(SIGN_IN_FOR_CATALOG)
 
 
 @cache
