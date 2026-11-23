@@ -22,6 +22,10 @@ class GoogleError(Exception):
     """Google refused or couldn't be reached."""
 
 
+class GoogleAccessRevoked(GoogleError):
+    """The refresh token no longer works (invalid_grant): the user removed Yourfeed's access or it expired."""
+
+
 @dataclass(frozen=True)
 class GoogleGrant:
     """What a sign-in gives Yourfeed: who the user is, and a refresh token (Google sends one only with consent)."""
@@ -34,6 +38,8 @@ class GoogleOAuth(Protocol):
     def authorization_url(self, *, redirect_uri: str, state: str, code_challenge: str) -> str: ...
 
     def exchange(self, *, code: str, redirect_uri: str, code_verifier: str) -> GoogleGrant: ...
+
+    def access_token(self, refresh_token: str) -> str: ...
 
     def revoke(self, refresh_token: str) -> None: ...
 
@@ -81,6 +87,20 @@ class HttpGoogleOAuth:
         refresh = tokens.get("refresh_token")
         return GoogleGrant(subject=subject, refresh_token=refresh if isinstance(refresh, str) and refresh else None)
 
+    def access_token(self, refresh_token: str) -> str:
+        """A short-lived access token for the user's YouTube calls, from their refresh token."""
+        form = {
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "refresh_token": refresh_token,
+            "grant_type": "refresh_token",
+        }
+        tokens = self._post(TOKEN_URL, form)
+        access_token = tokens.get("access_token")
+        if not isinstance(access_token, str) or not access_token:
+            raise GoogleError("Google's token answer had no access token.")
+        return access_token
+
     def revoke(self, refresh_token: str) -> None:
         self._post(REVOKE_URL, {"token": refresh_token})
 
@@ -103,9 +123,19 @@ def _json_or_raise(res: httpx.Response) -> dict:
     if res.status_code >= 400:
         # Google's error bodies name the error; they never echo secrets back.
         log.warning("Google answered %s at %s: %s", res.status_code, res.url.path, res.text[:200])
+        if res.status_code == 400 and _error_code(res) == "invalid_grant":
+            raise GoogleAccessRevoked("Google answered invalid_grant.")
         raise GoogleError(f"Google answered {res.status_code}.")
     try:
         body = res.json()
     except ValueError:
         body = {}
     return body if isinstance(body, dict) else {}
+
+
+def _error_code(res: httpx.Response) -> str:
+    try:
+        body = res.json()
+    except ValueError:
+        return ""
+    return str(body.get("error", "")) if isinstance(body, dict) else ""

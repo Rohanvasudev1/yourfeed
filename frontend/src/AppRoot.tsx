@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import App from "./App";
 import { CatalogError } from "./components/CatalogError";
 import { ACCOUNT_TEXT } from "./domain/account";
@@ -21,6 +21,8 @@ export function AppRoot({ loadCatalog, storage, serverState, assistant, account:
   const account = useAccount(accountPort);
   const [expectsSignedIn] = useState(accountPort.expectsSignedIn);
   const source = useStateSource(account, expectsSignedIn, storage, serverState);
+  const catalogSource = account.status?.kind === "signedIn" ? "youtube" : "demo";
+  const loadSourceCatalog = useCallback(() => loadCatalog(catalogSource), [loadCatalog, catalogSource]);
 
   if (source.phase !== "ready") {
     return (
@@ -41,7 +43,7 @@ export function AppRoot({ loadCatalog, storage, serverState, assistant, account:
   }
   return (
     <App
-      loadCatalog={loadCatalog}
+      loadCatalog={loadSourceCatalog}
       storage={source.storage}
       assistant={assistant}
       account={account}

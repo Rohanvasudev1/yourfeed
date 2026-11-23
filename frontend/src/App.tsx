@@ -33,7 +33,7 @@ import { shareStartingVideos } from "./domain/share";
 import { CATALOG_REASON, reasonText, type Reason } from "./domain/rank";
 import { hasSessionStarted } from "./domain/session";
 import type { Video } from "./domain/types";
-import type { AssistantPort, CatalogLoader, StateStorage } from "./ports";
+import type { AssistantPort, SourceCatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf } from "./state/appState";
 import { providerNotice } from "./domain/assistantInfo";
 import { ACCOUNT_TEXT } from "./domain/account";
@@ -61,7 +61,7 @@ import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
 
 type Props = Readonly<{
-  loadCatalog: CatalogLoader;
+  loadCatalog: SourceCatalogLoader;
   /** The browser's storage in demo mode, the server's when signed in. */
   storage: StateStorage;
   assistant: AssistantPort;
@@ -253,7 +253,15 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
                 )}
                 {feed.kind === "blend" && <BlendPanel partner={feed.partner} blends={state.blends} controls={blend} />}
                 {catalog.status === "loading" && <p className="muted">Loading…</p>}
-                {catalog.status === "error" && <CatalogError message={catalog.message} onRetry={retry} />}
+                {catalog.status === "error" && (
+                  <CatalogError message={catalog.message} onRetry={retry}>
+                    {account.status?.kind === "signedIn" && (
+                      <button type="button" onClick={account.signOut} disabled={account.busy}>
+                        Sign out
+                      </button>
+                    )}
+                  </CatalogError>
+                )}
                 <QuestionCard questions={questions} byId={byId} filters={state.filters} />
                 <Flash message={session.flash} />
                 {!shared.inInbox && session.finished.length > 0 && (

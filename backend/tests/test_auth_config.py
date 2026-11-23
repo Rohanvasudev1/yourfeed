@@ -17,6 +17,7 @@ def full_env(**changes: str) -> dict[str, str]:
         "GOOGLE_CLIENT_SECRET": "secret",
         "SESSION_SECRET": "s" * 32,
         "TOKEN_ENCRYPTION_KEY": Fernet.generate_key().decode(),
+        "YOUTUBE_API_KEY": "yt-key",
     }
     return {**base, **changes}
 
@@ -31,6 +32,12 @@ def test_every_secret_set_enables_sign_in_with_local_defaults():
     assert config is not None
     assert config.database_url.startswith("sqlite:///")
     assert config.app_url == "http://localhost:5173"
+    assert config.youtube_api_key == "yt-key"
+
+
+def test_signing_in_without_a_youtube_api_key_stops_startup():
+    with pytest.raises(AuthConfigError, match="missing: YOUTUBE_API_KEY"):
+        AuthConfig.from_env(full_env(YOUTUBE_API_KEY=""))
 
 
 def test_database_and_app_url_come_from_the_environment():
