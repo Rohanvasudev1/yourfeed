@@ -1,6 +1,6 @@
 # 7. The assistant changes only the current feed, through checked feed actions
 
-Date: 2026-11-18 · Status: accepted
+Date: 2026-11-18 · Status: accepted, amended by [ADR 0009](0009-follow-ups-and-recipe-log.md) (follow-up context)
 
 ## Context
 The Claude bar turns plain language into changes. A model can misread a request or invent things (a topic no video has, a video id that doesn't exist). The mockup also gave the Claude bar its own undo history next to the hand-change undo, which leaves the user guessing which undo undoes what.

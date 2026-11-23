@@ -1,6 +1,6 @@
 # Yourfeed
 
-Read `CONTEXT.md` for the vocabulary and `docs/adr/` for decisions before changing code. Work is tracked as GitHub issues: spec #1 with tickets #2–#14 (done), and spec #29 with tickets #30–#42. Each ticket lists what blocks it.
+Read `CONTEXT.md` for the vocabulary and `docs/adr/` for decisions before changing code. Work is tracked as GitHub issues: spec #1 with tickets #2–#14 (done), spec #29 with tickets #30–#42 (done), and spec #58 with tickets #59–#73. Each ticket lists what blocks it.
 
 ## Commands
 

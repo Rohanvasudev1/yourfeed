@@ -5,7 +5,7 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 ## Core terms
 
 - **Video**: one YouTube video as Yourfeed sees it: id, title, honest title, channel, topic, length in minutes, views, age, and flags (clickbait, live, news category). It comes from a **Video source**.
-- **Video source**: where videos come from. `demo` is the built-in mock catalog. `youtube` is a signed-in user's real subscriptions plus RSS and Data API lookups. The backend owns every source.
+- **Video source**: where videos come from. `demo` is the built-in mock catalog. `youtube` is a signed-in user's real subscriptions, their channels' uploads and cached topic searches, all through the documented Data API (ADR 0011). The backend owns every source.
 - **Catalog**: the set of videos a source returns for a user. The frontend builds feeds from it.
 - **Feed**: a saved recipe for choosing videos. Every feed is a **tab**. It has a **kind** and its own settings: topics or channels, length range, session range, muted topics, pinned, removed and skipped videos, and a seed.
 - **Feed kind**: `home` (Everything), `subs` (Subscriptions), `top` (Most viewed), `news`, `claude` (From Claude), `blend`, `shared` (Shared with you), or `topics` (a feed you made). Every kind except `topics` is **built-in**: it can be shelved but not deleted.
@@ -52,16 +52,31 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Simulated**: in demo mode there are no other users, so sending to a username, Blend's other person and their approval, and the From Claude connection are made up and labelled "Demo only". Share links are real.
 - **From Claude**: the `claude` feed. **Connecting** it reads a summary of the user's recent Claude work and turns it into topics (simulated in demo mode with a fixed summary); **disconnecting** clears them. Until it's connected it shows no videos, and requests get "Connect Claude first, then tell me what to add."
 
+## Recipe and recommender
+
+- **Recipe**: a feed's declared settings (topics, channels, mutes, length and session ranges). It's a contract: only the user, or an undoable action they asked for or accepted, changes it.
+- **Recipe log**: one line per request on a feed (the request, what it changed, the reply), at most 20 per feed. Undo greys a line out; **Clear log** empties it.
+- **Follow-up**: a request read together with the last 3 live lines of the current feed's recipe log, so "more like that" works. Still one undo step.
+- **Ranker**: the function that scores a feed's candidate videos from the recipe, the user's **behaviour**, recency and channel, and gives each a **reason** ("Why this is here"). Views never rank anything outside Most viewed.
+- **Behaviour**: Yourfeed's own record of what the user did (Finished, removed, skipped, pinned, watched, notes). Not YouTube data.
+- **Recipe mirror**: a card proposing a recipe change when at least 3 behaviour signals in 14 days disagree with the recipe. Accept applies it as one undo step; dismiss hides it for 7 days.
+- **Outside your recipe**: one labelled video per session from topics next to the feed's; can be turned off per feed.
+- **Channel topic**: a topic the user set for a channel; it wins over YouTube's category.
+- **Showcase page**: `/about`, the page that argues the design case with live pieces of the demo.
+
 ## Account and tabs
 
 - **Account menu**: the avatar menu: who you are ("demo account" in demo mode), jumps to All your feeds, Saved, Watch history, Feed notes, Shared with you and Blends with their counts, the From Claude connection, and which assistant answers.
 - **Edit mode**: selecting several tabs at once to move them to All tabs, show them in the tab bar or delete them. Built-in feeds can't be deleted, and at least one feed always stays.
 - **Demo mode**: not signed in. Mock catalog, state kept in the browser, rate-limited AI.
 - **Signed-in mode**: signed in with Google. Real YouTube catalog, state kept in the database.
+- **Username**: the handle a signed-in user picks at first sign-in; Share sends to it and Blend invites it. In demo mode usernames are simulated.
+- **Bring your demo feeds**: the one-time offer at first sign-in to copy demo feed recipes (names, ranges, topics that exist in the real catalog), nothing else.
+- **Delete my data**: removes a signed-in account and everything stored for it, and revokes the Google token.
 
 ## Avoid
 
 - "Algorithm" for a feed: say **feed**.
 - "Watched" to mean Finished: **watched** means in watch history (played here, or the eye toggle: "I've seen this elsewhere"), while **Finished** is part of a session.
-- "Chat" for the Claude bar: it takes **requests** and makes feed changes; it isn't a conversation and keeps no history beyond undo.
+- "Chat" for the Claude bar: it takes **requests** and makes feed changes. Its only memory is the feed's **recipe log**, used for **follow-ups**; it isn't a conversation.
 - "Playlist" for a feed or a saved folder: playlists are YouTube's. Ours are **feeds** and **saved folders**.
