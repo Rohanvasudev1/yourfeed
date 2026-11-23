@@ -32,6 +32,8 @@ type Input = Readonly<{
   feeds: readonly Feed[];
   feed: Feed;
   upNext: readonly Video[];
+  /** The reason the first Up next card shows. */
+  firstReason: string | null;
   /** The whole catalog, for videos from topics the feed doesn't have. */
   catalog: readonly Video[];
   questions: Pick<QuestionCardState, "answer" | "close">;
@@ -41,7 +43,7 @@ type Input = Readonly<{
 }>;
 
 /** The Claude bar: its mode, what's typed, whether the assistant is thinking, and its last reply or error. */
-export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, questions, chosenMode, dispatch }: Input) {
+export function useClaudeBar({ assistant, feeds, feed, upNext, firstReason, catalog, questions, chosenMode, dispatch }: Input) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
@@ -102,7 +104,7 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
     questions.close();
     const asked = feed;
     const askedMode = mode;
-    const context = feedContext(asked, upNext, exploreVideos(catalog, asked, request));
+    const context = feedContext(asked, upNext, firstReason, exploreVideos(catalog, asked, request));
     try {
       // A new feed starts from the request alone: the asking feed's log is about a different recipe.
       const followUps = askedMode === "new" || asked.draft ? [] : followUpsOf(asked.log);

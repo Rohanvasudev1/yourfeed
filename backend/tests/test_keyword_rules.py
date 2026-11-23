@@ -84,6 +84,11 @@ def test_why_explains_built_in_feeds(kind, reply):
     assert ask("why is this first?", kind=kind)["reply"] == reply
 
 
+def test_why_gives_the_reason_the_first_card_shows():
+    reply = ask("why is this first?", kind="home", firstReason="Because you Finished 3 Cooking videos")["reply"]
+    assert reply == '"Build an AI agent with tool use, step by step" is first. Because you Finished 3 Cooking videos.'
+
+
 def test_why_with_nothing_in_up_next_says_so():
     assert ask("why is this first?", upNext=[])["reply"] == "Up next is empty, so nothing is first yet."
 

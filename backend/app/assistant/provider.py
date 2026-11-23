@@ -97,7 +97,7 @@ def _earlier(follow_ups: FollowUps) -> str:
 
 def _user_message(text: str, mode: BarMode, context: FeedContext, follow_ups: FollowUps = ()) -> str:
     """The feed, compact and with the reason its first video is first, so the model never has to guess one, then any follow-ups."""
-    feed = {**context.model_dump(by_alias=True, mode="json", exclude_defaults=True), "whyFirst": context.why_first()}
+    feed = {**context.model_dump(by_alias=True, mode="json", exclude_defaults=True, exclude={"first_reason"}), "whyFirst": context.why_first()}
     task = "Start a new feed from this request." if mode == "new" else "Change this feed."
     return f"{task}\nFeed: {json.dumps(feed, separators=(',', ':'))}{_earlier(follow_ups)}\nRequest: {text}"
 

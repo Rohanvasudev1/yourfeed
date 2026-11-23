@@ -8,6 +8,8 @@ import type { Feed, FeedKind, Video } from "./types";
 export const MAX_REQUEST_CHARS = 300;
 /** How many Up next videos the assistant is shown (ADR 0007, cut from 20 by ADR 0009 to make room for follow-ups). */
 export const CONTEXT_VIDEOS = 15;
+/** Longest first-video reason the backend accepts; a card's reason is far shorter unless a channel name is huge. */
+export const MAX_REASON_CHARS = 200;
 
 /** Edit changes the current feed; new starts a feed from the request. Built-in feeds are always new. */
 export const BAR_MODES = ["edit", "new"] as const;
@@ -51,6 +53,8 @@ export type FeedContext = Readonly<{
   session: Feed["session"];
   pinned: readonly string[];
   upNext: readonly ContextVideo[];
+  /** Why the top of Up next is there, in the words its card shows, so "why is this first?" gives the same reason (ADR 0010). */
+  firstReason: string | null;
   /** Videos from topics the feed doesn't have, one per topic, that a question card may offer. */
   explore: readonly ContextVideo[];
 }>;
@@ -69,7 +73,7 @@ export function barModeFor(feed: Feed, chosen: BarMode = "edit"): BarMode {
 
 const contextVideo = ({ id, title, topic, channel }: Video): ContextVideo => ({ id, title, topic, channel });
 
-export function feedContext(feed: Feed, upNext: readonly Video[], explore: readonly Video[] = []): FeedContext {
+export function feedContext(feed: Feed, upNext: readonly Video[], firstReason: string | null, explore: readonly Video[] = []): FeedContext {
   const { kind, name, topics, channels, muted, length, session, pinned } = feed;
   return {
     kind,
@@ -81,6 +85,7 @@ export function feedContext(feed: Feed, upNext: readonly Video[], explore: reado
     session,
     pinned,
     upNext: upNext.slice(0, CONTEXT_VIDEOS).map(contextVideo),
+    firstReason: firstReason && firstReason.slice(0, MAX_REASON_CHARS),
     explore: explore.map(contextVideo),
   };
 }

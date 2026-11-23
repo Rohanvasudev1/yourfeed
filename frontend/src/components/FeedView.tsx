@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { displayTitle } from "../domain/format";
+import { reasonText, type Reason } from "../domain/rank";
 import type { FeedKind, GlobalFilters, Video } from "../domain/types";
 import type { View } from "../state/appState";
 import type { CardActions } from "../state/useCardActions";
@@ -16,6 +17,8 @@ type Props = Readonly<{
   /** Videos added to the session by hand; they come first and carry no rank. */
   pinned: readonly Video[];
   upNext: readonly Video[];
+  /** Why each card is there, by id (pinned ones included). */
+  reasons: ReadonlyMap<string, Reason>;
   kind: FeedKind;
   filters: GlobalFilters;
   view: View;
@@ -39,7 +42,7 @@ function withRowPanel(videos: readonly Video[], open: OpenPanel, columns: number
   return [...cards.slice(0, rowEnd), { kind: "panel", video: videos[at] }, ...cards.slice(rowEnd)];
 }
 
-export function FeedView({ pinned, upNext, kind, filters, view, onPlay, saveActions, cardActions }: Props) {
+export function FeedView({ pinned, upNext, reasons, kind, filters, view, onPlay, saveActions, cardActions }: Props) {
   const [open, setOpen] = useState<OpenPanel>(null);
   const popups = usePopupController<string>();
   const toggle = (id: string, panel: PanelKind) => setOpen((o) => (o?.id === id && o.panel === panel ? null : { id, panel }));
@@ -65,6 +68,7 @@ export function FeedView({ pinned, upNext, kind, filters, view, onPlay, saveActi
           <VideoCard
             key={video.id}
             video={video}
+            reason={reasonText(reasons.get(video.id) ?? { kind: "catalog" })}
             filters={filters}
             view={view}
             rank={ranks.get(video.id)}

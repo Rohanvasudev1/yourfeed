@@ -60,5 +60,5 @@ export function composeShared(share: InboxShare, feed: Feed, byId: ReadonlyMap<s
   const left = new Set([...committed, ...feed.removed]);
   const upNext = sharedVideos(share, byId).filter((v) => !left.has(v.id));
   const minutes = (videos: readonly Video[]) => videos.reduce((sum, v) => sum + v.minutes, 0);
-  return { upNext, hidden: 0, usedMinutes: minutes(committed.flatMap((id) => byId.get(id) ?? [])) + minutes(upNext) };
+  return { upNext, reasons: new Map(upNext.map((v) => [v.id, { kind: "shared" } as const])), hidden: 0, usedMinutes: minutes(committed.flatMap((id) => byId.get(id) ?? [])) + minutes(upNext) };
 }
