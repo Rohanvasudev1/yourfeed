@@ -15,6 +15,7 @@ import { Header } from "./components/Header";
 import { SharedWithYouView } from "./components/inbox/SharedWithYouView";
 import { HistorySection } from "./components/library/HistorySection";
 import { SavedSection } from "./components/library/SavedSection";
+import { MirrorCard } from "./components/mirror/MirrorCard";
 import { NameFeed } from "./components/NameFeed";
 import { QuestionCard } from "./components/QuestionCard";
 import { RecipeLog } from "./components/recipeLog/RecipeLog";
@@ -47,6 +48,7 @@ import { useComposeInput } from "./state/useComposeInput";
 import { useClaudeBar } from "./state/useClaudeBar";
 import { useEditMode } from "./state/useEditMode";
 import { useLibrary } from "./state/useLibrary";
+import { useMirror } from "./state/useMirror";
 import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
 import { useSearch } from "./state/useSearch";
@@ -125,6 +127,7 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
     chosenMode: state.barMode,
     dispatch,
   });
+  const mirror = useMirror({ feed, byId, now: input?.now ?? null, dispatch });
   const edit = useEditMode(state.feeds, dispatch);
   const blend = useBlend(state.feeds, feed, ready ?? NO_VIDEOS, dispatch);
   const info = useAssistantInfo(assistant);
@@ -262,6 +265,7 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
                     )}
                   </CatalogError>
                 )}
+                <MirrorCard mirror={mirror} />
                 <QuestionCard questions={questions} byId={byId} filters={state.filters} />
                 <Flash message={session.flash} />
                 {!shared.inInbox && session.finished.length > 0 && (

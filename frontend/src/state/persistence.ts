@@ -2,6 +2,7 @@ import { z } from "zod";
 import { BAR_MODES, MAX_REQUEST_CHARS } from "../domain/assistant";
 import { BEHAVIOUR_LIMIT, SIGNAL_KINDS } from "../domain/behaviour";
 import { BLEND_STATUSES, MATCH_SCORE } from "../domain/blend";
+import { DISMISSAL_LIMIT, MAX_PROPOSAL_ID_CHARS } from "../domain/mirror";
 import { LOG_LIMIT, MAX_LOG_REPLY_CHARS, MAX_SUMMARY_CHARS } from "../domain/recipeLog";
 import { RECENT_LIMIT } from "../domain/search";
 import { SHARE_LIMITS } from "../domain/share";
@@ -38,6 +39,10 @@ const behaviourSchema = z
   .array(z.object({ kind: z.enum(SIGNAL_KINDS), video: z.string().min(1), at: z.number().int().nonnegative() }))
   .max(BEHAVIOUR_LIMIT);
 
+const dismissedSchema = z
+  .array(z.object({ proposal: z.string().min(1).max(MAX_PROPOSAL_ID_CHARS), at: z.number().int().nonnegative() }))
+  .max(DISMISSAL_LIMIT);
+
 const feedSchema = z.object({
   name: z.string().min(1),
   kind: z.enum(FEED_KINDS),
@@ -65,6 +70,8 @@ const feedSchema = z.object({
   log: logSchema.default([]),
   // Saved before behaviour was recorded: start with none rather than discarding the save.
   behaviour: behaviourSchema.default([]),
+  // Saved before the recipe mirror existed: nothing dismissed yet.
+  dismissed: dismissedSchema.default([]),
 });
 
 const shareSchema = z

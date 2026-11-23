@@ -25,6 +25,7 @@ export const DEFAULT_FEED: Feed = {
   partner: null,
   log: [],
   behaviour: [],
+  dismissed: [],
 };
 
 export const makeFeed = (overrides: Partial<Feed> = {}): Feed => ({ ...DEFAULT_FEED, ...overrides });

@@ -1,5 +1,6 @@
 import type { BehaviourRecord, Signal } from "./behaviour";
 import type { Blend } from "./blend";
+import type { Dismissal } from "./mirror";
 import type { Reason } from "./rank";
 import type { LogLine } from "./recipeLog";
 
@@ -62,6 +63,8 @@ export type Feed = Readonly<{
   log: readonly LogLine[];
   /** What the visitor did on this feed in the last 30 days, timestamped (ADR 0010). */
   behaviour: BehaviourRecord;
+  /** Recipe mirror proposals the visitor dismissed lately, each hidden for 7 days (ADR 0010). */
+  dismissed: readonly Dismissal[];
 }>;
 
 export const NEWS_CATEGORIES = ["All", "World", "Business", "Tech", "Science"] as const;
