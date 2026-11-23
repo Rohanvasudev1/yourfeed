@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { BAR_MODES, MAX_REQUEST_CHARS } from "../domain/assistant";
+import { BEHAVIOUR_LIMIT, SIGNAL_KINDS } from "../domain/behaviour";
 import { BLEND_STATUSES, MATCH_SCORE } from "../domain/blend";
 import { LOG_LIMIT, MAX_LOG_REPLY_CHARS, MAX_SUMMARY_CHARS } from "../domain/recipeLog";
 import { RECENT_LIMIT } from "../domain/search";
@@ -33,6 +34,10 @@ const logSchema = z
   .max(LOG_LIMIT)
   .refine((log) => new Set(log.map((l) => l.id)).size === log.length, "log line ids must be unique");
 
+const behaviourSchema = z
+  .array(z.object({ kind: z.enum(SIGNAL_KINDS), video: z.string().min(1), at: z.number().int().nonnegative() }))
+  .max(BEHAVIOUR_LIMIT);
+
 const feedSchema = z.object({
   name: z.string().min(1),
   kind: z.enum(FEED_KINDS),
@@ -58,6 +63,8 @@ const feedSchema = z.object({
   partner: partnerSchema.extend({ status: z.enum(BLEND_STATUSES) }).nullable(),
   // Saved before recipe logs existed: start with an empty log rather than discarding the save.
   log: logSchema.default([]),
+  // Saved before behaviour was recorded: start with none rather than discarding the save.
+  behaviour: behaviourSchema.default([]),
 });
 
 const shareSchema = z

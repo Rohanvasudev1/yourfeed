@@ -12,6 +12,7 @@ const CONTEXT: FeedContext = {
   session: [30, 90],
   pinned: [],
   upNext: [],
+  firstReason: null,
   explore: [],
 };
 

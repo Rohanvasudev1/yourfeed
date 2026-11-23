@@ -1,4 +1,6 @@
+import type { BehaviourRecord, Signal } from "./behaviour";
 import type { Blend } from "./blend";
+import type { Reason } from "./rank";
 import type { LogLine } from "./recipeLog";
 
 export type Video = Readonly<{
@@ -58,6 +60,8 @@ export type Feed = Readonly<{
   partner: Blend | null;
   /** The requests that shaped this feed, oldest first (ADR 0009). */
   log: readonly LogLine[];
+  /** What the visitor did on this feed in the last 30 days, timestamped (ADR 0010). */
+  behaviour: BehaviourRecord;
 }>;
 
 export const NEWS_CATEGORIES = ["All", "World", "Business", "Tech", "Science"] as const;
@@ -88,10 +92,18 @@ export type ComposeInput = Readonly<{
   topMaxAgeHours: number;
   /** The topics of the visitor's own feeds; a blend puts them against its partner's. */
   myTopics: readonly string[];
+  /** The behaviour the Ranker reads for this feed: its own, or every feed's for Everything. */
+  behaviour: readonly Signal[];
+  /** When this visit started; behaviour older than 30 days before it doesn't count. */
+  now: number;
+  /** Channels the visitor follows (Subscriptions' channels). */
+  following: readonly string[];
 }>;
 
 export type Composition = Readonly<{
   upNext: readonly Video[];
+  /** Why each Up next video is there, by id. */
+  reasons: ReadonlyMap<string, Reason>;
   hidden: number;
   usedMinutes: number;
 }>;

@@ -1,24 +1,16 @@
 import { blendOrder, isBlendOn } from "./blend";
 import { activeItems } from "./feedList";
 import { isConnectedClaude } from "./fromClaude";
-import { hash } from "./hash";
-import { HOURS_PER_YEAR } from "./time";
+import { rank, type Reason } from "./rank";
+import { seededRank } from "./seeded";
+import { HOURS_PER_WEEK, HOURS_PER_YEAR } from "./time";
 import type { ComposeInput, Composition, CompositionFilters, Feed, Video } from "./types";
 
-export { hash };
+/** A video in composition order with the reason its card shows. */
+type Placed = Readonly<{ video: Video; reason: Reason }>;
+
 const SMALL_CREATOR_LIMIT = 100_000;
 const SHORTS_MAX_MINUTES = 2;
-
-/** murmur3 finalizer: spreads small input changes (like seed 0 → 1) across all bits. */
-const mix = (n: number): number => {
-  let h = n >>> 0;
-  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
-  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
-  return (h ^ (h >>> 16)) >>> 0;
-};
-
-/** A stable pseudo-random rank for a video under a seed. */
-export const seededRank = (id: string, seed: number): number => mix(hash(id) ^ mix(seed + 1));
 
 const shuffled = (videos: readonly Video[], seed: number): Video[] =>
   [...videos].sort((a, b) => seededRank(a.id, seed) - seededRank(b.id, seed));
@@ -65,41 +57,43 @@ function matchesKind(video: Video, input: ComposeInput): boolean {
   }
 }
 
-function homeScore(video: Video, input: ComposeInput, byId: ReadonlyMap<string, Video>): number {
-  const history = input.watched.flatMap((id) => byId.get(id) ?? []);
-  const sameTopic = history.filter((h) => h.topic === video.topic).length;
-  const sameChannel = history.filter((h) => h.channel === video.channel).length;
-  const boosted = activeItems(input.feed).includes(video.topic) ? 4 : 0;
-  const jitter = (seededRank(video.id, input.feed.seed) % 100) / 60;
-  return 3 * sameTopic + 2 * sameChannel + boosted + Math.log10(Math.max(video.views, 1)) / 2 + jitter;
-}
-
 const isSmall = (video: Video) => video.channelSubscribers < SMALL_CREATOR_LIMIT;
 
-function order(pool: readonly Video[], input: ComposeInput): Video[] {
+const placed = (videos: readonly Video[], reason: (v: Video) => Reason): Placed[] => videos.map((video) => ({ video, reason: reason(video) }));
+
+const subscriptionReason = (v: Video): Reason =>
+  v.ageHours <= HOURS_PER_WEEK ? { kind: "newFromSubscription", channel: v.channel } : { kind: "followedChannel", channel: v.channel };
+
+const byVideos = (ranked: readonly Placed[], order: readonly Video[]): Placed[] => {
+  const byId = new Map(ranked.map((r) => [r.video.id, r]));
+  return order.flatMap((v) => byId.get(v.id) ?? []);
+};
+
+/** Ranked feeds use the Ranker; Most viewed, Subscriptions, News and Shared keep their own orders (ADR 0010). */
+function order(pool: readonly Video[], input: ComposeInput): Placed[] {
   const { feed, filters } = input;
+  const ranked = () => rank(pool, feed, input.behaviour, input.now, input.following);
   switch (feed.kind) {
-    case "home": {
-      const byId = new Map(input.catalog.map((v) => [v.id, v]));
-      const scores = new Map(pool.map((v) => [v.id, homeScore(v, input, byId)]));
-      return [...pool].sort((a, b) => scores.get(b.id)! - scores.get(a.id)!);
-    }
+    case "home":
+      return ranked();
     case "top":
-      return [...pool].sort((a, b) => b.views - a.views);
+      return placed([...pool].sort((a, b) => b.views - a.views), () => ({ kind: "mostViewed" }));
     case "subs":
-      return feed.seed ? shuffled(pool, feed.seed) : [...pool].sort((a, b) => a.ageHours - b.ageHours);
+      return placed(feed.seed ? shuffled(pool, feed.seed) : [...pool].sort((a, b) => a.ageHours - b.ageHours), subscriptionReason);
     case "news":
-      return [...pool].sort((a, b) => Number(b.live) - Number(a.live) || a.ageHours - b.ageHours);
-    case "blend":
-      return blendOrder(shuffled(pool, feed.seed), input.myTopics, feed.partner?.topics ?? []);
+      return placed([...pool].sort((a, b) => Number(b.live) - Number(a.live) || a.ageHours - b.ageHours), (v) => ({ kind: v.live ? "live" : "latestNews" }));
+    case "blend": {
+      const r = ranked();
+      return byVideos(r, blendOrder(r.map((x) => x.video), input.myTopics, feed.partner?.topics ?? []));
+    }
     case "claude":
     case "topics": {
-      const mixed = shuffled(pool, feed.seed);
-      if (!filters.boostSmallCreators) return mixed;
-      return mixed.sort((a, b) => Number(isSmall(b)) - Number(isSmall(a)));
+      const r = ranked();
+      if (!filters.boostSmallCreators) return r;
+      return [...r].sort((a, b) => Number(isSmall(b.video)) - Number(isSmall(a.video)));
     }
     case "shared":
-      return [...pool];
+      return placed(pool, () => ({ kind: "shared" }));
   }
 }
 
@@ -118,11 +112,12 @@ export function composeFeed(input: ComposeInput): Composition {
   const startMinutes = committed.reduce((sum, id) => sum + (byId.get(id)?.minutes ?? 0), 0);
   const pool = catalog.filter((v) => !isExcluded(v, feed) && matchesKind(v, input));
 
-  return order(pool, input).reduce<Composition>(
-    (acc, video) =>
+  const result = order(pool, input).reduce(
+    (acc, { video, reason }) =>
       failsFilters(video, feed, filters) || acc.usedMinutes + video.minutes > feed.session[1]
         ? { ...acc, hidden: acc.hidden + 1 }
-        : { ...acc, upNext: [...acc.upNext, video], usedMinutes: acc.usedMinutes + video.minutes },
-    { upNext: [], hidden: 0, usedMinutes: startMinutes },
+        : { ...acc, upNext: [...acc.upNext, video], reasons: [...acc.reasons, [video.id, reason] as const], usedMinutes: acc.usedMinutes + video.minutes },
+    { upNext: [] as readonly Video[], reasons: [] as readonly (readonly [string, Reason])[], hidden: 0, usedMinutes: startMinutes },
   );
+  return { ...result, reasons: new Map(result.reasons) };
 }

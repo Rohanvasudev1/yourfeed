@@ -262,6 +262,19 @@ def test_the_feed_sent_says_why_the_first_video_is_first_so_the_model_never_gues
     assert feed_sent(provider.sent())["whyFirst"] == '"Build an MCP server in 20 minutes" is first because you added it yourself.'
 
 
+def test_the_feed_sent_gives_the_first_card_s_reason_once():
+    provider = FakeProvider()
+    app_with(provider).post("/api/assistant/request", json=request("why is this first?", firstReason="You added this"))
+    feed = feed_sent(provider.sent())
+    assert feed["whyFirst"] == '"Build an AI agent with tool use, step by step" is first. You added this.'
+    assert "firstReason" not in feed
+
+
+def test_a_first_reason_that_is_too_long_is_refused():
+    res = app_with(FakeProvider()).post("/api/assistant/request", json=request("why?", firstReason="x" * 201))
+    assert res.status_code == 422
+
+
 def test_the_feed_sent_with_nothing_up_next_says_nothing_is_first():
     provider = FakeProvider()
     app_with(provider).post("/api/assistant/request", json=request("why is this first?", upNext=[]))

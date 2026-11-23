@@ -1,5 +1,6 @@
 import { insertAnswer } from "../domain/askNotes";
 import { applyFeedActions, type BarMode, type FeedAction } from "../domain/assistant";
+import { forgetSignals, recordSignals, withBehaviour, withSessionSignals, type Forget } from "../domain/behaviour";
 import type { BlendPartner } from "../domain/blend";
 import { listKeyOf } from "../domain/feedList";
 import { withClaudeConnection } from "../domain/fromClaude";
@@ -63,8 +64,9 @@ export type Action =
   | Readonly<{ type: "set_length_range"; feed: string; range: Range }>
   /** Sets the minimum and maximum session minutes, already checked against the session limits. */
   | Readonly<{ type: "set_session_range"; feed: string; range: Range }>
-  | Readonly<{ type: "watch_video"; feed: string; video: string }>
-  | Readonly<{ type: "finish_current"; feed: string }>
+  /** Session changes carry when they happened (`at`, ms), so the feed's behaviour record can timestamp them. */
+  | Readonly<{ type: "watch_video"; feed: string; video: string; at: number }>
+  | Readonly<{ type: "finish_current"; feed: string; at: number }>
   | Readonly<{ type: "move_back_to_up_next"; feed: string; video: string }>
   | Readonly<{ type: "set_note"; target: NoteTarget; text: string }>
   /** Adds words heard by voice typing to the end of a note. */
@@ -72,11 +74,15 @@ export type Action =
   /** Puts an answer under its question in a video's notes; nothing changes if the question is gone. */
   | Readonly<{ type: "insert_answer"; video: string; question: string; answer: string }>
   /** Adds a video to the session by hand, first in Up next. */
-  | Readonly<{ type: "pin_video"; feed: string; video: string }>
+  | Readonly<{ type: "pin_video"; feed: string; video: string; at: number }>
   /** Unpins a video and keeps it out of the feed's Up next. */
-  | Readonly<{ type: "remove_from_session"; feed: string; video: string }>
-  /** The eye toggle: the visitor has seen this video elsewhere, so it joins watch history. */
-  | Readonly<{ type: "mark_watched"; video: string }>
+  | Readonly<{ type: "remove_from_session"; feed: string; video: string; at: number }>
+  /** The eye toggle: the visitor has seen this video elsewhere, so it joins watch history (and the feed's behaviour). */
+  | Readonly<{ type: "mark_watched"; feed: string; video: string; at: number }>
+  /** A session ended (the logo's new set, or leaving the page) with these Up next videos passed over: they're recorded skipped. */
+  | Readonly<{ type: "end_session"; feed: string; videos: readonly string[]; at: number }>
+  /** Undoing the logo's new set forgets the skips it recorded at `at`. */
+  | Readonly<{ type: "forget_skips"; feed: string; at: number }>
   | LibraryAction
   | SearchAction
   | BlendAction
@@ -110,6 +116,16 @@ const writeNote = (state: AppState, target: NoteTarget, write: (note: string) =>
   "video" in target
     ? { ...state, notes: { ...state.notes, [target.video]: write(state.notes[target.video] ?? "") } }
     : mapFeed(state, target.feed, (f) => ({ ...f, note: write(f.note) }));
+
+/** A session change on one feed, with whatever it did recorded in the feed's behaviour. */
+const sessionChange = (state: AppState, name: string, at: number, change: (feed: Feed) => Feed): AppState =>
+  mapFeed(state, name, (f) => withSessionSignals(f, change(f), at));
+
+/** Forgetting watch history forgets the watched signals it put in every feed's behaviour. */
+const forgetEverywhere = (state: AppState, forget: Forget): AppState => ({
+  ...state,
+  feeds: state.feeds.map((f) => withBehaviour(f, (record) => forgetSignals(record, forget))),
+});
 
 const without = (items: readonly string[], item: string) => items.filter((x) => x !== item);
 const withItem = (items: readonly string[], item: string) => (items.includes(item) ? items : [...items, item]);
@@ -154,18 +170,31 @@ export function makeReducer(seed: AppState) {
       case "set_session_range":
         return updateFeed(state, action.feed, { session: action.range });
       case "watch_video":
-        return { ...mapFeed(state, action.feed, (f) => startWatching(f, action.video)), watched: recordWatch(state.watched, action.video) };
+        return { ...sessionChange(state, action.feed, action.at, (f) => startWatching(f, action.video)), watched: recordWatch(state.watched, action.video) };
       case "finish_current":
-        return mapFeed(state, action.feed, finishCurrent);
+        return sessionChange(state, action.feed, action.at, finishCurrent);
       case "move_back_to_up_next":
-        // Moving back undoes a mis-click, so the play leaves watch history too (Everything hides watched videos).
-        return { ...mapFeed(state, action.feed, (f) => moveBackToUpNext(f, action.video)), watched: forgetWatch(state.watched, action.video) };
+        // Moving back undoes a mis-click, so the play leaves watch history and the feed's behaviour too (Everything hides watched videos).
+        return {
+          ...mapFeed(state, action.feed, (f) => ({
+            ...moveBackToUpNext(f, action.video),
+            behaviour: forgetSignals(f.behaviour, { kinds: ["watched", "finished"], video: action.video }),
+          })),
+          watched: forgetWatch(state.watched, action.video),
+        };
       case "pin_video":
-        return mapFeed(state, action.feed, (f) => pinVideo(f, action.video));
+        return sessionChange(state, action.feed, action.at, (f) => pinVideo(f, action.video));
       case "remove_from_session":
-        return mapFeed(state, action.feed, (f) => removeFromSession(f, action.video));
+        return sessionChange(state, action.feed, action.at, (f) => removeFromSession(f, action.video));
       case "mark_watched":
-        return { ...state, watched: recordWatch(state.watched, action.video) };
+        return {
+          ...mapFeed(state, action.feed, (f) => withBehaviour(f, (record) => recordSignals(record, "watched", [action.video], action.at))),
+          watched: recordWatch(state.watched, action.video),
+        };
+      case "end_session":
+        return mapFeed(state, action.feed, (f) => withBehaviour(f, (record) => recordSignals(record, "skipped", action.videos, action.at)));
+      case "forget_skips":
+        return mapFeed(state, action.feed, (f) => withBehaviour(f, (record) => forgetSignals(record, { kinds: ["skipped"], at: action.at })));
       case "set_note":
         return writeNote(state, action.target, () => action.text);
       case "add_dictation":
@@ -191,6 +220,10 @@ export function makeReducer(seed: AppState) {
         return state.barMode === action.mode ? state : { ...state, barMode: action.mode };
       case "see_provider_notice":
         return state.providerNoticeSeen ? state : { ...state, providerNoticeSeen: true };
+      case "forget_watch":
+        return reduceLibrary(forgetEverywhere(state, { kinds: ["watched"], video: action.video }), action);
+      case "clear_history":
+        return reduceLibrary(forgetEverywhere(state, { kinds: ["watched"], all: true }), action);
       default:
         return reduceLibrary(state, action);
     }

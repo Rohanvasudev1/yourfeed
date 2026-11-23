@@ -13,6 +13,8 @@ import type { PopupController } from "./popup/usePopupController";
 
 type Props = Readonly<{
   video: Video;
+  /** Why this card is here, from the Ranker (or the feed's own order). */
+  reason: string;
   filters: GlobalFilters;
   view: View;
   descriptionOpen: boolean;
@@ -29,7 +31,7 @@ type Props = Readonly<{
 }>;
 
 export function VideoCard(props: Props) {
-  const { video, filters, view, descriptionOpen, onToggleDescription, onPlay, actions, popups, rank } = props;
+  const { video, reason, filters, view, descriptionOpen, onToggleDescription, onPlay, actions, popups, rank } = props;
   const title = displayTitle(video, filters);
   const watched = actions.isWatched(video);
   const counts = [
@@ -50,6 +52,10 @@ export function VideoCard(props: Props) {
         </div>
         <div className="card-meta">
           <TopicWord value={video.topic} popupKey={`topic-${video.id}`} {...wordProps} /> · {ago(video.ageHours)}
+        </div>
+        <div className="card-reason">
+          <span className="visually-hidden">Why this is here: </span>
+          {reason}
         </div>
         <Description video={video} title={title} open={descriptionOpen} onToggle={onToggleDescription} />
       </div>

@@ -1,4 +1,4 @@
-import { useMemo, useReducer } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import { AccountMenu } from "./components/account/AccountMenu";
 import { AllTabsPage } from "./components/AllTabsPage";
 import { BlendPanel } from "./components/blend/BlendPanel";
@@ -28,11 +28,11 @@ import { TabBar } from "./components/TabBar";
 import { UpNextLine } from "./components/UpNextLine";
 import { UndoRedo } from "./components/UndoRedo";
 import { ViewToggle } from "./components/ViewToggle";
-import { myTopics } from "./domain/blend";
 import { composeFeed } from "./domain/compose";
-import { TOP_RANGE_HOURS } from "./domain/feed";
 import { shareStartingVideos } from "./domain/share";
-import type { ComposeInput, Video } from "./domain/types";
+import { CATALOG_REASON, reasonText, type Reason } from "./domain/rank";
+import { hasSessionStarted } from "./domain/session";
+import type { Video } from "./domain/types";
 import type { AccountPort, AssistantPort, CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
 import { providerNotice } from "./domain/assistantInfo";
@@ -45,6 +45,7 @@ import { useAssistantInfo } from "./state/useAssistantInfo";
 import { useBlend } from "./state/useBlend";
 import { useCardActions } from "./state/useCardActions";
 import { useCatalog } from "./state/useCatalog";
+import { useComposeInput } from "./state/useComposeInput";
 import { useClaudeBar } from "./state/useClaudeBar";
 import { useEditMode } from "./state/useEditMode";
 import { useLibrary } from "./state/useLibrary";
@@ -55,6 +56,7 @@ import { useNotes } from "./state/useNotes";
 import { useQuestionCard } from "./state/useQuestionCard";
 import { sectionControl, useSections } from "./state/useSections";
 import { useSession } from "./state/useSession";
+import { useSessionEnd } from "./state/useSessionEnd";
 import { useSharedWithYou } from "./state/useSharedWithYou";
 import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
@@ -66,6 +68,14 @@ const NO_VIDEOS: readonly Video[] = [];
 const SHARE_PANEL_ID = "share-panel";
 const reducer = withHistory(baseReducer);
 
+const PINNED_REASON: Reason = { kind: "pinned" };
+
+/** Composition's reasons plus the pinned videos', which the visitor added themselves. */
+const withPinnedReasons = (pinned: readonly string[], reasons: ReadonlyMap<string, Reason> = new Map()): ReadonlyMap<string, Reason> =>
+  new Map([...reasons, ...pinned.map((id) => [id, PINNED_REASON] as const)]);
+
+const reasonOf = (reasons: ReadonlyMap<string, Reason>, id: string): string => reasonText(reasons.get(id) ?? CATALOG_REASON);
+
 /** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */
 const restore = (storage: StateStorage) =>
   startHistory(baseReducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" }));
@@ -73,26 +83,15 @@ const restore = (storage: StateStorage) =>
 export default function App({ loadCatalog, storage, assistant, account: accountPort }: Props) {
   const [history, dispatch] = useReducer(reducer, storage, restore);
   const state = history.present;
+  const passedOver = useSessionEnd(dispatch);
   usePersist(storage, state);
   const [catalog, retry] = useCatalog(loadCatalog);
 
   const feed = currentFeedOf(state);
   const ready = catalog.status === "ready" ? catalog.catalog : null;
-  const mine = useMemo(() => myTopics(state.feeds), [state.feeds]);
-  const input = useMemo<ComposeInput | null>(
-    () =>
-      ready && {
-        catalog: ready,
-        feed,
-        filters: state.filters,
-        watched: state.watched,
-        topMaxAgeHours: TOP_RANGE_HOURS[feed.topRange],
-        myTopics: mine,
-      },
-    [ready, feed, state.filters, state.watched, mine],
-  );
-  const composed = useMemo(() => input && composeFeed(input), [input]);
   const byId = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
+  const input = useComposeInput(state, feed, ready, byId);
+  const composed = useMemo(() => input && composeFeed(input), [input]);
   const session = useSession(feed, byId, dispatch);
   const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
   const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, assistant, dispatch, showFlash: session.showFlash });
@@ -108,12 +107,18 @@ export default function App({ loadCatalog, storage, assistant, account: accountP
   // With nothing to share the panel has nothing to show, so the button never claims it's open.
   const share = { ...shareToggle, open: shareToggle.open && shareVideos.length > 0 && !shared.inInbox };
   const upNext = [...pinned, ...(composition?.upNext ?? [])];
+  const reasons = useMemo(() => withPinnedReasons(feed.pinned, composition?.reasons), [feed.pinned, composition]);
+  const firstReason = upNext.length > 0 ? reasonOf(reasons, upNext[0].id) : null;
+  useEffect(() => {
+    passedOver.current = hasSessionStarted(feed) && composition ? { feed: feed.name, videos: composition.upNext.map((v) => v.id) } : null;
+  }, [passedOver, feed, composition]);
   const questions = useQuestionCard({ feed, scope: `${tabs.page}:${feed.name}`, byId, dispatch });
   const claudeBar = useClaudeBar({
     assistant,
     feeds: state.feeds,
     feed,
     upNext,
+    firstReason,
     catalog: ready ?? NO_VIDEOS,
     questions,
     chosenMode: state.barMode,
@@ -294,6 +299,7 @@ export default function App({ loadCatalog, storage, assistant, account: accountP
                     key={`${state.view}-${feed.seed}`}
                     pinned={pinned}
                     upNext={composition.upNext}
+                    reasons={reasons}
                     kind={feed.kind}
                     filters={state.filters}
                     view={state.view}
