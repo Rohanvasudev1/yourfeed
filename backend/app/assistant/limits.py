@@ -27,9 +27,9 @@ def _env_count(env: Mapping[str, str], name: str, default: int) -> int:
 
 @dataclass(frozen=True)
 class LimitConfig:
-    """Requests per visitor IP per minute and per day, and for the whole site per day. Keep the site cap below the provider's free quota."""
+    """Requests per visitor IP per minute and per day, and for the whole site per day. Keep both under the provider's free quota: Groq's free gpt-oss-20b serves about five requests a minute."""
 
-    per_minute: int = 10
+    per_minute: int = 5
     per_day: int = 100
     site_per_day: int = 200
 

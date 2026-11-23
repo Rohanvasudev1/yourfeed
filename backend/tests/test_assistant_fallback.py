@@ -176,3 +176,8 @@ def test_passing_the_keyword_rules_as_the_assistant_means_no_model():
     client = TestClient(create_app(assistant=KeywordRules()))
     assert client.get("/api/assistant/info").json()["data"] == {"answeredBy": "rules", "provider": None, "model": None}
     assert ask(client)["notice"] is None
+
+
+def test_the_default_per_visitor_minute_fits_groqs_free_tier():
+    """Groq's free gpt-oss-20b allows 8,000 tokens a minute, about five Claude bar requests."""
+    assert LimitConfig().per_minute == 5

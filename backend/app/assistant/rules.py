@@ -75,17 +75,7 @@ def _topics_in(text: str) -> list[str]:
 def _why(text: str, context: FeedContext) -> Proposal | None:
     if not WHY.search(text):
         return None
-    top = context.first_video()
-    if top is None:
-        return _reply("Up next is empty, so nothing is first yet.")
-    if top.id in context.pinned:
-        return _reply(f'"{top.title}" is first because you added it yourself.')
-    reasons = {
-        "home": f"is first because you've been watching {top.topic}.",
-        "subs": f"is the newest upload from {top.channel}.",
-        "top": "has the most views in this range.",
-    }
-    return _reply(f'"{top.title}" {reasons.get(context.kind, f"matches {top.topic} in this feed.")}')
+    return _reply(context.why_first())
 
 
 def _less(text: str, context: FeedContext) -> Proposal | None:

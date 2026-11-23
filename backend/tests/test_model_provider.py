@@ -88,20 +88,50 @@ def test_the_provider_gets_the_model_the_key_and_the_request_with_its_feed():
     assert "Learn" in said and "demo-22" in said
 
 
+def edit_fields(sent: dict) -> dict:
+    return tool(sent, "edit_feed")["parameters"]["properties"]
+
+
 def test_tools_offer_only_catalog_topics_and_the_videos_shown():
     provider = FakeProvider()
     ask(app_with(provider))
     sent = provider.sent()
-    topics = tool(sent, "set_topics")["parameters"]["properties"]["add"]["items"]["enum"]
-    assert "Cooking" in topics and "Knitting" not in topics
-    assert tool(sent, "pin_video")["parameters"]["properties"]["id"]["enum"] == ["demo-0", "demo-1", "demo-22"]
-    assert "create_feed" not in {t["function"]["name"] for t in sent["tools"]}
+    assert [t["function"]["name"] for t in sent["tools"]] == ["edit_feed", "ask_user"]
+    fields = edit_fields(sent)
+    assert "Cooking" in fields["add"]["items"]["enum"] and "Knitting" not in fields["add"]["items"]["enum"]
+    assert fields["pin"]["enum"] == ["demo-0", "demo-1", "demo-22"]
+    assert "name" not in fields
 
 
-def test_new_mode_also_offers_create_feed():
-    provider = FakeProvider(completion(None, tool_call("create_feed", {"name": "Cooking"}), tool_call("set_topics", {"add": ["Cooking"], "remove": []})))
-    body = ask(app_with(provider), "a cooking feed", mode="new")
-    assert body["actions"] == [{"type": "create_feed", "name": "Cooking"}, {"type": "set_topics", "add": ["Cooking"], "remove": []}]
+def test_every_change_in_a_request_comes_from_one_edit_feed_call():
+    """gpt-oss-20b on Groq makes one tool call per answer, so one call carries every part of a request."""
+    edit = {"add": ["Travel"], "remove": ["Careers"], "mute": ["News"], "length": {"min": 1, "max": 15}, "session": {"min": 50, "max": 60}, "pin": "demo-22"}
+    provider = FakeProvider(completion("Done.", tool_call("edit_feed", edit)))
+    assert ask(app_with(provider), "add travel and keep videos under 15 minutes")["actions"] == [
+        {"type": "set_topics", "add": ["Travel"], "remove": ["Careers"]},
+        {"type": "mute_topic", "topic": "News"},
+        {"type": "set_length_range", "min": 1, "max": 15},
+        {"type": "set_session_range", "min": 50, "max": 60},
+        {"type": "pin_video", "id": "demo-22"},
+    ]
+
+
+@pytest.mark.parametrize("edit", [{}, {"length": {"min": 5}}, {"length": 15}, {"add": "Travel"}, {"pin": "demo-99"}])
+def test_an_edit_feed_call_with_nothing_usable_changes_nothing(edit):
+    provider = FakeProvider(completion("Done.", tool_call("edit_feed", edit)))
+    assert ask(app_with(provider))["actions"] == []
+
+
+def test_new_mode_names_the_feed_and_cant_remove_or_pin():
+    provider = FakeProvider(completion(None, tool_call("edit_feed", {"name": "Cooking", "add": ["Cooking"], "length": {"min": 1, "max": 10}})))
+    body = ask(app_with(provider), "a quick cooking feed", mode="new")
+    assert body["actions"] == [
+        {"type": "create_feed", "name": "Cooking"},
+        {"type": "set_topics", "add": ["Cooking"], "remove": []},
+        {"type": "set_length_range", "min": 1, "max": 10},
+    ]
+    fields = edit_fields(provider.sent())
+    assert "name" in fields and "remove" not in fields and "pin" not in fields
 
 
 def test_ollama_needs_no_key():
@@ -215,3 +245,65 @@ def test_question_cards_offer_catalog_topics_and_the_videos_sent():
     assert res.json()["data"]["actions"] == [chips]
     items = tool(provider.sent(), "ask_user")["parameters"]["properties"]["items"]["items"]["enum"]
     assert "demo-30" in items and "Cooking" in items and "demo-22" in items
+
+
+def feed_sent(sent: dict) -> dict:
+    """The feed JSON in the user message the provider got."""
+    user = sent["messages"][1]["content"]
+    return json.loads(user.split("Feed: ", 1)[1].split("\nRequest: ", 1)[0])
+
+
+def test_the_feed_sent_says_why_the_first_video_is_first_so_the_model_never_guesses():
+    provider = FakeProvider()
+    client = app_with(provider)
+    client.post("/api/assistant/request", json=request("why is this first?"))
+    assert feed_sent(provider.sent())["whyFirst"] == '"Build an AI agent with tool use, step by step" matches AI in this feed.'
+    client.post("/api/assistant/request", json=request("why is this first?", pinned=["demo-22"]))
+    assert feed_sent(provider.sent())["whyFirst"] == '"Build an MCP server in 20 minutes" is first because you added it yourself.'
+
+
+def test_the_feed_sent_with_nothing_up_next_says_nothing_is_first():
+    provider = FakeProvider()
+    app_with(provider).post("/api/assistant/request", json=request("why is this first?", upNext=[]))
+    assert feed_sent(provider.sent())["whyFirst"] == "Up next is empty, so nothing is first yet."
+
+
+def test_topics_can_only_be_removed_if_the_feed_has_them():
+    provider = FakeProvider()
+    ask(app_with(provider))
+    assert edit_fields(provider.sent())["remove"]["items"]["enum"] == ["AI", "Careers", "Economics", "Programming"]
+
+
+def test_a_request_stays_small_enough_for_groqs_free_minute():
+    """Each request counts against 8,000 tokens a minute on Groq's free tier; about 4 characters make a token."""
+    provider = FakeProvider()
+    ask(app_with(provider), "a feed for tennis", mode="new")
+    assert len(provider.requests[0].content) < 3_600
+
+
+@pytest.mark.parametrize(
+    ("text", "edit", "expected"),
+    [
+        ("a feed for tennis", {"name": "Tennis"}, [{"type": "create_feed", "name": "Tennis"}, {"type": "set_topics", "add": ["Tennis"], "remove": []}]),
+        (
+            "something for live music and cricket",
+            {"name": "Weekend"},
+            [{"type": "create_feed", "name": "Weekend"}, {"type": "set_topics", "add": ["Cricket", "Live music"], "remove": []}],
+        ),
+        (
+            "a feed for tennis",
+            {"name": "Tennis", "add": ["Cricket"]},
+            [{"type": "create_feed", "name": "Tennis"}, {"type": "set_topics", "add": ["Cricket"], "remove": []}],
+        ),
+        ("a feed for knitting", {"name": "Knitting"}, [{"type": "create_feed", "name": "Knitting"}]),
+        ("a feed for tennis", {}, [{"type": "create_feed", "name": None}, {"type": "set_topics", "add": ["Tennis"], "remove": []}]),
+    ],
+)
+def test_a_new_feed_without_topics_gets_the_catalog_topics_its_request_names(text, edit, expected):
+    provider = FakeProvider(completion(None, tool_call("edit_feed", edit)))
+    assert ask(app_with(provider), text, mode="new")["actions"] == expected
+
+
+def test_a_topic_is_only_filled_in_for_a_new_feed():
+    provider = FakeProvider(completion("Can't.", tool_call("edit_feed", {"name": "Tennis"})))
+    assert ask(app_with(provider), "a feed for tennis")["actions"] == []

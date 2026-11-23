@@ -53,6 +53,20 @@ class FeedContext(_Frozen):
         pinned = [by_id[i] for i in self.pinned if i in by_id]
         return (pinned or list(self.up_next) or [None])[0]
 
+    def why_first(self) -> str:
+        """One sentence on why the top of Up next is first, from facts the frontend sent, for the rules and the model alike."""
+        top = self.first_video()
+        if top is None:
+            return "Up next is empty, so nothing is first yet."
+        if top.id in self.pinned:
+            return f'"{top.title}" is first because you added it yourself.'
+        reasons = {
+            "home": f"is first because you've been watching {top.topic}.",
+            "subs": f"is the newest upload from {top.channel}.",
+            "top": "has the most views in this range.",
+        }
+        return f'"{top.title}" {reasons.get(self.kind, f"matches {top.topic} in this feed.")}'
+
 
 class AssistantRequest(_Frozen):
     text: RequestText
