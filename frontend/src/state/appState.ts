@@ -4,6 +4,7 @@ import type { BlendPartner } from "../domain/blend";
 import { listKeyOf } from "../domain/feedList";
 import { withClaudeConnection } from "../domain/fromClaude";
 import { createFromRequest } from "../domain/newFeed";
+import { appendLine, type NewLine } from "../domain/recipeLog";
 import type { FeedSet } from "../domain/refresh";
 import { appendDictation, type NoteTarget } from "../domain/notes";
 import type { Inbox } from "../domain/inbox";
@@ -82,10 +83,15 @@ export type Action =
   | InboxAction
   /** Loads (or, for undo, restores) a feed set. */
   | Readonly<{ type: "set_feed_set"; set: FeedSet }>
-  /** Every feed action of one Claude bar request, applied together so they make one undo step. */
-  | Readonly<{ type: "apply_request"; feed: string; actions: readonly FeedAction[] }>
-  /** A new-mode request (or one asked on a draft): makes a feed from its actions and opens it. */
-  | Readonly<{ type: "create_from_request"; from: string; actions: readonly FeedAction[] }>
+  /**
+   * Every feed action of one Claude bar request (or question card answer), applied together so they make one undo step,
+   * and its line in the feed's recipe log, which that undo step greys out.
+   */
+  | Readonly<{ type: "apply_request"; feed: string; actions: readonly FeedAction[]; line: NewLine }>
+  /** A new-mode request (or one asked on a draft): makes a feed from its actions, starts its log with `line`, and opens it. */
+  | Readonly<{ type: "create_from_request"; from: string; actions: readonly FeedAction[]; line: NewLine }>
+  /** Empties a feed's recipe log; the feed and its undo steps stay as they are. */
+  | Readonly<{ type: "clear_log"; feed: string }>
   | Readonly<{ type: "set_bar_mode"; mode: BarMode }>
   /** A request or note question went to the assistant, so the provider notice moves to the account menu only. */
   | Readonly<{ type: "see_provider_notice" }>
@@ -171,12 +177,15 @@ export function makeReducer(seed: AppState) {
       case "set_feed_set":
         return updateFeed(state, action.set.feed, { seed: action.set.seed, skipped: action.set.skipped });
       case "apply_request":
-        return mapFeed(state, action.feed, (f) => applyFeedActions(f, action.actions));
+        return mapFeed(state, action.feed, (f) => ({ ...applyFeedActions(f, action.actions), log: appendLine(f.log, action.line) }));
+      case "clear_log":
+        return mapFeed(state, action.feed, (f) => (f.log.length === 0 ? f : { ...f, log: [] }));
       case "set_claude_connection":
         return mapFeed(state, action.feed, (f) => (f.kind === "claude" ? withClaudeConnection(f, action.connected) : f));
       case "create_from_request": {
         const tabs = createFromRequest(state, action.from, action.actions);
-        return tabs.feeds === state.feeds ? state : { ...state, ...tabs };
+        if (tabs.feeds === state.feeds) return state;
+        return mapFeed({ ...state, ...tabs }, tabs.currentFeed, (f) => ({ ...f, log: appendLine(f.log, action.line) }));
       }
       case "set_bar_mode":
         return state.barMode === action.mode ? state : { ...state, barMode: action.mode };

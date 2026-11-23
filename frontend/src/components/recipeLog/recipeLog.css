@@ -1,0 +1,11 @@
+/* The recipe log under the Claude bar: one quiet line per request, undone ones greyed out (ADR 0009). */
+.recipe-log { margin: 0 0 12px; padding: 8px 12px 10px; border-radius: 12px; background: var(--surface-2); border: 0.5px solid var(--border); }
+.recipe-log-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.recipe-log-title { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.recipe-log-clear { padding: 2px 8px; font-size: 12px; border-radius: 8px; background: transparent; border: 0.5px solid var(--border); color: var(--text-secondary); }
+.recipe-log-clear:hover { color: var(--text-primary); border-color: var(--border-strong); }
+.recipe-log-lines { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; font-size: 13px; line-height: 1.4; }
+.recipe-line { color: var(--text-primary); overflow-wrap: anywhere; }
+.recipe-summary { color: var(--text-secondary); }
+.recipe-reply { font-family: var(--font-voice); color: var(--text-secondary); }
+.recipe-line.undone, .recipe-line.undone .recipe-summary, .recipe-line.undone .recipe-reply { color: var(--text-muted); text-decoration: line-through; }

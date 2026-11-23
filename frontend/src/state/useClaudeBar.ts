@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type Dispatch } from "react";
-import { barModeFor, changesFeed, feedContext, MAX_REQUEST_CHARS, type AssistantResult, type BarMode, isLockedToNew } from "../domain/assistant";
+import { applyFeedActions, barModeFor, changesFeed, feedContext, MAX_REQUEST_CHARS, type AssistantResult, type BarMode, type FeedAction, isLockedToNew } from "../domain/assistant";
 import { awaitsConnection } from "../domain/fromClaude";
 import { createFromRequest } from "../domain/newFeed";
 import { exploreVideos } from "../domain/questionCard";
+import { followUpsOf, newLine, summarizeChange, summarizeNew } from "../domain/recipeLog";
 import type { Feed, Video } from "../domain/types";
 import type { AssistantPort } from "../ports";
 import type { Action } from "./appState";
@@ -17,6 +18,13 @@ const ALREADY = "Already in this feed.";
 const CONNECT_FIRST = "Connect Claude first, then tell me what to add.";
 const NOTHING_TO_START = "Name a topic to start a new feed.";
 const shelvedNotice = (name: string) => `The tab bar is full, so ${name} is in All tabs.`;
+
+/** A request's recipe log summary: what it changed, else the question it asked back, else "no change". */
+function summaryOf(feed: Feed, actions: readonly FeedAction[]): string {
+  const changed = summarizeChange(feed, applyFeedActions(feed, actions));
+  const asked = actions.find((a) => a.type === "ask_user");
+  return changed === summarizeChange(feed, feed) && asked ? `asked ${asked.question}` : changed;
+}
 
 type Input = Readonly<{
   assistant: AssistantPort;
@@ -56,11 +64,11 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
   };
 
   /** Makes a feed from the answer. Its name and place are worked out here the same way the reducer will. */
-  const create = (asked: Feed, result: AssistantResult) => {
+  const create = (request: string, asked: Feed, result: AssistantResult) => {
     const before = latestFeeds.current;
     const made = createFromRequest({ feeds: before, currentFeed: asked.name }, asked.name, result.actions);
     const created = made.feeds === before ? undefined : made.feeds.find((f) => f.name === made.currentFeed);
-    if (created) dispatch({ type: "create_from_request", from: asked.name, actions: result.actions });
+    if (created) dispatch({ type: "create_from_request", from: asked.name, actions: result.actions, line: newLine(request, summarizeNew(created), result.reply) });
     // A shelved feed is out of sight, so say where it went even after the assistant's own reply.
     const notice = created ? (created.shelved ? shelvedNotice(created.name) : null) : NOTHING_TO_START;
     const message = created ? [result.reply, notice].filter(Boolean).join(" ") : (result.reply ?? notice);
@@ -68,12 +76,14 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
   };
 
   /** Applies the answer to the feed that asked, which may no longer be open and may have changed meanwhile. */
-  const settle = (askedName: string, askedMode: BarMode, result: AssistantResult) => {
+  const settle = (request: string, askedName: string, askedMode: BarMode, result: AssistantResult) => {
     const asked = latestFeeds.current.find((f) => f.name === askedName);
     if (!asked) return;
-    if (askedMode === "new" || asked.draft) return create(asked, result);
+    if (askedMode === "new" || asked.draft) return create(request, asked, result);
     const shouldApply = changesFeed(asked, result.actions);
-    if (shouldApply) dispatch({ type: "apply_request", feed: asked.name, actions: result.actions });
+    // Every answered request gets a log line, even one that changed nothing, so a follow-up can build on it.
+    const line = newLine(request, summaryOf(asked, result.actions), result.reply);
+    dispatch({ type: "apply_request", feed: asked.name, actions: shouldApply ? result.actions : [], line });
     const asking = questions.answer(asked, result.actions, shouldApply);
     const message = result.reply ?? (shouldApply || asking ? null : ALREADY);
     if (message) showReply(message);
@@ -94,9 +104,9 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
     const askedMode = mode;
     const context = feedContext(asked, upNext, exploreVideos(catalog, asked, request));
     try {
-      const result = await assistant.request(request, askedMode, context);
+      const result = await assistant.request(request, askedMode, context, followUpsOf(asked.log));
       noteBusyNotice(result);
-      settle(asked.name, askedMode, result);
+      settle(request, asked.name, askedMode, result);
       if (suggestion === undefined) setText("");
     } catch (err) {
       console.error("Claude bar request failed", err);

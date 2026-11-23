@@ -1,9 +1,10 @@
 import type { AssistantResult, BarMode, FeedAction, FeedContext } from "../domain/assistant";
 import type { AnswerResult } from "../domain/askNotes";
 import type { AssistantInfo } from "../domain/assistantInfo";
+import type { FollowUp } from "../domain/recipeLog";
 import type { AssistantPort } from "../ports";
 
-export type AssistantCall = Readonly<{ text: string; mode: BarMode; context: FeedContext }>;
+export type AssistantCall = Readonly<{ text: string; mode: BarMode; context: FeedContext; followUps: readonly FollowUp[] }>;
 
 export type QuestionCall = Readonly<{ videoId: string; question: string }>;
 
@@ -29,8 +30,8 @@ export function scriptedAssistant(
   return {
     calls,
     questions,
-    request: async (text, mode, context) => {
-      calls.push({ text, mode, context });
+    request: async (text, mode, context, followUps) => {
+      calls.push({ text, mode, context, followUps });
       return answer(text);
     },
     answer: async (videoId, question) => {

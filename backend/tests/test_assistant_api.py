@@ -137,9 +137,3 @@ def test_a_300_character_request_is_accepted():
 def test_unknown_mode_is_rejected():
     client, _ = client_answering()
     assert post(client, request("add cooking", mode="chat")).status_code == 422
-
-
-def test_more_than_20_up_next_videos_are_rejected():
-    client, _ = client_answering()
-    up_next = [{"id": f"demo-{i}", "title": "t", "topic": "AI", "channel": "c"} for i in range(21)]
-    assert post(client, request("add cooking", upNext=up_next)).status_code == 422

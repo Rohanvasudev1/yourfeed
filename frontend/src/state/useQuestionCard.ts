@@ -1,8 +1,13 @@
 import { useState, type Dispatch } from "react";
-import type { FeedAction } from "../domain/assistant";
+import { applyFeedActions, type FeedAction } from "../domain/assistant";
 import { cardForAnswer, PICK_FIRST, togglePick, topicsToAdd, type QuestionCard } from "../domain/questionCard";
+import { newLine, summarizeChange } from "../domain/recipeLog";
 import type { Feed, Video } from "../domain/types";
 import type { Action } from "./appState";
+
+/** The feedback card's two answers, as its buttons name them. */
+export const FEEDBACK_GOOD = "Looks good";
+export const FEEDBACK_BAD = "Not quite";
 
 type Input = Readonly<{
   feed: Feed;
@@ -24,8 +29,14 @@ export function useQuestionCard({ feed, scope, byId, dispatch }: Input) {
   // An answer for a feed the visitor has since left is never shown.
   const open = card?.feed === feed.name ? card : null;
 
-  const applyTopics = (change: Extract<FeedAction, { type: "set_topics" }>) =>
-    dispatch({ type: "apply_request", feed: feed.name, actions: [change] });
+  /** An answer is one undo step and one recipe log line, like a request: the question and the answer given. */
+  const applyAnswer = (question: QuestionCard, answer: string, actions: readonly FeedAction[]) =>
+    dispatch({
+      type: "apply_request",
+      feed: feed.name,
+      actions,
+      line: newLine(`${question.question} ${answer}`, summarizeChange(feed, applyFeedActions(feed, actions))),
+    });
 
   return {
     card: open,
@@ -41,11 +52,11 @@ export function useQuestionCard({ feed, scope, byId, dispatch }: Input) {
       if (!open) return;
       if (open.picked.length === 0) return setCard({ ...open, error: PICK_FIRST });
       const change = { type: "set_topics", add: topicsToAdd(open, byId), remove: [] } as const;
-      applyTopics(change);
+      applyAnswer(open, open.kind === "videos" ? change.add.join(", ") : open.picked.join(", "), [change]);
       setCard(cardForAnswer(feed, [change], true));
     },
     feedback: (good: boolean) => {
-      if (open && !good) applyTopics({ type: "set_topics", add: [], remove: open.items });
+      if (open) applyAnswer(open, good ? FEEDBACK_GOOD : FEEDBACK_BAD, good ? [] : [{ type: "set_topics", add: [], remove: open.items }]);
       setCard(null);
     },
   };

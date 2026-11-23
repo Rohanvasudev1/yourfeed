@@ -2,7 +2,7 @@
 
 import threading
 
-from app.assistant.model import AnsweredBy, BarMode, FeedContext, Proposal
+from app.assistant.model import AnsweredBy, BarMode, FeedContext, FollowUps, Proposal
 from app.catalog import Video
 
 
@@ -27,6 +27,7 @@ class ScriptedAssistant:
         self.model_name = model_name
         self.provider = provider
         self.calls: list[tuple[str, BarMode, FeedContext]] = []
+        self.follow_ups: list[FollowUps] = []
         self.questions: list[tuple[str, Video]] = []
 
     def _cue(self) -> None:
@@ -35,8 +36,9 @@ class ScriptedAssistant:
         if self._error is not None:
             raise self._error
 
-    def handle(self, text: str, mode: BarMode, context: FeedContext) -> Proposal:
+    def handle(self, text: str, mode: BarMode, context: FeedContext, follow_ups: FollowUps = ()) -> Proposal:
         self.calls.append((text, mode, context))
+        self.follow_ups.append(follow_ups)
         self._cue()
         return self._proposal
 

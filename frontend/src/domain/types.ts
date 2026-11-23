@@ -1,4 +1,5 @@
 import type { Blend } from "./blend";
+import type { LogLine } from "./recipeLog";
 
 export type Video = Readonly<{
   id: string;
@@ -55,6 +56,8 @@ export type Feed = Readonly<{
   connected: boolean;
   /** Blend only: who the visitor invited or blends with, or null before an invite. */
   partner: Blend | null;
+  /** The requests that shaped this feed, oldest first (ADR 0009). */
+  log: readonly LogLine[];
 }>;
 
 export const NEWS_CATEGORIES = ["All", "World", "Business", "Tech", "Science"] as const;

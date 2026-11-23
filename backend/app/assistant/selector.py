@@ -7,7 +7,7 @@ from concurrent.futures import TimeoutError as FutureTimeout
 from typing import NamedTuple, TypeVar
 
 from app.assistant.limits import AiLimits
-from app.assistant.model import AnsweredBy, Assistant, BarMode, FeedContext, Model, Proposal
+from app.assistant.model import AnsweredBy, Assistant, BarMode, FeedContext, FollowUps, Model, Proposal
 from app.catalog import Video
 
 log = logging.getLogger("yourfeed")
@@ -66,8 +66,9 @@ class AssistantSelector:
             log.warning("%s failed (%s); the rules answer", model.provider, type(exc).__name__)
         return None, True
 
-    def handle(self, text: str, mode: BarMode, context: FeedContext, visitor: str) -> Answer:
-        proposal, busy = self._try_model(lambda m: m.handle(text, mode, context), visitor)
+    def handle(self, text: str, mode: BarMode, context: FeedContext, visitor: str, follow_ups: FollowUps = ()) -> Answer:
+        """The model reads the follow-ups; the rules answer from the request alone (ADR 0009)."""
+        proposal, busy = self._try_model(lambda m: m.handle(text, mode, context, follow_ups), visitor)
         if proposal is not None:
             return Answer(proposal, "model")
         return Answer(self._rules.handle(text, mode, context), self._rules.answered_by, BUSY_NOTICE if busy else None)

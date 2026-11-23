@@ -22,7 +22,9 @@ import httpx
 from fastapi.testclient import TestClient
 
 from app.assistant.limits import LimitConfig
+from app.assistant.model import MAX_FOLLOW_UPS, MAX_UP_NEXT
 from app.assistant.provider import MODEL_TIMEOUT_S, ModelConfig, OpenAICompatibleModel
+from app.catalog import Source, load_catalog
 from app.main import create_app
 from tests.assistant_helpers import request
 
@@ -39,6 +41,8 @@ class Case(NamedTuple):
     mode: str
     check: Check
     context: Mapping[str, Any] = MappingProxyType({})
+    follow_ups: tuple[Mapping[str, str], ...] = ()
+    """Earlier live recipe log lines on the feed, oldest first (ADR 0009)."""
 
 
 def adds(topic: str) -> Check:
@@ -79,9 +83,25 @@ def replies_with_a_pin_claim(actions: list[dict], reply: str | None) -> bool:
     return only_replies(actions, reply) and bool(PIN_CLAIM.search(reply or ""))
 
 
+def keeps(topic: str) -> Check:
+    return lambda actions, _: not removes_or_mutes(topic)(actions, None)
+
+
 def creates_with(topic: str) -> Check:
     return lambda actions, reply: any(a["type"] == "create_feed" for a in actions) and adds(topic)(actions, reply)
 
+
+def follow_up(request_text: str, summary: str) -> Mapping[str, str]:
+    return MappingProxyType({"request": request_text, "summary": summary})
+
+
+LEARN_TOPICS = ("AI", "Programming", "Economics", "Careers")
+FULL_UP_NEXT = tuple({"id": v.id, "title": v.title, "topic": v.topic, "channel": v.channel} for v in load_catalog(Source.DEMO)[:MAX_UP_NEXT])
+FULL_FOLLOW_UPS = (
+    follow_up("add some cooking videos for weeknights, nothing too fancy", "added Cooking"),
+    follow_up("I only have about forty minutes tonight", "sessions 30–40 min"),
+    follow_up("shorter videos", "videos 1–15 min"),
+)
 
 CASES = (
     Case("add cooking", "edit", adds("Cooking")),
@@ -97,19 +117,28 @@ CASES = (
     Case("why is this video first?", "edit", replies_with_a_pin_claim, {"pinned": ["demo-22"]}),
     Case("add travel and keep videos under 15 minutes", "edit", both(adds("Travel"), length(lambda lo, hi: hi <= 15))),
     Case("a feed for tennis", "new", creates_with("Tennis")),
+    # Follow-ups: the request only makes sense read against the feed's earlier recipe log lines.
+    Case("no, shorter", "edit", length(lambda lo, hi: hi < 20), {"length": [1, 20]}, (follow_up("shorter videos", "videos 1–20 min"),)),
+    Case("actually, drop that", "edit", removes_or_mutes("Cooking"), {"topics": [*LEARN_TOPICS, "Cooking"]}, (follow_up("add cooking", "added Cooking"),)),
+    Case("and travel too", "edit", both(adds("Travel"), keeps("Cooking")), {"topics": [*LEARN_TOPICS, "Cooking"]}, (follow_up("add cooking", "added Cooking"),)),
+    # The largest request the frontend sends: 15 Up next videos and 3 follow-ups. Its tokens are the ones to watch.
+    Case("no, shorter", "edit", length(lambda lo, hi: hi < 15), {"length": [1, 15], "upNext": FULL_UP_NEXT}, FULL_FOLLOW_UPS),
 )
 
 
 class TokenMeter:
-    """Adds up the tokens each chat completion reports, read from the provider's answers."""
+    """Keeps the tokens each chat completion reports, read from the provider's answers: the whole call and the prompt alone."""
 
     def __init__(self) -> None:
         self.calls: list[int] = []
+        self.prompts: list[int] = []
 
     def __call__(self, res: httpx.Response) -> None:
         res.read()
         try:
-            self.calls.append(int(res.json()["usage"]["total_tokens"]))
+            usage = res.json()["usage"]
+            self.calls.append(int(usage["total_tokens"]))
+            self.prompts.append(int(usage["prompt_tokens"]))
         except (ValueError, KeyError, TypeError):
             print(f"      no token usage in a {res.status_code} answer", file=sys.stderr)
 
@@ -117,7 +146,8 @@ class TokenMeter:
 def _ask(client: TestClient, case: Case, retries: int, retry_wait: float) -> dict:
     """The answer to one case, asked again after a wait while the rules answer (the provider was busy or rate limited)."""
     for attempt in range(retries + 1):
-        body = client.post("/api/assistant/request", json=request(case.text, mode=case.mode, **case.context)).json()["data"]
+        payload = {**request(case.text, mode=case.mode, **case.context), "followUps": [dict(f) for f in case.follow_ups]}
+        body = client.post("/api/assistant/request", json=payload).json()["data"]
         if body["answeredBy"] == "model" or attempt == retries:
             return body
         print(f"      rules answered {case.text!r}; waiting {retry_wait:.0f}s and asking again", file=sys.stderr)
@@ -156,6 +186,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{'PASS' if ok else 'FAIL'}  {case.text!r} -> {body['answeredBy']}: {body['actions']} {body['reply'] or ''}")
     if meter.calls:
         print(f"\nTokens per model call: mean {sum(meter.calls) // len(meter.calls)}, max {max(meter.calls)}")
+        print(f"Prompt tokens per call: mean {sum(meter.prompts) // len(meter.prompts)}, max {max(meter.prompts)}")
+        print(f"The last call ({MAX_UP_NEXT} Up next videos, {MAX_FOLLOW_UPS} follow-ups): {meter.prompts[-1]} prompt, {meter.calls[-1]} in all")
     print(f"\n{passed}/{len(CASES)} passed")
     return 0 if passed == len(CASES) else 1
 
