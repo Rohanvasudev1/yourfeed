@@ -72,6 +72,8 @@ const feedSchema = z.object({
   behaviour: behaviourSchema.default([]),
   // Saved before the recipe mirror existed: nothing dismissed yet.
   dismissed: dismissedSchema.default([]),
+  // Saved before Outside your recipe existed: on, like a new feed.
+  exploreSlot: z.boolean().default(true),
 });
 
 const shareSchema = z

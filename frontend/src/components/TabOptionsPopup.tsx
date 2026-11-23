@@ -1,11 +1,12 @@
 import { IconApps, IconArrowLeft, IconArrowRight, IconLayoutNavbar, IconTrash } from "@tabler/icons-react";
 import { useId, useState, type HTMLAttributes, type RefCallback } from "react";
+import { hasOutsideSlot } from "../domain/outsideRecipe";
 import { isBuiltIn } from "../domain/feed";
 import { canShelve } from "../domain/tabs";
 import type { Feed } from "../domain/types";
 import type { TabControls } from "../state/useTabs";
 
-export type TabOptions = Pick<TabControls, "toggleShelved" | "remove" | "move" | "neighbours">;
+export type TabOptions = Pick<TabControls, "toggleShelved" | "remove" | "move" | "neighbours" | "setExploreSlot">;
 
 type Props = Readonly<{
   feed: Feed;
@@ -13,7 +14,10 @@ type Props = Readonly<{
   popupProps: HTMLAttributes<HTMLElement> & { ref: RefCallback<HTMLElement> };
 }>;
 
-/** The ⋯ popup: move the open feed to All tabs or back, move it left or right, and delete it (your own feeds only). */
+/**
+ * The ⋯ popup: turn Outside your recipe on or off, move the open feed to All tabs or back, move it left or right,
+ * and delete it (your own feeds only).
+ */
 export function TabOptionsPopup({ feed, options, popupProps }: Props) {
   const labelId = useId();
   const [confirming, setConfirming] = useState(false);
@@ -25,6 +29,12 @@ export function TabOptionsPopup({ feed, options, popupProps }: Props) {
       <p className="popup-label" id={labelId}>
         Tab options
       </p>
+      {hasOutsideSlot(feed) && (
+        <button type="button" role="switch" aria-checked={feed.exploreSlot} className="toggle" onClick={() => options.setExploreSlot(feed, !feed.exploreSlot)}>
+          Outside your recipe
+          <span className="switch" aria-hidden="true" />
+        </button>
+      )}
       {canShelve(feed) && (
         <button type="button" className="popup-action" onClick={() => setMessage(options.toggleShelved(feed) ?? "")}>
           {feed.shelved ? <IconLayoutNavbar size={16} aria-hidden="true" /> : <IconApps size={16} aria-hidden="true" />}

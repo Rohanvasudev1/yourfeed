@@ -31,7 +31,7 @@ describe("topics feed", () => {
   it("shows only the feed's topics, from the last year", () => {
     const ai = video({ topic: "AI" });
     const old = video({ topic: "AI", ageHours: 9000 });
-    const cooking = video({ topic: "Cooking" });
+    const cooking = video({ topic: "Cooking", channel: "Kitchen" });
     const r = compose({ catalog: [ai, old, cooking], feed: makeFeed({ topics: ["AI"] }) });
     expect(ids(r)).toEqual([ai.id]);
   });

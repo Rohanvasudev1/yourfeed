@@ -110,7 +110,9 @@ export type Action =
   /** Answers Bring your demo feeds: copies `recipes` (none on No thanks), and the offer is never made again. */
   | Readonly<{ type: "answer_demo_offer"; recipes: readonly DemoRecipe[] }>
   /** Connects From Claude (filling its topics from the summary) or disconnects it (clearing them). */
-  | Readonly<{ type: "set_claude_connection"; feed: string; connected: boolean }>;
+  | Readonly<{ type: "set_claude_connection"; feed: string; connected: boolean }>
+  /** Turns the feed's Outside your recipe slot on or off. */
+  | Readonly<{ type: "set_explore_slot"; feed: string; on: boolean }>;
 
 const mapFeed = (state: AppState, name: string, change: (feed: Feed) => Feed): AppState => ({
   ...state,
@@ -222,6 +224,8 @@ export function makeReducer(seed: AppState) {
         return mapFeed(state, action.feed, (f) => (f.log.length === 0 ? f : { ...f, log: [] }));
       case "set_claude_connection":
         return mapFeed(state, action.feed, (f) => (f.kind === "claude" ? withClaudeConnection(f, action.connected) : f));
+      case "set_explore_slot":
+        return updateFeed(state, action.feed, { exploreSlot: action.on });
       case "create_from_request": {
         const tabs = createFromRequest(state, action.from, action.actions);
         if (tabs.feeds === state.feeds) return state;
