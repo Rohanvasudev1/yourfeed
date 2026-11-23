@@ -139,6 +139,15 @@ describe("the recipe log", () => {
     expect(lines()).toEqual(["a feed for tennis → new feed with Tennis"]);
   });
 
+  it("sends no follow-ups for a request that starts a new feed", async () => {
+    const assistant = await start(answering(SHORTER));
+    await ask("shorter videos");
+    await userEvent.click(screen.getByRole("switch", { name: "New feed mode" }));
+    await ask("a feed for tennis");
+    expect(assistant.calls[1].mode).toBe("new");
+    expect(assistant.calls[1].followUps).toEqual([]);
+  });
+
   it("sends 15 Up next videos at most", async () => {
     const assistant = await start(undefined, openOn("Everything"));
     await ask("why is this first?");

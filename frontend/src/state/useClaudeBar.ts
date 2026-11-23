@@ -3,7 +3,7 @@ import { applyFeedActions, barModeFor, changesFeed, feedContext, MAX_REQUEST_CHA
 import { awaitsConnection } from "../domain/fromClaude";
 import { createFromRequest } from "../domain/newFeed";
 import { exploreVideos } from "../domain/questionCard";
-import { followUpsOf, newLine, summarizeChange, summarizeNew } from "../domain/recipeLog";
+import { followUpsOf, newLine, NO_CHANGE, summarizeChange, summarizeNew } from "../domain/recipeLog";
 import type { Feed, Video } from "../domain/types";
 import type { AssistantPort } from "../ports";
 import type { Action } from "./appState";
@@ -23,7 +23,7 @@ const shelvedNotice = (name: string) => `The tab bar is full, so ${name} is in A
 function summaryOf(feed: Feed, actions: readonly FeedAction[]): string {
   const changed = summarizeChange(feed, applyFeedActions(feed, actions));
   const asked = actions.find((a) => a.type === "ask_user");
-  return changed === summarizeChange(feed, feed) && asked ? `asked ${asked.question}` : changed;
+  return changed === NO_CHANGE && asked ? `asked ${asked.question}` : changed;
 }
 
 type Input = Readonly<{
@@ -104,7 +104,9 @@ export function useClaudeBar({ assistant, feeds, feed, upNext, catalog, question
     const askedMode = mode;
     const context = feedContext(asked, upNext, exploreVideos(catalog, asked, request));
     try {
-      const result = await assistant.request(request, askedMode, context, followUpsOf(asked.log));
+      // A new feed starts from the request alone: the asking feed's log is about a different recipe.
+      const followUps = askedMode === "new" || asked.draft ? [] : followUpsOf(asked.log);
+      const result = await assistant.request(request, askedMode, context, followUps);
       noteBusyNotice(result);
       settle(request, asked.name, askedMode, result);
       if (suggestion === undefined) setText("");

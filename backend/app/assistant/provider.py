@@ -91,7 +91,7 @@ class _Completion(BaseModel):
 
 def _earlier(follow_ups: FollowUps) -> str:
     """The follow-ups as one short line each, oldest first, or nothing when there are none."""
-    lines = "".join(f"\n- {json.dumps(f.request, ensure_ascii=False)} -> {f.summary}" for f in follow_ups)
+    lines = "".join(f"\n- {json.dumps(f.request, ensure_ascii=False)} -> {json.dumps(f.summary, ensure_ascii=False)}" for f in follow_ups)
     return f"\nEarlier requests, already applied to the feed above. Change only what the new request asks, read against them (\"no, shorter\" means shorter than now):{lines}" if lines else ""
 
 

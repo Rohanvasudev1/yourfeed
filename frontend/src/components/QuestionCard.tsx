@@ -1,8 +1,8 @@
 import { IconAsterisk, IconCheck, IconThumbDown, IconThumbUp, IconX } from "@tabler/icons-react";
 import type { ReactNode } from "react";
-import { feedbackVideos, type QuestionCard as Card } from "../domain/questionCard";
+import { FEEDBACK_BAD, FEEDBACK_GOOD, feedbackVideos, type QuestionCard as Card } from "../domain/questionCard";
 import type { GlobalFilters, Video } from "../domain/types";
-import { FEEDBACK_BAD, FEEDBACK_GOOD, type QuestionCardState } from "../state/useQuestionCard";
+import type { QuestionCardState } from "../state/useQuestionCard";
 import { Thumbnail } from "./thumbnail/Thumbnail";
 import "./questionCard.css";
 

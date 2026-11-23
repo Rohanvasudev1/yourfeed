@@ -7,6 +7,9 @@ export const EXPLORE_VIDEOS = 8;
 /** How many of the added topics' videos a feedback card shows. */
 export const FEEDBACK_VIDEOS = 3;
 export const PICK_FIRST = "Pick at least one first";
+/** The feedback card's two answers, as its buttons name them. */
+export const FEEDBACK_GOOD = "Looks good";
+export const FEEDBACK_BAD = "Not quite";
 
 type AskAction = Extract<FeedAction, { type: "ask_user" }>;
 export type QuestionKind = AskAction["kind"];
@@ -73,6 +76,10 @@ export function topicsToAdd(question: QuestionCard, byId: ReadonlyMap<string, Vi
   const topics = question.picked.flatMap((id) => byId.get(id)?.topic ?? []);
   return [...new Set(topics)];
 }
+
+/** How an answer reads in the recipe log: the question, then the topics picked or the feedback given. */
+export const answerRequest = (question: QuestionCard, answer: readonly string[] | boolean): string =>
+  `${question.question} ${typeof answer === "boolean" ? (answer ? FEEDBACK_GOOD : FEEDBACK_BAD) : answer.join(", ")}`;
 
 /** The newest videos of the added topics, for the feedback card to show. */
 export const feedbackVideos = (topics: readonly string[], catalog: readonly Video[], hideClickbait: boolean): readonly Video[] =>

@@ -51,10 +51,11 @@ const sameRange = (a: Feed["length"], b: Feed["length"]) => a[0] === b[0] && a[1
 
 /** What a request changed on a feed, in a few words ("added Cooking · videos 10–30 min"), or "no change". */
 export function summarizeChange(before: Feed, after: Feed): string {
+  const listed = (verb: string, items: readonly string[]) => items.length > 0 && `${verb} ${items.join(", ")}`;
   const parts = [
-    added(after.topics, before.topics).length > 0 && `added ${added(after.topics, before.topics).join(", ")}`,
-    added(before.topics, after.topics).length > 0 && `removed ${added(before.topics, after.topics).join(", ")}`,
-    added(after.muted, before.muted).length > 0 && `muted ${added(after.muted, before.muted).join(", ")}`,
+    listed("added", added(after.topics, before.topics)),
+    listed("removed", added(before.topics, after.topics)),
+    listed("muted", added(after.muted, before.muted)),
     !sameRange(before.length, after.length) && `videos ${formatRange(after.length)}`,
     !sameRange(before.session, after.session) && `sessions ${formatRange(after.session)}`,
     added(after.pinned, before.pinned).length > 0 && "put a video first",
