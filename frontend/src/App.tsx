@@ -1,4 +1,4 @@
-import { useMemo, useReducer } from "react";
+import { useMemo } from "react";
 import { AccountMenu } from "./components/account/AccountMenu";
 import { AllTabsPage } from "./components/AllTabsPage";
 import { BlendPanel } from "./components/blend/BlendPanel";
@@ -18,6 +18,7 @@ import { SavedSection } from "./components/library/SavedSection";
 import { NameFeed } from "./components/NameFeed";
 import { QuestionCard } from "./components/QuestionCard";
 import { RecipeLog } from "./components/recipeLog/RecipeLog";
+import { SaveError } from "./components/SaveError";
 import { SearchBox } from "./components/search/SearchBox";
 import { SearchPage } from "./components/search/SearchPage";
 import { SettingsLine } from "./components/SettingsLine";
@@ -33,13 +34,10 @@ import { composeFeed } from "./domain/compose";
 import { TOP_RANGE_HOURS } from "./domain/feed";
 import { shareStartingVideos } from "./domain/share";
 import type { ComposeInput, Video } from "./domain/types";
-import type { AccountPort, AssistantPort, CatalogLoader, StateStorage } from "./ports";
-import { currentFeedOf, makeReducer } from "./state/appState";
+import type { AssistantPort, CatalogLoader, StateStorage } from "./ports";
+import { currentFeedOf } from "./state/appState";
 import { providerNotice } from "./domain/assistantInfo";
-import { startHistory, withHistory } from "./state/history";
-import { restoreState } from "./state/persistence";
-import { DEMO_SEED } from "./state/seed";
-import { useAccount } from "./state/useAccount";
+import type { AccountControls } from "./state/useAccount";
 import { useAccountJumps } from "./state/useAccountJumps";
 import { useAssistantInfo } from "./state/useAssistantInfo";
 import { useBlend } from "./state/useBlend";
@@ -48,7 +46,6 @@ import { useCatalog } from "./state/useCatalog";
 import { useClaudeBar } from "./state/useClaudeBar";
 import { useEditMode } from "./state/useEditMode";
 import { useLibrary } from "./state/useLibrary";
-import { usePersist } from "./state/usePersist";
 import { useRefresh } from "./state/useRefresh";
 import { useSearch } from "./state/useSearch";
 import { useNotes } from "./state/useNotes";
@@ -56,24 +53,26 @@ import { useQuestionCard } from "./state/useQuestionCard";
 import { sectionControl, useSections } from "./state/useSections";
 import { useSession } from "./state/useSession";
 import { useSharedWithYou } from "./state/useSharedWithYou";
+import { useStoredHistory } from "./state/useStoredHistory";
 import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
 
-type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage; assistant: AssistantPort; account: AccountPort }>;
+type Props = Readonly<{
+  loadCatalog: CatalogLoader;
+  /** The browser's storage in demo mode, the server's when signed in. */
+  storage: StateStorage;
+  assistant: AssistantPort;
+  account: AccountControls;
+  /** A save to the server that failed, with a way to send it again; null when there's none. */
+  saveProblem: Readonly<{ retry: () => void }> | null;
+}>;
 
-const baseReducer = makeReducer(DEMO_SEED);
 const NO_VIDEOS: readonly Video[] = [];
 const SHARE_PANEL_ID = "share-panel";
-const reducer = withHistory(baseReducer);
 
-/** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */
-const restore = (storage: StateStorage) =>
-  startHistory(baseReducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" }));
-
-export default function App({ loadCatalog, storage, assistant, account: accountPort }: Props) {
-  const [history, dispatch] = useReducer(reducer, storage, restore);
+export default function App({ loadCatalog, storage, assistant, account, saveProblem }: Props) {
+  const [history, dispatch] = useStoredHistory(storage);
   const state = history.present;
-  usePersist(storage, state);
   const [catalog, retry] = useCatalog(loadCatalog);
 
   const feed = currentFeedOf(state);
@@ -122,7 +121,6 @@ export default function App({ loadCatalog, storage, assistant, account: accountP
   const edit = useEditMode(state.feeds, dispatch);
   const blend = useBlend(state.feeds, feed, ready ?? NO_VIDEOS, dispatch);
   const info = useAssistantInfo(assistant);
-  const account = useAccount(accountPort);
   const sections = useSections();
   const jump = useAccountJumps({ feeds: state.feeds, current: feed, tabs, sections, dispatch });
   const search = useSearch({
@@ -173,6 +171,7 @@ export default function App({ loadCatalog, storage, assistant, account: accountP
       />
       <TabBar feeds={state.feeds} current={feed} tabs={tabs} edit={edit} unread={shared.unread} />
       {edit.editing && <EditBar edit={edit} onAllTabs={tabs.page === "all"} />}
+      {saveProblem && <SaveError onRetry={saveProblem.retry} />}
       <Flash message={account.flash ?? tabs.flash ?? search.flash ?? shared.flash} />
       <main>
         {tabs.page === "all" ? (

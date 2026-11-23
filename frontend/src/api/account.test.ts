@@ -22,6 +22,7 @@ const headersOf = (fetch: ReturnType<typeof serverSays>, call: number) => (fetch
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.localStorage.clear();
   window.history.replaceState(null, "", "/");
 });
 
@@ -74,6 +75,36 @@ describe("the account API client", () => {
     const account = apiAccount();
     await expect(account.status()).rejects.toThrow();
     await expect(account.status()).rejects.toThrow("The server answered 502.");
+  });
+
+  it("remembers in the browser whether it's signed in, and forgets on sign out", async () => {
+    serverSays(SIGNED_IN, ok({}), SIGNED_IN, ok({ revoked: true }), SIGNED_IN, SIGNED_OUT);
+    expect(apiAccount().expectsSignedIn()).toBe(false);
+    const account = apiAccount();
+    await account.status();
+    expect(apiAccount().expectsSignedIn()).toBe(true);
+    await account.signOut();
+    expect(apiAccount().expectsSignedIn()).toBe(false);
+    await account.status();
+    await account.deleteData();
+    expect(apiAccount().expectsSignedIn()).toBe(false);
+    await account.status();
+    await account.status();
+    expect(apiAccount().expectsSignedIn()).toBe(false);
+  });
+
+  it("works without remembering when browser storage is blocked", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("The operation is insecure.", "SecurityError");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("The operation is insecure.", "SecurityError");
+    });
+    serverSays(SIGNED_IN);
+    const account = apiAccount();
+    expect(account.expectsSignedIn()).toBe(false);
+    expect(await account.status()).toEqual({ kind: "signedIn" });
   });
 
   it("signs in by leaving for the backend's login route", () => {

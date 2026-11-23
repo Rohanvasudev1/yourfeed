@@ -8,26 +8,23 @@ import hmac
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
 from app.accounts.config import AuthConfig
 from app.accounts.google import GoogleError, GoogleOAuth
+from app.accounts.guards import SESSION_COOKIE, Guards, Refusal
 from app.accounts.keys import LOGIN_TTL_S, new_token, pkce_challenge
 from app.accounts.store import SESSION_TTL, AccountStore, SignedIn
 from app.envelope import Envelope, fail, ok
 
 log = logging.getLogger("yourfeed.accounts")
 
-SESSION_COOKIE = "yourfeed_session"
 LOGIN_COOKIE = "yourfeed_login"
 LOGIN_COOKIE_PATH = "/api/auth"
-CSRF_HEADER = "X-CSRF-Token"
 NOT_SET_UP = "Signing in isn't set up on this server."
-SIGN_IN_FIRST = "Sign in with Google first."
-BAD_CSRF = "This request is missing its security token. Reload and try again."
 SIGN_IN_FAILED_PATH = "/?signin=failed"
 
 
@@ -47,31 +44,13 @@ class DeleteResult(_Camel):
     revoked: bool
 
 
-class Refusal(Exception):
-    """A write the API turns down; `install_refusals` answers it in the envelope."""
-
-    def __init__(self, status: int, message: str):
-        self.status, self.message = status, message
-
-
 SIGNED_OUT = AccountStatus(sign_in_available=True, signed_in=False, csrf_token=None)
 DEMO_ONLY = AccountStatus(sign_in_available=False, signed_in=False, csrf_token=None)
 
 
-def accounts_router(config: AuthConfig, google: GoogleOAuth, store: AccountStore) -> APIRouter:
+def accounts_router(config: AuthConfig, google: GoogleOAuth, store: AccountStore, guards: Guards) -> APIRouter:
     router = APIRouter(prefix="/api")
-
-    def session_of(request: Request) -> SignedIn | None:
-        return store.find_session(request.cookies.get(SESSION_COOKIE))
-
-    def writer(request: Request, csrf: Annotated[str | None, Header(alias=CSRF_HEADER)] = None) -> SignedIn:
-        """The signed-in session behind a write, which must carry that session's CSRF token."""
-        session = session_of(request)
-        if session is None:
-            raise Refusal(401, SIGN_IN_FIRST)
-        if not csrf or not hmac.compare_digest(csrf, session.csrf_token):
-            raise Refusal(403, BAD_CSRF)
-        return session
+    session_of, writer = guards.session_of, guards.writer
 
     def set_cookie(res: Response, name: str, value: str, *, max_age: int, path: str) -> None:
         res.set_cookie(name, value, max_age=max_age, path=path, httponly=True, samesite="lax", secure=config.secure_cookies)

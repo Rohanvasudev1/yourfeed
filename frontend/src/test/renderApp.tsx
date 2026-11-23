@@ -1,21 +1,32 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import App from "../App";
-import type { AccountPort, AssistantPort, CatalogLoader, StateStorage } from "../ports";
+import { AppRoot } from "../AppRoot";
+import type { AccountPort, AssistantPort, CatalogLoader, ServerStatePort, StateStorage } from "../ports";
 import { fakeAccount } from "./account";
 import { scriptedAssistant } from "./assistant";
 import { CATALOG, memoryStorage } from "./fixtures";
+import { fakeServerState } from "./serverState";
 
-export type RenderAppOptions = { loadCatalog?: CatalogLoader; storage?: StateStorage; assistant?: AssistantPort; account?: AccountPort };
+export type RenderAppOptions = {
+  loadCatalog?: CatalogLoader;
+  storage?: StateStorage;
+  serverState?: ServerStatePort;
+  assistant?: AssistantPort;
+  account?: AccountPort;
+};
 
-/** Renders the whole app the way production does, with a fixed catalog, in-memory storage, a scripted assistant and no sign-in set up by default. */
+/**
+ * Renders the whole app the way production does, with a fixed catalog, in-memory browser storage, an in-memory server,
+ * a scripted assistant and no sign-in set up by default.
+ */
 export function renderApp({
   loadCatalog = async () => CATALOG,
   storage = memoryStorage(),
+  serverState = fakeServerState(),
   assistant = scriptedAssistant(),
   account = fakeAccount(),
 }: RenderAppOptions = {}) {
-  return render(<App loadCatalog={loadCatalog} storage={storage} assistant={assistant} account={account} />);
+  return render(<AppRoot loadCatalog={loadCatalog} storage={storage} serverState={serverState} assistant={assistant} account={account} />);
 }
 
 /** The open page's title: its first h2. Session and Feed notes sections add more h2s below it. */

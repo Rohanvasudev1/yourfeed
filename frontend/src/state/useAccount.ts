@@ -8,6 +8,8 @@ const SIGNED_OUT: AccountStatus = { kind: "signedOut", signInFailed: false };
 export type AccountControls = Readonly<{
   /** `null` until the server says, or when it can't: the app stays in the demo either way. */
   status: AccountStatus | null;
+  /** Whether the server has answered, or failed to, the first time it was asked. */
+  checked: boolean;
   /** The last sign-out or Delete my data problem, shown in the menu. */
   problem: string | null;
   busy: boolean;
@@ -21,6 +23,7 @@ export type AccountControls = Readonly<{
 /** The visitor's account: asks once whether they're signed in, then signs out or deletes on request. */
 export function useAccount(account: AccountPort): AccountControls {
   const [status, setStatus] = useState<AccountStatus | null>(null);
+  const [checked, setChecked] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [flash, showFlash] = useTimedValue<string>(FLASH_MS);
@@ -34,7 +37,10 @@ export function useAccount(account: AccountPort): AccountControls {
         setStatus(answer);
         if (answer.kind === "signedOut" && answer.signInFailed) showFlash(ACCOUNT_TEXT.signInFailed);
       })
-      .catch((err: unknown) => console.error("Couldn't find out whether you're signed in", err));
+      .catch((err: unknown) => console.error("Couldn't find out whether you're signed in", err))
+      .finally(() => {
+        if (live) setChecked(true);
+      });
     return () => {
       live = false;
     };
@@ -66,5 +72,5 @@ export function useAccount(account: AccountPort): AccountControls {
     [account, run],
   );
 
-  return { status, problem, busy, flash, signIn: account.signIn, signOut, deleteData };
+  return { status, checked, problem, busy, flash, signIn: account.signIn, signOut, deleteData };
 }
