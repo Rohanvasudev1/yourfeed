@@ -4,6 +4,7 @@ import { forgetSignals, recordSignals, withBehaviour, withSessionSignals, type F
 import type { BlendPartner } from "../domain/blend";
 import { listKeyOf } from "../domain/feedList";
 import { withClaudeConnection } from "../domain/fromClaude";
+import { dismissProposal } from "../domain/mirror";
 import { createFromRequest } from "../domain/newFeed";
 import { appendLine, type NewLine } from "../domain/recipeLog";
 import type { FeedSet } from "../domain/refresh";
@@ -96,6 +97,8 @@ export type Action =
   | Readonly<{ type: "apply_request"; feed: string; actions: readonly FeedAction[]; line: NewLine }>
   /** A new-mode request (or one asked on a draft): makes a feed from its actions, starts its log with `line`, and opens it. */
   | Readonly<{ type: "create_from_request"; from: string; actions: readonly FeedAction[]; line: NewLine }>
+  /** Hides a recipe mirror proposal on a feed for 7 days from `at`. */
+  | Readonly<{ type: "dismiss_proposal"; feed: string; proposal: string; at: number }>
   /** Empties a feed's recipe log; the feed and its undo steps stay as they are. */
   | Readonly<{ type: "clear_log"; feed: string }>
   | Readonly<{ type: "set_bar_mode"; mode: BarMode }>
@@ -207,6 +210,8 @@ export function makeReducer(seed: AppState) {
         return updateFeed(state, action.set.feed, { seed: action.set.seed, skipped: action.set.skipped });
       case "apply_request":
         return mapFeed(state, action.feed, (f) => ({ ...applyFeedActions(f, action.actions), log: appendLine(f.log, action.line) }));
+      case "dismiss_proposal":
+        return mapFeed(state, action.feed, (f) => ({ ...f, dismissed: dismissProposal(f.dismissed, action.proposal, action.at) }));
       case "clear_log":
         return mapFeed(state, action.feed, (f) => (f.log.length === 0 ? f : { ...f, log: [] }));
       case "set_claude_connection":
