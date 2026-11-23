@@ -13,6 +13,8 @@ class User(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     google_subject: str = Field(unique=True, index=True)
+    # Lowercase (see usernames.py); None until the user chooses one at first sign-in.
+    username: str | None = Field(default=None, max_length=20, unique=True, index=True)
     # Fernet-encrypted with TOKEN_ENCRYPTION_KEY; never leaves the server.
     refresh_token: str
     created_at: datetime = Field(sa_type=WHEN)

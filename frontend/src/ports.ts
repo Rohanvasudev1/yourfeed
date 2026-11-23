@@ -1,4 +1,4 @@
-import type { AccountStatus, DeleteResult } from "./domain/account";
+import type { AccountStatus, DeleteResult, UsernameAnswer } from "./domain/account";
 import type { AnswerResult } from "./domain/askNotes";
 import type { AssistantResult, BarMode, FeedContext } from "./domain/assistant";
 import type { AssistantInfo } from "./domain/assistantInfo";
@@ -43,5 +43,7 @@ export type AccountPort = Readonly<{
   /** Leaves the page for Google's sign-in; Google sends the visitor back to the app. */
   signIn: () => void;
   signOut: () => Promise<void>;
+  /** Asks the server for `username` (already in the username rules); rejects when it couldn't answer. */
+  chooseUsername: (username: string) => Promise<UsernameAnswer>;
   deleteData: () => Promise<DeleteResult>;
 }>;

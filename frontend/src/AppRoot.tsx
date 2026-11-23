@@ -1,8 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import App from "./App";
+import { UsernamePrompt } from "./components/account/UsernamePrompt";
 import { CatalogError } from "./components/CatalogError";
 import { ACCOUNT_TEXT } from "./domain/account";
 import type { AccountPort, AssistantPort, CatalogLoader, ServerStatePort, StateStorage } from "./ports";
+import { restoreState } from "./state/persistence";
+import { DEMO_SEED } from "./state/seed";
 import { useAccount } from "./state/useAccount";
 import { useStateSource } from "./state/useStateSource";
 
@@ -21,8 +24,21 @@ export function AppRoot({ loadCatalog, storage, serverState, assistant, account:
   const account = useAccount(accountPort);
   const [expectsSignedIn] = useState(accountPort.expectsSignedIn);
   const source = useStateSource(account, expectsSignedIn, storage, serverState);
-  const catalogSource = account.status?.kind === "signedIn" ? "youtube" : "demo";
+  const signedIn = account.status?.kind === "signedIn";
+  const catalogSource = signedIn ? "youtube" : "demo";
   const loadSourceCatalog = useCallback(() => loadCatalog(catalogSource), [loadCatalog, catalogSource]);
+  // What Bring your demo feeds would copy: the demo as this browser keeps it.
+  const demoFeeds = useMemo(() => (signedIn ? restoreState(storage.load(), DEMO_SEED).feeds : null), [signedIn, storage]);
+
+  if (account.status?.kind === "signedIn" && account.status.username === null) {
+    return (
+      <div className="app">
+        <main>
+          <UsernamePrompt account={account} />
+        </main>
+      </div>
+    );
+  }
 
   if (source.phase !== "ready") {
     return (
@@ -48,6 +64,7 @@ export function AppRoot({ loadCatalog, storage, serverState, assistant, account:
       assistant={assistant}
       account={account}
       saveProblem={source.saveFailed ? { retry: source.retrySave } : null}
+      demoFeeds={demoFeeds}
     />
   );
 }

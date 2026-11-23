@@ -119,4 +119,5 @@ export const DEMO_SEED: AppState = {
   blends: DEMO_BLENDS.map((name) => tasteOf(name, myTopics(DEMO_FEEDS), DEMO_TOPICS)),
   inbox: { shares: DEMO_INBOX, open: null, sessionShare: null },
   providerNoticeSeen: false,
+  demoFeedsOffered: false,
 };

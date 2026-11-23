@@ -33,6 +33,7 @@ const itemsFor = (counts: AccountCounts, claudeConnected: boolean): readonly Ite
 /** The avatar button and its menu: who you are, jumps with counts, which assistant answers, and signing in or out. */
 export function AccountMenu({ counts, claudeConnected, info, account, onJump }: Props) {
   const popups = usePopupController<"account">();
+  const signedIn = account.status?.kind === "signedIn" ? account.status : null;
   const jump = (to: AccountJump) => {
     popups.finish();
     onJump(to);
@@ -50,8 +51,8 @@ export function AccountMenu({ counts, claudeConnected, info, account, onJump }: 
               Y
             </span>
             <div>
-              <p className="account-name">You</p>
-              <p className="account-handle">{account.status?.kind === "signedIn" ? "Signed in with Google" : "@you · demo account"}</p>
+              <p className="account-name">{signedIn ? `@${signedIn.username ?? "you"}` : "You"}</p>
+              <p className="account-handle">{signedIn ? "Signed in with Google" : "@you · demo account"}</p>
             </div>
           </div>
           {itemsFor(counts, claudeConnected).map(({ to, icon: ItemIcon, label, count }) => (

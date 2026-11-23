@@ -73,7 +73,7 @@ demo = TestClient(create_app())
 def test_demo_only_app_says_sign_in_isnt_available():
     assert demo.get("/api/auth/me").json() == {
         "success": True,
-        "data": {"signInAvailable": False, "signedIn": False, "csrfToken": None},
+        "data": {"signInAvailable": False, "signedIn": False, "csrfToken": None, "username": None},
         "error": None,
     }
 

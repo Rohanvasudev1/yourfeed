@@ -1,10 +1,22 @@
 import { z } from "zod";
-import type { AccountStatus, DeleteResult } from "../domain/account";
+import type { AccountStatus, DeleteResult, UsernameAnswer } from "../domain/account";
+import { USERNAME_PATTERN } from "../domain/username";
 import type { AccountPort } from "../ports";
-import { apiSession, type ApiSession } from "./session";
+import { ApiError, apiSession, type ApiSession } from "./session";
 
-const statusSchema = z.object({ signInAvailable: z.boolean(), signedIn: z.boolean(), csrfToken: z.string().min(1).nullable() });
+const username = z.string().regex(USERNAME_PATTERN);
+const statusSchema = z.object({
+  signInAvailable: z.boolean(),
+  signedIn: z.boolean(),
+  csrfToken: z.string().min(1).nullable(),
+  username: username.nullable().default(null),
+});
 const deleteSchema = z.object({ revoked: z.boolean() });
+const usernameSchema = z.object({ username });
+
+const USERNAME_PATH = "/api/account/username";
+/** Statuses where the server refused the username itself (broken rules, taken) and said why in the visitor's words. */
+const REFUSED = new Set([409, 422]);
 
 const LOGIN_PATH = "/api/auth/login";
 /** The backend sends a failed sign-in back to `/?signin=failed`. */
@@ -53,7 +65,7 @@ export function apiAccount(session: ApiSession = apiSession()): AccountPort {
       session.setCsrfToken(status.csrfToken);
       rememberSignedIn(status.signedIn);
       if (!status.signInAvailable) return { kind: "unavailable" };
-      return status.signedIn ? { kind: "signedIn" } : { kind: "signedOut", signInFailed };
+      return status.signedIn ? { kind: "signedIn", username: status.username } : { kind: "signedOut", signInFailed };
     },
     expectsSignedIn: rememberedSignedIn,
     signIn: () => window.location.assign(LOGIN_PATH),
@@ -61,6 +73,14 @@ export function apiAccount(session: ApiSession = apiSession()): AccountPort {
       await write("/api/auth/logout", "POST");
       session.setCsrfToken(null);
       rememberSignedIn(false);
+    },
+    chooseUsername: async (name): Promise<UsernameAnswer> => {
+      try {
+        return { ok: true, ...usernameSchema.parse(await write(USERNAME_PATH, "PUT", { username: name })) };
+      } catch (err: unknown) {
+        if (err instanceof ApiError && REFUSED.has(err.status)) return { ok: false, problem: err.message };
+        throw err;
+      }
     },
     deleteData: async (): Promise<DeleteResult> => {
       const result = deleteSchema.parse(await write("/api/account", "DELETE"));

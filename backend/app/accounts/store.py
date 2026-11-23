@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 from cryptography.fernet import InvalidToken
 from sqlalchemy import Engine
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, delete, select
 
 from app.accounts.keys import Keys, new_token
@@ -91,6 +92,26 @@ class AccountStore:
             except InvalidToken:
                 log.error("User %s's refresh token can't be decrypted with TOKEN_ENCRYPTION_KEY", user_id)
                 return None
+
+    def username_of(self, user_id: int) -> str | None:
+        with Session(self.engine) as db:
+            user = db.get(User, user_id)
+            return None if user is None else user.username
+
+    def set_username(self, user_id: int, username: str) -> bool:
+        """Gives the user `username` (already clean); False when another user has it."""
+        with Session(self.engine) as db:
+            user = db.get(User, user_id)
+            if user is None:
+                return False
+            user.username = username
+            db.add(user)
+            try:
+                db.commit()
+            except IntegrityError:
+                db.rollback()
+                return False
+            return True
 
     def delete_user(self, user_id: int) -> None:
         """Deletes the user and every row stored for them."""
