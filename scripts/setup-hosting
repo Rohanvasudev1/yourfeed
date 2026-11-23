@@ -206,6 +206,7 @@ DEFAULT_APP_URL="https://yourfeed.onrender.com"
 DEFAULT_API_URL="https://yourfeed-api.onrender.com"
 LOCAL_CALLBACK="http://localhost:5173/api/auth/callback"
 SCOPE="https://www.googleapis.com/auth/youtube.readonly"
+MIGRATE_CMD="cd backend && uv run --env-file .env.hosting alembic upgrade head"
 
 # _clipboard copies stdin to the system clipboard; fails when there's no clipboard tool.
 _clipboard() {
@@ -254,7 +255,10 @@ say "You'll need: a Google account, the repo pushed to your GitHub, and uv insta
 say "Neon and Render both let you sign up with GitHub. Everything here stays on free tiers."
 say "Values you paste are saved to $ENV_FILE (git-ignored), so the migration and smoke"
 say "steps can use them and a re-run keeps them. Nothing is printed back."
-command -v uv >/dev/null 2>&1 || warn "uv isn't on your PATH: install it (https://docs.astral.sh/uv/) before stage 9."
+if ! command -v uv >/dev/null 2>&1; then
+  warn "uv isn't on your PATH. Install it (https://docs.astral.sh/uv/), then run this again."
+  exit 1
+fi
 say ""
 say "Render names the site after render.yaml's services when the names are free:"
 step "frontend: $DEFAULT_APP_URL"
@@ -270,6 +274,7 @@ open_url "https://console.cloud.google.com/projectcreate"
 step "Name it Yourfeed (no organisation needed) and click Create."
 step "Copy its Project ID (shown under the name; it can differ from the name)."
 ask_valid GOOGLE_PROJECT "Paste the project ID:" '^[a-z][a-z0-9-]{4,28}[a-z0-9]$' "A project ID is 6–30 lowercase letters, digits and dashes."
+write_env GOOGLE_PROJECT "$GOOGLE_PROJECT"
 
 # ── 3 ─────────────────────────────────────────────────────────────────────
 stage "Google Cloud: turn on the YouTube Data API"
@@ -347,17 +352,17 @@ write_env DATABASE_URL "$DATABASE_URL"
 # ── 9 ─────────────────────────────────────────────────────────────────────
 stage "Neon: create the tables"
 say "This runs Yourfeed's Alembic migrations against Neon:"
-say "    cd backend && uv run --env-file .env.hosting alembic upgrade head"
+say "    $MIGRATE_CMD"
 note "The backend also migrates at startup; running it now proves the connection works."
 if confirm "Run the migrations now?"; then
   if (cd "$ROOT/backend" && uv run --env-file .env.hosting alembic upgrade head); then
     printf '  %s✓ database is at the newest migration%s\n' "$GREEN" "$RESET"
   else
     warn "The migration failed: check DATABASE_URL (re-run this wizard to change it)."
-    SKIPPED+=("Alembic migrations: cd backend && uv run --env-file .env.hosting alembic upgrade head")
+    SKIPPED+=("Alembic migrations: $MIGRATE_CMD")
   fi
 else
-  SKIPPED+=("Alembic migrations: cd backend && uv run --env-file .env.hosting alembic upgrade head")
+  SKIPPED+=("Alembic migrations: $MIGRATE_CMD")
 fi
 pause
 
@@ -418,15 +423,17 @@ pause
 stage "Sign in and smoke-test YouTube"
 open_url "$APP_URL"
 step "Account menu → Sign in with Google, as one of the test users. Pick a username."
+step "Reload the page: you should still be signed in (the session cookie passes the /api rewrite)."
 step "Switch to your real catalog and check your subscriptions' videos show up."
 ask_valid SMOKE_USERNAME "The username you picked:" '^@?[A-Za-z0-9_.]{3,20}$' "Usernames are 3–20 letters, digits, dots and underscores."
+SMOKE_ARGS=(--env-file .env.hosting python -m scripts.youtube_smoke --username "${SMOKE_USERNAME#@}")
 say "This checks that account end to end against the real Google and YouTube APIs:"
-say "    cd backend && uv run --env-file .env.hosting python -m scripts.youtube_smoke --username ${SMOKE_USERNAME#@}"
+say "    cd backend && uv run ${SMOKE_ARGS[*]}"
 if confirm "Run the smoke test now?"; then
-  (cd "$ROOT/backend" && uv run --env-file .env.hosting python -m scripts.youtube_smoke --username "${SMOKE_USERNAME#@}") \
+  (cd "$ROOT/backend" && uv run "${SMOKE_ARGS[@]}") \
     || SKIPPED+=("A passing smoke test: see its output, fix, then re-run it")
 else
-  SKIPPED+=("Smoke test: cd backend && uv run --env-file .env.hosting python -m scripts.youtube_smoke --username ${SMOKE_USERNAME#@}")
+  SKIPPED+=("Smoke test: cd backend && uv run ${SMOKE_ARGS[*]}")
 fi
 pause
 

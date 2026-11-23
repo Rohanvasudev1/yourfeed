@@ -12,7 +12,9 @@ services:
     rootDir: backend
     # Render installs uv itself when it finds uv.lock in rootDir.
     buildCommand: uv sync --frozen --no-dev
-    # Render's proxy sets X-Forwarded-For, so per-visitor AI limits key on the visitor, not the proxy.
+    # Trusts X-Forwarded-For so per-visitor AI limits key on the visitor rather than Render's proxy. The API's own
+    # onrender.com address is reachable directly, so a caller can forge the header and get fresh per-visitor
+    # limits; AI_LIMIT_SITE_PER_DAY still caps the whole site.
     # The backend migrates DATABASE_URL to the newest Alembic revision at startup.
     startCommand: uv run --frozen --no-dev uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*'
     healthCheckPath: /api/health
