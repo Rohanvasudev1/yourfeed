@@ -18,7 +18,6 @@ import { SavedSection } from "./components/library/SavedSection";
 import { NameFeed } from "./components/NameFeed";
 import { QuestionCard } from "./components/QuestionCard";
 import { RecipeLog } from "./components/recipeLog/RecipeLog";
-import { SaveError } from "./components/SaveError";
 import { SearchBox } from "./components/search/SearchBox";
 import { SearchPage } from "./components/search/SearchPage";
 import { SettingsLine } from "./components/SettingsLine";
@@ -37,6 +36,7 @@ import type { ComposeInput, Video } from "./domain/types";
 import type { AssistantPort, CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf } from "./state/appState";
 import { providerNotice } from "./domain/assistantInfo";
+import { ACCOUNT_TEXT } from "./domain/account";
 import type { AccountControls } from "./state/useAccount";
 import { useAccountJumps } from "./state/useAccountJumps";
 import { useAssistantInfo } from "./state/useAssistantInfo";
@@ -171,7 +171,7 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
       />
       <TabBar feeds={state.feeds} current={feed} tabs={tabs} edit={edit} unread={shared.unread} />
       {edit.editing && <EditBar edit={edit} onAllTabs={tabs.page === "all"} />}
-      {saveProblem && <SaveError onRetry={saveProblem.retry} />}
+      {saveProblem && <CatalogError message={ACCOUNT_TEXT.saveFailed} retryLabel={ACCOUNT_TEXT.retrySave} onRetry={saveProblem.retry} />}
       <Flash message={account.flash ?? tabs.flash ?? search.flash ?? shared.flash} />
       <main>
         {tabs.page === "all" ? (

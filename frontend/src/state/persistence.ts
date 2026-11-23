@@ -112,6 +112,9 @@ export type SavedState = Readonly<{ version: typeof SCHEMA_VERSION; state: AppSt
 
 export const toSaved = (state: AppState): SavedState => ({ version: SCHEMA_VERSION, state });
 
+/** Whether saved data is state this version can open; when it isn't, `restoreState` falls back. */
+export const isRestorable = (saved: unknown): boolean => savedSchema.safeParse(saved).success;
+
 /** Turns untrusted saved data into app state, or falls back (with a warning) when it doesn't fit. */
 export function restoreState(saved: unknown, fallback: AppState): AppState {
   if (saved === null || saved === undefined) return fallback;

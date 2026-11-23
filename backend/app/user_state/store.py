@@ -26,7 +26,5 @@ class StateStore:
     def save(self, user_id: int, doc: StateDocument) -> None:
         """Replaces the user's document with `doc`."""
         with Session(self.engine) as db:
-            row = db.get(UserState, user_id) or UserState(user_id=user_id, version=doc.version, document="", updated_at=self.now())
-            row.version, row.document, row.updated_at = doc.version, doc.model_dump_json(), self.now()
-            db.add(row)
+            db.merge(UserState(user_id=user_id, version=doc.version, document=doc.model_dump_json(), updated_at=self.now()))
             db.commit()

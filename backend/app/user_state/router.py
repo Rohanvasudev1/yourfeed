@@ -19,10 +19,20 @@ INVALID = "That isn't a Yourfeed state document."
 NOT_SET_UP = "Signing in isn't set up on this server, so state stays in the browser."
 
 
+async def _capped_body(request: Request) -> bytes:
+    """The request body, read no further than the cap."""
+    chunks: list[bytes] = []
+    size = 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > MAX_DOCUMENT_BYTES:
+            raise Refusal(413, TOO_LARGE)
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
 async def _document(request: Request) -> StateDocument:
-    body = await request.body()
-    if len(body) > MAX_DOCUMENT_BYTES:
-        raise Refusal(413, TOO_LARGE)
+    body = await _capped_body(request)
     try:
         return StateDocument.model_validate_json(body)
     except ValidationError as exc:

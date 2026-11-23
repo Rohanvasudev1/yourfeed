@@ -1,4 +1,6 @@
 const CSRF_HEADER = "X-CSRF-Token";
+/** Browsers refuse `keepalive` requests over 64 KB; under that, a save sent as the page closes still arrives. */
+const KEEPALIVE_MAX_CHARS = 60_000;
 
 type Envelope = { success?: boolean; data?: unknown; error?: string | null };
 
@@ -26,7 +28,13 @@ export function apiSession(): ApiSession {
     write: (path, method, body) => {
       const headers: Record<string, string> = csrfToken ? { [CSRF_HEADER]: csrfToken } : {};
       if (body === undefined) return call(path, { method, headers });
-      return call(path, { method, headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const json = JSON.stringify(body);
+      return call(path, {
+        method,
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: json,
+        keepalive: json.length <= KEEPALIVE_MAX_CHARS,
+      });
     },
     setCsrfToken: (token) => {
       csrfToken = token;

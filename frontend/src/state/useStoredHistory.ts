@@ -6,7 +6,7 @@ import { restoreState } from "./persistence";
 import { DEMO_SEED } from "./seed";
 import { usePersist } from "./usePersist";
 
-export const baseReducer = makeReducer(DEMO_SEED);
+const baseReducer = makeReducer(DEMO_SEED);
 const reducer = withHistory(baseReducer);
 
 /** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */

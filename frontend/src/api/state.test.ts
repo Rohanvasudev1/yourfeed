@@ -40,6 +40,13 @@ describe("the state API client", () => {
     expect(init?.method).toBe("PUT");
     expect(init?.headers).toEqual({ "X-CSRF-Token": "csrf-123", "Content-Type": "application/json" });
     expect(JSON.parse(init?.body as string)).toEqual(DOC);
+    expect(init?.keepalive).toBe(true);
+  });
+
+  it("sends a save too large for keepalive without it", async () => {
+    const fetch = serverSays(ok({ version: 4 }));
+    await apiServerState(apiSession()).save({ version: 4, state: { notes: { v: "x".repeat(70_000) } } });
+    expect(fetch.mock.calls[0][1]?.keepalive).toBe(false);
   });
 
   it("says why a save was refused", async () => {

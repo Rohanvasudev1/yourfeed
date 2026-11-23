@@ -2,6 +2,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { toSaved } from "./state/persistence";
+import { SAVE_DELAY_MS } from "./state/usePersist";
 import { DEMO_SEED } from "./state/seed";
 import { fakeAccount, SIGNED_IN, SIGNED_OUT } from "./test/account";
 import { EVERYTHING_ORDER, memoryStorage } from "./test/fixtures";
@@ -77,6 +78,36 @@ describe("signed in, state lives on the server", () => {
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(await feedTitles()).toContain(BAIT_TITLE);
     expect(storage.saved()).toBeNull();
+  });
+
+  it("doesn't save the starting example over a server document this version can't open, until you change something", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const unreadable = { version: 999, state: { from: "a newer Yourfeed" } };
+    const server = fakeServerState(unreadable);
+    renderApp({ account: signedIn(), serverState: server });
+
+    expect(await feedTitles()).toEqual(EVERYTHING_ORDER);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("saved state"), expect.anything());
+    await new Promise((resolve) => setTimeout(resolve, SAVE_DELAY_MS * 2));
+    expect(server.calls.save).toBe(0);
+    expect(server.saved()).toEqual(unreadable);
+
+    await toggleFilters("Hide clickbait");
+    await waitFor(() => expect(filtersOf(server.saved()).hideClickbait).toBe(false));
+  });
+
+  it("offers Sign out when your state couldn't load, back to the demo", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const server = fakeServerState();
+    server.failLoads(1);
+    const account = signedIn();
+    renderApp({ account, serverState: server });
+
+    await screen.findByRole("alert");
+    await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(account.calls.signOut).toBe(1);
+    expect(await feedTitles()).toEqual(EVERYTHING_ORDER);
+    expect(server.calls.load).toBe(1);
   });
 
   it("signing out returns to the demo state, untouched", async () => {

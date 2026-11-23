@@ -18,5 +18,6 @@ export const ACCOUNT_TEXT = {
   saveFailed: "Couldn't save your changes to your account.",
   retrySave: "Try saving again",
   loadFailed: "Couldn't load your feeds from your account.",
+  loading: "Loading…",
   confirmDelete: "Delete your account and everything Yourfeed stored for it, and remove its access to your Google account? This can't be undone.",
 } as const;

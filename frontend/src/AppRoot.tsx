@@ -27,9 +27,13 @@ export function AppRoot({ loadCatalog, storage, serverState, assistant, account:
       <div className="app">
         <main>
           {source.phase === "waiting" ? (
-            <p className="muted">Loading…</p>
+            <p className="muted">{ACCOUNT_TEXT.loading}</p>
           ) : (
-            <CatalogError message={ACCOUNT_TEXT.loadFailed} onRetry={source.retry} />
+            <CatalogError message={ACCOUNT_TEXT.loadFailed} onRetry={source.retry}>
+              <button type="button" onClick={account.signOut} disabled={account.busy}>
+                Sign out
+              </button>
+            </CatalogError>
           )}
         </main>
       </div>
