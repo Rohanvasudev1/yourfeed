@@ -1,4 +1,5 @@
 import type { Dispatch } from "react";
+import { channelTopicOf } from "../domain/channelTopics";
 import { activeItems, listKeyOf } from "../domain/feedList";
 import { isInSession } from "../domain/session";
 import { similarVideos } from "../domain/similar";
@@ -18,12 +19,16 @@ export type TopicStanding = Readonly<{
   count: number;
 }>;
 
+export type ChannelTopicChoice = Readonly<{ settable: false }> | Readonly<{ settable: true; topic: string | null }>;
+
 export type ChannelStanding = Readonly<{
   subscribers: number;
   /** Videos in the catalog from this channel. */
   count: number;
   /** In the Subscriptions feed's channels. */
   followed: boolean;
+  /** On your YouTube, the topic you set for the channel (null: YouTube's category); the demo's topics are fixed. */
+  topic: ChannelTopicChoice;
 }>;
 
 /** What a card's quick actions read and do. Every change goes through the reducer, so topic and channel changes are undoable. */
@@ -36,6 +41,8 @@ export type CardActions = Readonly<{
   channel: (channel: string) => ChannelStanding;
   /** Adds the channel to Subscriptions, or takes it out. */
   setFollowed: (channel: string, followed: boolean) => void;
+  /** Sets the channel's topic, or with null goes back to YouTube's category. Only on the real catalog. */
+  setChannelTopic: (channel: string, topic: string | null) => void;
   isWatched: (video: Video) => boolean;
   toggleWatched: (video: Video) => void;
   similarTo: (video: Video) => readonly Video[];
@@ -44,7 +51,16 @@ export type CardActions = Readonly<{
   removeFromSession: (video: Video) => void;
 }>;
 
-export function useCardActions(state: AppState, feed: Feed, catalog: readonly Video[], dispatch: Dispatch<Action>): CardActions {
+type Options = Readonly<{
+  state: AppState;
+  feed: Feed;
+  catalog: readonly Video[];
+  /** Signed in, on your YouTube: channels can take your topic. */
+  realCatalog: boolean;
+  dispatch: Dispatch<Action>;
+}>;
+
+export function useCardActions({ state, feed, catalog, realCatalog, dispatch }: Options): CardActions {
   const subs = state.feeds.find((f) => f.kind === "subs");
   const countWhere = (match: (v: Video) => boolean) => catalog.filter(match).length;
   const onFeed = (type: "add_to_feed" | "remove_from_feed", item: string) => dispatch({ type, feed: feed.name, item });
@@ -66,7 +82,9 @@ export function useCardActions(state: AppState, feed: Feed, catalog: readonly Vi
       subscribers: catalog.find((v) => v.channel === channel)?.channelSubscribers ?? 0,
       count: countWhere((v) => v.channel === channel),
       followed: subs?.channels.includes(channel) ?? false,
+      topic: realCatalog ? { settable: true, topic: channelTopicOf(state.channelTopics, channel) ?? null } : { settable: false },
     }),
+    setChannelTopic: (channel, topic) => dispatch({ type: "set_channel_topic", channel, topic }),
     setFollowed: (channel, followed) => {
       // Subscriptions is built in and can't be deleted, so `subs` is always there.
       if (subs) dispatch({ type: followed ? "add_to_feed" : "remove_from_feed", feed: subs.name, item: channel });

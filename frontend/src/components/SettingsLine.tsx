@@ -17,6 +17,8 @@ export type RangeActions = Readonly<{
 type Props = Readonly<{
   feed: Feed;
   filters: GlobalFilters;
+  /** Signed in, on your YouTube: the demo-only filters are off. */
+  realCatalog: boolean;
   topicActions: TopicsPopupActions;
   rangeActions: RangeActions;
   onToggleFilter: (filter: keyof GlobalFilters) => void;
@@ -28,7 +30,7 @@ type PopupKey = "topics" | "length" | "session" | "filters" | "tab-options";
 const rangeText = ([min, max]: Range) => `${min}–${max} min`;
 
 /** The sentence under the feed header that sums up the feed's settings; each phrase opens a popup that edits it. */
-export function SettingsLine({ feed, filters, topicActions, rangeActions, onToggleFilter, tabOptions }: Props) {
+export function SettingsLine({ feed, filters, realCatalog, topicActions, rangeActions, onToggleFilter, tabOptions }: Props) {
   const popups = usePopupController<PopupKey>();
 
   /** A phrase that opens `popup` (rendered only while open) under it. */
@@ -52,8 +54,8 @@ export function SettingsLine({ feed, filters, topicActions, rangeActions, onTogg
   const session = phrase("session", rangeText(feed.session), `${SESSION_SETTING.label}, ${rangeText(feed.session)}`, () => (
     <RangePopup setting={SESSION_SETTING} value={feed.session} onChange={rangeActions.onSession} popupProps={popups.popup("session")} />
   ));
-  const filtersButton = phrase("filters", filtersPhrase(filters), undefined, () => (
-    <FiltersPopup filters={filters} onToggle={onToggleFilter} popupProps={popups.popup("filters")} />
+  const filtersButton = phrase("filters", filtersPhrase(filters, realCatalog), undefined, () => (
+    <FiltersPopup filters={filters} realCatalog={realCatalog} onToggle={onToggleFilter} popupProps={popups.popup("filters")} />
   ));
   return (
     <div className="settings-line" role="group" aria-label="Feed settings">

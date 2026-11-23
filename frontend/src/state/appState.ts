@@ -1,4 +1,5 @@
 import { insertAnswer } from "../domain/askNotes";
+import { setChannelTopic, type ChannelTopics } from "../domain/channelTopics";
 import { applyFeedActions, type BarMode, type FeedAction } from "../domain/assistant";
 import { bringRecipes, type DemoRecipe } from "../domain/demoFeeds";
 import { forgetSignals, recordSignals, withBehaviour, withSessionSignals, type Forget } from "../domain/behaviour";
@@ -49,6 +50,8 @@ export type AppState = Readonly<{
   providerNoticeSeen: boolean;
   /** Whether Bring your demo feeds has been offered; a new signed-in account is offered it once (ADR 0012). */
   demoFeedsOffered: boolean;
+  /** Topics the user set for channels; they win over YouTube's category on the real catalog (ADR 0011). */
+  channelTopics: ChannelTopics;
 }>;
 
 export type Action =
@@ -56,6 +59,8 @@ export type Action =
   | Readonly<{ type: "reset" }>
   | Readonly<{ type: "setView"; view: View }>
   | Readonly<{ type: "toggle_filter"; filter: keyof GlobalFilters }>
+  /** Sets a channel's topic, already one of YouTube's topics; `null` goes back to YouTube's category. */
+  | Readonly<{ type: "set_channel_topic"; channel: string; topic: string | null }>
   | Readonly<{ type: "set_top_range"; feed: string; range: TopRange }>
   | Readonly<{ type: "set_news_category"; feed: string; category: NewsCategory }>
   /** Adds a topic (a channel on Subscriptions) to the feed's list, unmuting a topic that was muted. */
@@ -158,6 +163,10 @@ export function makeReducer(seed: AppState) {
         return state.view === action.view ? state : { ...state, view: action.view };
       case "toggle_filter":
         return { ...state, filters: { ...state.filters, [action.filter]: !state.filters[action.filter] } };
+      case "set_channel_topic": {
+        const channelTopics = setChannelTopic(state.channelTopics, action.channel, action.topic);
+        return channelTopics === state.channelTopics ? state : { ...state, channelTopics };
+      }
       case "set_top_range":
         return updateFeed(state, action.feed, { topRange: action.range });
       case "set_news_category":

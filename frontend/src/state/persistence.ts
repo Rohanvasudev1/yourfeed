@@ -2,6 +2,7 @@ import { z } from "zod";
 import { BAR_MODES, MAX_REQUEST_CHARS } from "../domain/assistant";
 import { BEHAVIOUR_LIMIT, SIGNAL_KINDS } from "../domain/behaviour";
 import { BLEND_STATUSES, MATCH_SCORE } from "../domain/blend";
+import { keptChannelTopics } from "../domain/channelTopics";
 import { DISMISSAL_LIMIT, MAX_PROPOSAL_ID_CHARS } from "../domain/mirror";
 import { LOG_LIMIT, MAX_LOG_REPLY_CHARS, MAX_SUMMARY_CHARS } from "../domain/recipeLog";
 import { RECENT_LIMIT } from "../domain/search";
@@ -99,6 +100,9 @@ const inboxSchema = z
   .refine((i) => new Set(i.shares.map((s) => s.id)).size === i.shares.length, "share ids must be unique")
   .refine((i) => i.open === null || i.shares.some((s) => s.id === i.open), "the open share must exist");
 
+/** Each entry is checked on its own, so one that isn't a topic (say, from a later topic list) doesn't cost the others. */
+const channelTopicsSchema = z.record(z.string(), z.unknown()).transform(keptChannelTopics);
+
 const stateSchema = z
   .object({
     feeds: z.array(feedSchema).min(1),
@@ -125,6 +129,8 @@ const stateSchema = z
     providerNoticeSeen: z.boolean().catch(false),
     // Saved before the offer existed, or not a yes or no: the account isn't new, so it isn't offered.
     demoFeedsOffered: z.boolean().catch(true),
+    // Saved before channel topics existed, or not a record: back to YouTube's categories rather than discarding the save.
+    channelTopics: channelTopicsSchema.catch({}),
   })
   .refine((s) => new Set(s.feeds.map((f) => f.name.toLowerCase())).size === s.feeds.length, "feed names must be unique")
   .refine((s) => s.feeds.some((f) => f.name === s.currentFeed), "the open feed must exist") satisfies z.ZodType<AppState>;
