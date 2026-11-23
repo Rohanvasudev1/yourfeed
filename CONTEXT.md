@@ -60,6 +60,7 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Ranker**: the function that scores a feed's candidate videos from the recipe, the user's **behaviour**, recency and channel, and gives each a **reason** ("Why this is here"). Views never rank anything outside Most viewed.
 - **Behaviour**: Yourfeed's own record of what the user did (Finished, removed, skipped, pinned, watched, notes). Not YouTube data.
 - **Skipped** (behaviour): an Up next video passed over when a session ended (the logo's new set or leaving the page, while something is Watching now or Finished); at most once a day per video. Not the same as a feed set's skipped videos, which only hide a set for now.
+- **Noted** (behaviour): a video whose note you started writing (empty to written) on the open feed; it counts once per video, and the card says "Because you took notes on a Cooking video".
 - **Reason**: the short line on a card saying why it's there ("Because you Finished 3 Cooking videos"); the Ranker gives it, and "why is this first?" repeats the first card's.
 - **Recipe mirror**: a card proposing a recipe change when at least 3 behaviour signals in 14 days (each on a different video) disagree with the recipe: Finished outside the length range, a topic repeatedly removed, or pins from a muted topic. At most one per feed per visit. Accept applies it as one undo step with a recipe log line; dismiss hides it for 7 days.
 - **Outside your recipe**: one labelled video per session from topics next to the feed's; can be turned off per feed.
@@ -73,6 +74,7 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Demo mode**: not signed in. Mock catalog, state kept in the browser, rate-limited AI.
 - **Signed-in mode**: signed in with Google. Real YouTube catalog, state kept in the database.
 - **Username**: the handle a signed-in user picks at first sign-in; Share sends to it and Blend invites it. In demo mode usernames are simulated.
+- **Account start**: what a new signed-in account begins with: the built-in feeds and the demo's filters, none of the demo's made-up feeds, shares, blends, saved videos or history. Reset demo isn't offered signed in.
 - **Bring your demo feeds**: the one-time offer at first sign-in to copy demo feed recipes (names, ranges, topics that exist in the real catalog), nothing else.
 - **Delete my data**: removes a signed-in account and everything stored for it, and revokes the Google token.
 

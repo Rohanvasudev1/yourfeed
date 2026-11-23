@@ -1,7 +1,8 @@
 import { ABOUT_PATH } from "../state/useRoute";
 import { RouteLink } from "./RouteLink";
 
-type Props = Readonly<{ onReset: () => void }>;
+/** `onReset` is null when there's no demo to reset: signed in, the state is your account's. */
+type Props = Readonly<{ onReset: (() => void) | null }>;
 
 export function Footer({ onReset }: Props) {
   return (
@@ -10,9 +11,11 @@ export function Footer({ onReset }: Props) {
       <RouteLink to={ABOUT_PATH} className="footer-link">
         About this design
       </RouteLink>
-      <button type="button" className="link-button" onClick={onReset}>
-        Reset demo
-      </button>
+      {onReset && (
+        <button type="button" className="link-button" onClick={onReset}>
+          Reset demo
+        </button>
+      )}
     </footer>
   );
 }

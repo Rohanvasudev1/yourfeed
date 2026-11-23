@@ -22,7 +22,7 @@ dev = [
     "pytest-cov>=7.1.0",
 ]
 
-# Coverage gate for the assistant, accounts, youtube and user state modules: `uv run pytest --cov=app.assistant --cov=app.accounts --cov=app.youtube --cov=app.user_state`
+# Coverage gate for the assistant, accounts, youtube, user state, sharing and blends modules: `uv run pytest --cov=app.assistant --cov=app.accounts --cov=app.youtube --cov=app.user_state --cov=app.sharing --cov=app.blends`
 [tool.coverage.report]
 fail_under = 80
 show_missing = true

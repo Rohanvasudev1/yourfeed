@@ -1,11 +1,11 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { toSaved } from "./state/persistence";
 import { SAVE_DELAY_MS } from "./state/usePersist";
 import { DEMO_SEED } from "./state/seed";
 import { fakeAccount, SIGNED_IN, SIGNED_OUT } from "./test/account";
-import { EVERYTHING_ORDER, memoryStorage } from "./test/fixtures";
+import { ACCOUNT_ORDER, EVERYTHING_ORDER, memoryStorage } from "./test/fixtures";
 import { feedTitles, renderApp, toggleFilters } from "./test/renderApp";
 import { fakeServerState } from "./test/serverState";
 
@@ -36,17 +36,35 @@ describe("signed in, state lives on the server", () => {
     const server = fakeServerState();
     renderApp({ account: signedIn(), storage, serverState: server });
 
-    expect(await feedTitles()).toEqual(EVERYTHING_ORDER);
+    expect(await feedTitles()).toEqual(ACCOUNT_ORDER);
     await toggleFilters("Include Shorts");
     await waitFor(() => expect(filtersOf(server.saved()).includeShorts).toBe(true));
     expect(storage.saved()).toBeNull();
   });
 
-  it("starts a new account from the starting example, not from the browser's demo state", async () => {
+  it("starts a new account with the built-in feeds only, not the demo's feeds, shares, blends or history", async () => {
     const storage = memoryStorage(withClickbait());
-    renderApp({ account: signedIn(), storage, serverState: fakeServerState() });
+    const server = fakeServerState();
+    renderApp({ account: signedIn(), storage, serverState: server });
 
-    expect(await feedTitles()).toEqual(EVERYTHING_ORDER);
+    expect(await feedTitles()).not.toContain(BAIT_TITLE);
+    const tabBar = screen.getByRole("navigation", { name: "Feeds" });
+    expect(within(tabBar).queryByRole("button", { name: "Learn" })).not.toBeInTheDocument();
+    await waitFor(() => expect(server.saved()).not.toBeNull());
+    const saved = (server.saved() as ReturnType<typeof toSaved>).state;
+    expect(saved.feeds.map((f) => f.kind)).toEqual(["home", "subs", "top", "news", "claude", "blend", "shared"]);
+    expect(saved.feeds.flatMap((f) => [...f.channels, ...f.behaviour.map((b) => b.video)])).toEqual([]);
+    expect(saved.inbox.shares).toEqual([]);
+    expect(saved.blends).toEqual([]);
+    expect(saved.watched).toEqual([]);
+    expect(saved.recentSearches).toEqual([]);
+    expect(saved.folders.flatMap((f) => f.videoIds)).toEqual([]);
+  });
+
+  it("doesn't offer Reset demo while signed in, so your account can't be wiped by a footer link", async () => {
+    renderApp({ account: signedIn(), serverState: fakeServerState(withClickbait()) });
+    expect(await feedTitles()).toContain(BAIT_TITLE);
+    expect(screen.queryByRole("button", { name: "Reset demo" })).not.toBeInTheDocument();
   });
 
   it("says when a save failed, and Try again saves it", async () => {
@@ -80,13 +98,13 @@ describe("signed in, state lives on the server", () => {
     expect(storage.saved()).toBeNull();
   });
 
-  it("doesn't save the starting example over a server document this version can't open, until you change something", async () => {
+  it("doesn't save the account start over a server document this version can't open, until you change something", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const unreadable = { version: 999, state: { from: "a newer Yourfeed" } };
     const server = fakeServerState(unreadable);
     renderApp({ account: signedIn(), serverState: server });
 
-    expect(await feedTitles()).toEqual(EVERYTHING_ORDER);
+    expect(await feedTitles()).toEqual(ACCOUNT_ORDER);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("saved state"), expect.anything());
     await new Promise((resolve) => setTimeout(resolve, SAVE_DELAY_MS * 2));
     expect(server.calls.save).toBe(0);
@@ -115,7 +133,7 @@ describe("signed in, state lives on the server", () => {
     const storage = memoryStorage(demo);
     const server = fakeServerState();
     renderApp({ account: signedIn(), storage, serverState: server });
-    expect(await feedTitles()).toEqual(EVERYTHING_ORDER);
+    expect(await feedTitles()).toEqual(ACCOUNT_ORDER);
     await toggleFilters("Hide view counts");
 
     await userEvent.click(screen.getByRole("button", { name: "Your account" }));
@@ -129,7 +147,7 @@ describe("signed in, state lives on the server", () => {
     const demo = withClickbait();
     const storage = memoryStorage(demo);
     renderApp({ account: signedIn(), storage, serverState: fakeServerState() });
-    expect(await feedTitles()).toEqual(EVERYTHING_ORDER);
+    expect(await feedTitles()).toEqual(ACCOUNT_ORDER);
 
     await userEvent.click(screen.getByRole("button", { name: "Your account" }));
     await userEvent.click(await screen.findByRole("button", { name: "Delete my data" }));

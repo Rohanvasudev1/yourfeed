@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { CatalogLoader } from "./ports";
 import { fakeAccount, SIGNED_IN, SIGNED_OUT } from "./test/account";
-import { CATALOG, EVERYTHING_ORDER } from "./test/fixtures";
+import { ACCOUNT_ORDER, CATALOG, EVERYTHING_ORDER } from "./test/fixtures";
 import { feedTitles, renderApp } from "./test/renderApp";
 
 const EXPIRED = "Your YouTube access has expired. Sign out, then sign in with Google again.";
@@ -13,7 +13,7 @@ describe("the catalog's source", () => {
   it("is your YouTube when you're signed in", async () => {
     const loadCatalog = vi.fn<CatalogLoader>(async () => CATALOG);
     renderApp({ loadCatalog, account: fakeAccount({ status: SIGNED_IN }) });
-    expect(await feedTitles()).toEqual(EVERYTHING_ORDER);
+    expect(await feedTitles()).toEqual(ACCOUNT_ORDER);
     expect(loadCatalog.mock.calls.map(([source]) => source)).toEqual(["youtube"]);
   });
 
@@ -34,7 +34,7 @@ describe("when YouTube can't load your catalog", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(UNAVAILABLE);
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
 
-    expect(await feedTitles()).toEqual(EVERYTHING_ORDER);
+    expect(await feedTitles()).toEqual(ACCOUNT_ORDER);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 

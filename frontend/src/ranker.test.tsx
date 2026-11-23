@@ -62,6 +62,32 @@ describe("reasons on cards", () => {
   });
 });
 
+describe("notes", () => {
+  const notesBox = (title: string) => within(screen.getByRole("region", { name: "Watching now" })).getByRole("textbox", { name: `Notes on ${title}` });
+
+  it("count as behaviour: a video you wrote notes on ranks its topic and says so", async () => {
+    const storage = memoryStorage();
+    const first = renderApp({ storage });
+    await play(FIRST);
+    await userEvent.type(notesBox(FIRST), "Loops and tools");
+    expect(await reasonOn(SECOND)).toBe("Because you took notes on an AI video");
+    first.unmount();
+
+    // Saved with the feed's behaviour, so it still counts next visit.
+    renderApp({ storage });
+    expect(await reasonOn(SECOND)).toBe("Because you took notes on an AI video");
+  });
+
+  it("count once per video, not per keystroke or edit", async () => {
+    renderApp();
+    await play(FIRST);
+    await userEvent.type(notesBox(FIRST), "Loops");
+    await userEvent.clear(notesBox(FIRST));
+    await userEvent.type(notesBox(FIRST), "Tools");
+    expect(await reasonOn(SECOND)).toBe("Because you took notes on an AI video");
+  });
+});
+
 describe("skipped videos", () => {
   it("records Up next as skipped when you leave mid-session, so the next visit offers other videos", async () => {
     const storage = memoryStorage();
