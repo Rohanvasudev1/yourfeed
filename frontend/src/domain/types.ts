@@ -65,6 +65,8 @@ export type Feed = Readonly<{
   behaviour: BehaviourRecord;
   /** Recipe mirror proposals the visitor dismissed lately, each hidden for 7 days (ADR 0010). */
   dismissed: readonly Dismissal[];
+  /** Whether Up next gets one video per session from topics next to the feed's ("Outside your recipe", ADR 0010). */
+  exploreSlot: boolean;
 }>;
 
 export const NEWS_CATEGORIES = ["All", "World", "Business", "Tech", "Science"] as const;

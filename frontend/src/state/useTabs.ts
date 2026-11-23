@@ -27,6 +27,8 @@ export type TabControls = Readonly<{
   /** Shows search results; opening any feed or All tabs leaves them. */
   openSearch: () => void;
   closeSearch: () => void;
+  /** Turns a feed's Outside your recipe slot on or off. */
+  setExploreSlot: (feed: Feed, on: boolean) => void;
   /** Your own tabs either side of `name` in the bar, for moving it left or right. */
   neighbours: (name: string) => Readonly<{ left: string | null; right: string | null }>;
 }>;
@@ -78,5 +80,6 @@ export function useTabs(state: AppState, current: Feed, dispatch: Dispatch<Actio
     openSearch: () => setPage("search"),
     closeSearch: () => setPage("feed"),
     neighbours: (name) => ownNeighbours(state.feeds, name),
+    setExploreSlot: (feed, on) => dispatch({ type: "set_explore_slot", feed: feed.name, on }),
   };
 }

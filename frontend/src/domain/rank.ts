@@ -13,6 +13,7 @@ export type Reason = Readonly<
   | { kind: "finishedChannel" | "watchedChannel" | "pinnedChannel"; channel: string; count: number }
   | { kind: "newFromSubscription" | "followedChannel"; channel: string }
   | { kind: "matchesTopic"; topic: string }
+  | { kind: "outsideRecipe"; topic: string; near: string }
   | { kind: "recent" | "pinned" | "mostViewed" | "live" | "latestNews" | "shared" | "catalog" }
 >;
 
@@ -145,6 +146,8 @@ export function reasonText(reason: Reason): string {
       return `From ${reason.channel}, which you follow`;
     case "matchesTopic":
       return `Matches ${reason.topic} in this feed`;
+    case "outsideRecipe":
+      return `Outside your recipe: ${reason.topic}, next to ${reason.near}`;
     case "recent":
       return "New this week";
     case "pinned":

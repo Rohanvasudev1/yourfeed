@@ -1,4 +1,5 @@
 import { blendOrder, isBlendOn } from "./blend";
+import { OUTSIDE_POSITION, pickOutside } from "./outsideRecipe";
 import { activeItems } from "./feedList";
 import { isConnectedClaude } from "./fromClaude";
 import { rank, type Reason } from "./rank";
@@ -111,13 +112,26 @@ export function composeFeed(input: ComposeInput): Composition {
   const committed = [...feed.pinned, ...sessionIds(feed)];
   const startMinutes = committed.reduce((sum, id) => sum + (byId.get(id)?.minutes ?? 0), 0);
   const pool = catalog.filter((v) => !isExcluded(v, feed) && matchesKind(v, input));
+  const outside = pickOutside({
+    feed,
+    catalog,
+    fits: (v) => !failsFilters(v, feed, filters) && v.ageHours < HOURS_PER_YEAR,
+    following: input.following,
+    room: feed.session[1] - startMinutes,
+  });
 
   const result = order(pool, input).reduce(
     (acc, { video, reason }) =>
       failsFilters(video, feed, filters) || acc.usedMinutes + video.minutes > feed.session[1]
         ? { ...acc, hidden: acc.hidden + 1 }
         : { ...acc, upNext: [...acc.upNext, video], reasons: [...acc.reasons, [video.id, reason] as const], usedMinutes: acc.usedMinutes + video.minutes },
-    { upNext: [] as readonly Video[], reasons: [] as readonly (readonly [string, Reason])[], hidden: 0, usedMinutes: startMinutes },
+    { upNext: [] as readonly Video[], reasons: [] as readonly (readonly [string, Reason])[], hidden: 0, usedMinutes: startMinutes + (outside?.video.minutes ?? 0) },
   );
-  return { ...result, reasons: new Map(result.reasons) };
+  if (outside === null) return { ...result, reasons: new Map(result.reasons) };
+  const at = Math.min(OUTSIDE_POSITION, result.upNext.length);
+  return {
+    ...result,
+    upNext: [...result.upNext.slice(0, at), outside.video, ...result.upNext.slice(at)],
+    reasons: new Map([...result.reasons, [outside.video.id, outside.reason]]),
+  };
 }

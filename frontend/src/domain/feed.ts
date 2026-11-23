@@ -26,6 +26,7 @@ export const DEFAULT_FEED: Feed = {
   log: [],
   behaviour: [],
   dismissed: [],
+  exploreSlot: true,
 };
 
 export const makeFeed = (overrides: Partial<Feed> = {}): Feed => ({ ...DEFAULT_FEED, ...overrides });
