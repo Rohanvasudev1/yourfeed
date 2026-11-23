@@ -15,5 +15,9 @@ export const ACCOUNT_TEXT = {
   signOutFailed: "Couldn't sign out. Try again.",
   deleteFailed: "Couldn't delete your data. Try again.",
   notRevoked: "Your data is deleted, but Google didn't confirm it removed Yourfeed's access. Remove it at myaccount.google.com/permissions.",
+  saveFailed: "Couldn't save your changes to your account.",
+  retrySave: "Try saving again",
+  loadFailed: "Couldn't load your feeds from your account.",
+  loading: "Loading…",
   confirmDelete: "Delete your account and everything Yourfeed stored for it, and remove its access to your Google account? This can't be undone.",
 } as const;

@@ -1,22 +1,33 @@
 import { z } from "zod";
 import type { AccountStatus, DeleteResult } from "../domain/account";
 import type { AccountPort } from "../ports";
+import { apiSession, type ApiSession } from "./session";
 
 const statusSchema = z.object({ signInAvailable: z.boolean(), signedIn: z.boolean(), csrfToken: z.string().min(1).nullable() });
 const deleteSchema = z.object({ revoked: z.boolean() });
 
 const LOGIN_PATH = "/api/auth/login";
-const CSRF_HEADER = "X-CSRF-Token";
 /** The backend sends a failed sign-in back to `/?signin=failed`. */
 const FAILED_PARAM = "signin";
 
-type Envelope = { success?: boolean; data?: unknown; error?: string | null };
+/** Remembers in this browser that it's signed in, so the next visit waits for the account. Storage may be blocked; then it just doesn't remember. */
+const SIGNED_IN_KEY = "yourfeed.signedIn";
 
-async function call(path: string, init: RequestInit = {}): Promise<unknown> {
-  const res = await fetch(path, { credentials: "same-origin", ...init });
-  const body = (await res.json().catch(() => null)) as Envelope | null;
-  if (!body?.success) throw new Error(body?.error ?? `The server answered ${res.status}.`);
-  return body.data;
+function rememberSignedIn(signedIn: boolean): void {
+  try {
+    if (signedIn) window.localStorage.setItem(SIGNED_IN_KEY, "1");
+    else window.localStorage.removeItem(SIGNED_IN_KEY);
+  } catch (err) {
+    console.warn("Couldn't remember whether you're signed in", err);
+  }
+}
+
+function rememberedSignedIn(): boolean {
+  try {
+    return window.localStorage.getItem(SIGNED_IN_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
 /** Reads, then removes, the failed-sign-in marker, so a reload doesn't say it again. */
@@ -29,30 +40,32 @@ function takeSignInFailed(): boolean {
 }
 
 /**
- * The backend's account API. It keeps the session's CSRF token, which every write sends back.
+ * The backend's account API. It hands the session's CSRF token to `session`, which every write sends back.
  * Whether sign-in just failed is read once, when the page opens, so asking for the status twice gives the same answer.
  */
-export function apiAccount(): AccountPort {
+export function apiAccount(session: ApiSession = apiSession()): AccountPort {
   const signInFailed = takeSignInFailed();
-  let csrfToken: string | null = null;
-  const write = (path: string, method: string) =>
-    call(path, { method, headers: csrfToken ? { [CSRF_HEADER]: csrfToken } : {} });
+  const { call, write } = session;
 
   return {
     status: async (): Promise<AccountStatus> => {
       const status = statusSchema.parse(await call("/api/auth/me"));
-      csrfToken = status.csrfToken;
+      session.setCsrfToken(status.csrfToken);
+      rememberSignedIn(status.signedIn);
       if (!status.signInAvailable) return { kind: "unavailable" };
       return status.signedIn ? { kind: "signedIn" } : { kind: "signedOut", signInFailed };
     },
+    expectsSignedIn: rememberedSignedIn,
     signIn: () => window.location.assign(LOGIN_PATH),
     signOut: async () => {
       await write("/api/auth/logout", "POST");
-      csrfToken = null;
+      session.setCsrfToken(null);
+      rememberSignedIn(false);
     },
     deleteData: async (): Promise<DeleteResult> => {
       const result = deleteSchema.parse(await write("/api/account", "DELETE"));
-      csrfToken = null;
+      session.setCsrfToken(null);
+      rememberSignedIn(false);
       return result;
     },
   };

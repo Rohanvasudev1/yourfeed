@@ -8,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 
 from app.accounts.config import AuthConfig
 from app.accounts.google import GoogleOAuth, HttpGoogleOAuth
+from app.accounts.guards import session_guards
 from app.accounts.keys import Keys
 from app.accounts.router import accounts_router, demo_only_router, install_refusals
 from app.accounts.store import AccountStore, Now, utc_now
@@ -20,6 +21,8 @@ from app.assistant.selector import AssistantSelector
 from app.catalog import SignInRequired, Source, Video, load_catalog
 from app.db import make_engine, migrate
 from app.envelope import Envelope, fail, ok
+from app.user_state.router import demo_only_state_router, state_router
+from app.user_state.store import StateStore
 
 log = logging.getLogger("yourfeed")
 
@@ -70,18 +73,21 @@ def create_app(
     model = assistant if assistant is not None and assistant.answered_by == "model" else None
     selector = AssistantSelector(model, KeywordRules(), AiLimits(limits, clock), timeout)
     app.include_router(assistant_router(selector))
-    app.include_router(_accounts(app, auth))
+    for router in _signed_in_routers(app, auth):
+        app.include_router(router)
     return app
 
 
-def _accounts(app: FastAPI, auth: AuthSetup | None):
+def _signed_in_routers(app: FastAPI, auth: AuthSetup | None):
+    """The account and state routes; without `auth`, their demo-only stand-ins."""
     if auth is None:
-        return demo_only_router()
+        return [demo_only_router(), demo_only_state_router()]
     engine = make_engine(auth.config.database_url)
     migrate(engine)
     app.state.engine = engine
     store = AccountStore(engine, Keys(auth.config.session_secret, auth.config.token_encryption_key), auth.now)
-    return accounts_router(auth.config, auth.google, store)
+    guards = session_guards(store)
+    return [accounts_router(auth.config, auth.google, store, guards), state_router(guards, StateStore(engine, auth.now))]
 
 
 def create_app_from_env() -> FastAPI:

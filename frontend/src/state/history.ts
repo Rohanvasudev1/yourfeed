@@ -34,7 +34,8 @@ type Change = Readonly<{ feed: string; range?: RangeKey }>;
 /** App state plus its undo and redo steps, newest last. The steps live in memory only; a reload starts with none. */
 export type History = Readonly<{ present: AppState; undo: readonly Step[]; redo: readonly Step[] }>;
 
-export type HistoryAction = Action | Readonly<{ type: "undo" }> | Readonly<{ type: "redo" }>;
+/** `load` swaps in state from another storage (signing out goes back to the browser's), with no steps either way. */
+export type HistoryAction = Action | Readonly<{ type: "undo" }> | Readonly<{ type: "redo" }> | Readonly<{ type: "load"; present: AppState }>;
 
 export const startHistory = (present: AppState): History => ({ present, undo: [], redo: [] });
 
@@ -143,6 +144,8 @@ export function withHistory(reduce: (state: AppState, action: Action) => AppStat
       }
       case "reset":
         return startHistory(reduce(history.present, action));
+      case "load":
+        return startHistory(action.present);
       default: {
         const present = reduce(history.present, action);
         if (present === history.present) return history;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useMemo } from "react";
 import { AccountMenu } from "./components/account/AccountMenu";
 import { AllTabsPage } from "./components/AllTabsPage";
 import { BlendPanel } from "./components/blend/BlendPanel";
@@ -33,13 +33,11 @@ import { shareStartingVideos } from "./domain/share";
 import { CATALOG_REASON, reasonText, type Reason } from "./domain/rank";
 import { hasSessionStarted } from "./domain/session";
 import type { Video } from "./domain/types";
-import type { AccountPort, AssistantPort, CatalogLoader, StateStorage } from "./ports";
-import { currentFeedOf, makeReducer } from "./state/appState";
+import type { AssistantPort, CatalogLoader, StateStorage } from "./ports";
+import { currentFeedOf } from "./state/appState";
 import { providerNotice } from "./domain/assistantInfo";
-import { startHistory, withHistory } from "./state/history";
-import { restoreState } from "./state/persistence";
-import { DEMO_SEED } from "./state/seed";
-import { useAccount } from "./state/useAccount";
+import { ACCOUNT_TEXT } from "./domain/account";
+import type { AccountControls } from "./state/useAccount";
 import { useAccountJumps } from "./state/useAccountJumps";
 import { useAssistantInfo } from "./state/useAssistantInfo";
 import { useBlend } from "./state/useBlend";
@@ -58,15 +56,22 @@ import { sectionControl, useSections } from "./state/useSections";
 import { useSession } from "./state/useSession";
 import { useSessionEnd } from "./state/useSessionEnd";
 import { useSharedWithYou } from "./state/useSharedWithYou";
+import { useStoredHistory } from "./state/useStoredHistory";
 import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
 
-type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage; assistant: AssistantPort; account: AccountPort }>;
+type Props = Readonly<{
+  loadCatalog: CatalogLoader;
+  /** The browser's storage in demo mode, the server's when signed in. */
+  storage: StateStorage;
+  assistant: AssistantPort;
+  account: AccountControls;
+  /** A save to the server that failed, with a way to send it again; null when there's none. */
+  saveProblem: Readonly<{ retry: () => void }> | null;
+}>;
 
-const baseReducer = makeReducer(DEMO_SEED);
 const NO_VIDEOS: readonly Video[] = [];
 const SHARE_PANEL_ID = "share-panel";
-const reducer = withHistory(baseReducer);
 
 const PINNED_REASON: Reason = { kind: "pinned" };
 
@@ -76,12 +81,8 @@ const withPinnedReasons = (pinned: readonly string[], reasons: ReadonlyMap<strin
 
 const reasonOf = (reasons: ReadonlyMap<string, Reason>, id: string): string => reasonText(reasons.get(id) ?? CATALOG_REASON);
 
-/** Reloading leaves an unnamed draft, so it's dropped like any other time you leave it. */
-const restore = (storage: StateStorage) =>
-  startHistory(baseReducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" }));
-
-export default function App({ loadCatalog, storage, assistant, account: accountPort }: Props) {
-  const [history, dispatch] = useReducer(reducer, storage, restore);
+export default function App({ loadCatalog, storage, assistant, account, saveProblem }: Props) {
+  const [history, dispatch] = useStoredHistory(storage);
   const state = history.present;
   const passedOver = useSessionEnd(dispatch);
   usePersist(storage, state);
@@ -127,7 +128,6 @@ export default function App({ loadCatalog, storage, assistant, account: accountP
   const edit = useEditMode(state.feeds, dispatch);
   const blend = useBlend(state.feeds, feed, ready ?? NO_VIDEOS, dispatch);
   const info = useAssistantInfo(assistant);
-  const account = useAccount(accountPort);
   const sections = useSections();
   const jump = useAccountJumps({ feeds: state.feeds, current: feed, tabs, sections, dispatch });
   const search = useSearch({
@@ -178,6 +178,7 @@ export default function App({ loadCatalog, storage, assistant, account: accountP
       />
       <TabBar feeds={state.feeds} current={feed} tabs={tabs} edit={edit} unread={shared.unread} />
       {edit.editing && <EditBar edit={edit} onAllTabs={tabs.page === "all"} />}
+      {saveProblem && <CatalogError message={ACCOUNT_TEXT.saveFailed} retryLabel={ACCOUNT_TEXT.retrySave} onRetry={saveProblem.retry} />}
       <Flash message={account.flash ?? tabs.flash ?? search.flash ?? shared.flash} />
       <main>
         {tabs.page === "all" ? (

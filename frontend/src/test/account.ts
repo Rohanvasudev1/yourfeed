@@ -7,6 +7,8 @@ type Script = Readonly<{
   status?: Answer<AccountStatus>;
   signOut?: Answer<void>;
   deleteData?: Answer<DeleteResult>;
+  /** Whether the browser remembers being signed in; by default, whether the script says it is. */
+  expectsSignedIn?: boolean;
 }>;
 
 export const NOT_SET_UP: AccountStatus = { kind: "unavailable" };
@@ -19,10 +21,16 @@ const settle = async <T>(answer: Answer<T>): Promise<T> => {
 };
 
 /** A stand-in account port: answers from the script (sign-in not set up by default) and counts each call. */
-export function fakeAccount({ status = NOT_SET_UP, signOut = undefined, deleteData = { revoked: true } }: Script = {}) {
+export function fakeAccount({
+  status = NOT_SET_UP,
+  signOut = undefined,
+  deleteData = { revoked: true },
+  expectsSignedIn = status === SIGNED_IN,
+}: Script = {}) {
   const calls = { signIn: 0, signOut: 0, deleteData: 0 };
   const port: AccountPort = {
     status: () => settle(status),
+    expectsSignedIn: () => expectsSignedIn,
     signIn: () => {
       calls.signIn += 1;
     },
