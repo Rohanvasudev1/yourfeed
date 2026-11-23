@@ -120,4 +120,5 @@ export const DEMO_SEED: AppState = {
   inbox: { shares: DEMO_INBOX, open: null, sessionShare: null, sentCursor: 0 },
   providerNoticeSeen: false,
   demoFeedsOffered: false,
+  channelTopics: {},
 };

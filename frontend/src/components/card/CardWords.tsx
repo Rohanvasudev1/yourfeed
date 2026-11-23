@@ -1,5 +1,6 @@
 import { IconEye, IconEyeOff, IconMinus, IconPlus, IconUserMinus, IconUserPlus, type Icon } from "@tabler/icons-react";
 import { useId, type ReactNode } from "react";
+import { YOUTUBE_TOPICS } from "../../domain/channelTopics";
 import { hasItemList } from "../../domain/feedList";
 import { compactCount } from "../../domain/format";
 import type { CardActions, TopicStanding } from "../../state/useCardActions";
@@ -13,7 +14,15 @@ type Choice = Readonly<{ label: string; icon: Icon; run: () => void }>;
 const videoCount = (n: number) => `${n} video${n === 1 ? "" : "s"}`;
 
 /** A topic or channel name on a card that opens its quick actions, using the shared popup controller. */
-function Word({ kind, value, popups, popupKey, status, choices }: WordProps & Readonly<{ kind: "Topic" | "Channel"; status: string; choices: readonly Choice[] }>) {
+function Word({
+  kind,
+  value,
+  popups,
+  popupKey,
+  status,
+  choices,
+  children,
+}: WordProps & Readonly<{ kind: "Topic" | "Channel"; status: string; choices: readonly Choice[]; children?: ReactNode }>) {
   const headingId = useId();
   return (
     <span className="popup-anchor">
@@ -40,6 +49,7 @@ function Word({ kind, value, popups, popupKey, status, choices }: WordProps & Re
               {label}
             </button>
           ))}
+          {children}
         </div>
       )}
     </span>
@@ -75,10 +85,11 @@ export function TopicWord(props: WordProps): ReactNode {
   return <Word kind="Topic" status={topicStatus(standing)} choices={topicChoices(value, standing, actions)} {...props} />;
 }
 
-/** A card's channel: Add to / Remove from Subscriptions. */
+/** A card's channel: Add to / Remove from Subscriptions, and on your YouTube, this channel's topic. */
 export function ChannelWord(props: WordProps & Readonly<{ hideSubscriberCounts: boolean }>) {
   const { value, actions, hideSubscriberCounts } = props;
-  const { subscribers, count, followed } = actions.channel(value);
+  const standing = actions.channel(value);
+  const { subscribers, count, followed } = standing;
   const status = [
     ...(hideSubscriberCounts ? [] : [`${compactCount(subscribers)} subscribers`]),
     `${videoCount(count)} here`,
@@ -87,5 +98,33 @@ export function ChannelWord(props: WordProps & Readonly<{ hideSubscriberCounts: 
   const choice: Choice = followed
     ? { label: "Remove from Subscriptions", icon: IconUserMinus, run: () => actions.setFollowed(value, false) }
     : { label: "Add to Subscriptions", icon: IconUserPlus, run: () => actions.setFollowed(value, true) };
-  return <Word kind="Channel" status={status} choices={[choice]} {...props} />;
+  return (
+    <Word kind="Channel" status={status} choices={[choice]} {...props}>
+      {standing.topic.settable && <ChannelTopicPicker channel={value} topic={standing.topic.topic} actions={actions} />}
+    </Word>
+  );
+}
+
+const YOUTUBES_CATEGORY = "";
+
+/** Sets this channel's topic from YouTube's topic list; it wins over YouTube's category. The popup stays open to show it. */
+function ChannelTopicPicker({ channel, topic, actions }: Readonly<{ channel: string; topic: string | null; actions: CardActions }>) {
+  const id = useId();
+  return (
+    <div className="channel-topic">
+      <label htmlFor={id}>This channel's topic</label>
+      <select
+        id={id}
+        value={topic ?? YOUTUBES_CATEGORY}
+        onChange={(e) => actions.setChannelTopic(channel, e.target.value === YOUTUBES_CATEGORY ? null : e.target.value)}
+      >
+        <option value={YOUTUBES_CATEGORY}>YouTube's category</option>
+        {YOUTUBE_TOPICS.map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 }

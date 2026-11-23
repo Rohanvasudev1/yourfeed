@@ -37,8 +37,8 @@ describe("signed in, state lives on the server", () => {
     renderApp({ account: signedIn(), storage, serverState: server });
 
     expect(await feedTitles()).toEqual(EVERYTHING_ORDER);
-    await toggleFilters("Hide clickbait");
-    await waitFor(() => expect(filtersOf(server.saved()).hideClickbait).toBe(false));
+    await toggleFilters("Include Shorts");
+    await waitFor(() => expect(filtersOf(server.saved()).includeShorts).toBe(true));
     expect(storage.saved()).toBeNull();
   });
 
@@ -57,12 +57,12 @@ describe("signed in, state lives on the server", () => {
     await waitFor(() => expect(server.saved()).not.toBeNull());
 
     server.failSaves(1);
-    await toggleFilters("Hide clickbait");
+    await toggleFilters("Include Shorts");
     expect(await screen.findByRole("alert")).toHaveTextContent(SAVE_FAILED);
-    expect(filtersOf(server.saved()).hideClickbait).toBe(true);
+    expect(filtersOf(server.saved()).includeShorts).toBe(false);
 
     await userEvent.click(screen.getByRole("button", { name: "Try saving again" }));
-    await waitFor(() => expect(filtersOf(server.saved()).hideClickbait).toBe(false));
+    await waitFor(() => expect(filtersOf(server.saved()).includeShorts).toBe(true));
     expect(screen.queryByText(SAVE_FAILED)).not.toBeInTheDocument();
   });
 
@@ -92,8 +92,8 @@ describe("signed in, state lives on the server", () => {
     expect(server.calls.save).toBe(0);
     expect(server.saved()).toEqual(unreadable);
 
-    await toggleFilters("Hide clickbait");
-    await waitFor(() => expect(filtersOf(server.saved()).hideClickbait).toBe(false));
+    await toggleFilters("Include Shorts");
+    await waitFor(() => expect(filtersOf(server.saved()).includeShorts).toBe(true));
   });
 
   it("offers Sign out when your state couldn't load, back to the demo", async () => {

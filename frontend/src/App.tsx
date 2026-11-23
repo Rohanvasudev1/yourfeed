@@ -30,6 +30,7 @@ import { TabBar } from "./components/TabBar";
 import { UpNextLine } from "./components/UpNextLine";
 import { UndoRedo } from "./components/UndoRedo";
 import { ViewToggle } from "./components/ViewToggle";
+import { withChannelTopics, type ChannelTopics } from "./domain/channelTopics";
 import { composeFeed } from "./domain/compose";
 import { shareStartingVideos } from "./domain/share";
 import { CATALOG_REASON, reasonText, type Reason } from "./domain/rank";
@@ -82,6 +83,7 @@ type Props = Readonly<{
 }>;
 
 const NO_VIDEOS: readonly Video[] = [];
+const NO_CHANNEL_TOPICS: ChannelTopics = {};
 const SHARE_PANEL_ID = "share-panel";
 
 const PINNED_REASON: Reason = { kind: "pinned" };
@@ -100,18 +102,26 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
   const [catalog, retry] = useCatalog(loadCatalog);
 
   const feed = currentFeedOf(state);
-  const ready = catalog.status === "ready" ? catalog.catalog : null;
+  // Signed in, the catalog is your YouTube (ADR 0011): channels can take your topic, and the clickbait filters are demo-only.
+  const realCatalog = account.status?.kind === "signedIn";
+  const loaded = catalog.status === "ready" ? catalog.catalog : null;
+  // Channel topics are for your YouTube only; the demo catalog's topics are fixed.
+  const channelTopics = realCatalog ? state.channelTopics : NO_CHANNEL_TOPICS;
+  const ready = useMemo(() => loaded && withChannelTopics(loaded, channelTopics), [loaded, channelTopics]);
   const catalogById = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const unknownIds = useMemo(() => (ready && sharing ? unknownVideoIds(state, catalogById) : []), [ready, sharing, state, catalogById]);
   const lookedUp = useLookedUpVideos(sharing, unknownIds);
-  const byId = useMemo(() => new Map([...lookedUp.videos, ...catalogById]), [lookedUp.videos, catalogById]);
+  const byId = useMemo(
+    () => new Map([...withChannelTopics([...lookedUp.videos.values()], channelTopics).map((v) => [v.id, v] as const), ...catalogById]),
+    [lookedUp.videos, channelTopics, catalogById],
+  );
   const input = useComposeInput(state, feed, ready, byId);
   const composed = useMemo(() => input && composeFeed(input), [input]);
   const session = useSession(feed, byId, dispatch);
   const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
   const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, assistant, dispatch, showFlash: session.showFlash });
   const library = useLibrary(state, feed, byId, dispatch);
-  const cardActions = useCardActions(state, feed, ready ?? NO_VIDEOS, dispatch);
+  const cardActions = useCardActions({ state, feed, catalog: ready ?? NO_VIDEOS, realCatalog, dispatch });
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);
@@ -243,6 +253,7 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
                     feed={feed}
                     tabOptions={tabs}
                     filters={state.filters}
+                    realCatalog={realCatalog}
                     topicActions={{
                       onAdd: (item) => dispatch({ type: "add_to_feed", feed: feed.name, item }),
                       onRemove: (item) => dispatch({ type: "remove_from_feed", feed: feed.name, item }),

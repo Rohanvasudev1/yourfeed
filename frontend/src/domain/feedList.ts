@@ -43,8 +43,15 @@ export function topicsPhrase(feed: Feed): string {
   return hidden ? `${what}, ${hidden} hidden` : what;
 }
 
-export function filtersPhrase(filters: GlobalFilters): string {
-  const on = Object.values(filters).filter(Boolean).length;
+/** Filters that need the demo catalog's AI tags; the real catalog has none, so there they're off (ADR 0011). */
+export const DEMO_ONLY_FILTERS: readonly (keyof GlobalFilters)[] = ["hideClickbait", "honestTitles"];
+
+/** Whether `filter` does anything on this catalog. */
+export const filterApplies = (filter: keyof GlobalFilters, realCatalog: boolean): boolean => !realCatalog || !DEMO_ONLY_FILTERS.includes(filter);
+
+/** How many filters are on, counting only those that apply to this catalog. */
+export function filtersPhrase(filters: GlobalFilters, realCatalog: boolean): string {
+  const on = (Object.keys(filters) as (keyof GlobalFilters)[]).filter((f) => filters[f] && filterApplies(f, realCatalog)).length;
   return on ? `${plural(on, "filter")} on` : "no filters";
 }
 

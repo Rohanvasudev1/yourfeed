@@ -11,7 +11,7 @@ ADR 0005 relied on channel RSS feeds, which aren't part of the documented API (a
 - Uploads: `playlistItems.list` on each channel's uploads playlist **with the server's API key**, cached **per channel and shared across users**, refreshed at most every 6 hours when someone needs it, deleted or refreshed within 30 days (III.E.4.d).
 - Details: `videos.list`, 50 ids per unit.
 - `search.list` only for a feed's topics outside subscriptions, cached per topic and shared, within the 100-call daily budget; past it, no new searches until tomorrow.
-- **Topics** come from YouTube's `topicCategories` (video, else channel), mapped to a fixed list of about 60 readable names. A topic the user sets for a channel is Yourfeed data, stored, and wins.
+- **Topics** come from YouTube's `topicCategories` (video, else channel), mapped to a fixed list of about 60 readable names. A topic the user sets for a channel is Yourfeed data, stored in user state, and wins. The frontend applies it over the catalog it loads (feed composition runs there, ADR 0003), so a change shows at once without fetching the catalog again.
 - In signed-in mode **Hide clickbait and Honest titles are demo-only**: the filters show "Demo catalog only". No per-video AI tags are stored for API Data.
 
 ## Consequences
