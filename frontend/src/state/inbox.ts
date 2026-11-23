@@ -1,5 +1,6 @@
 import { makeFeed } from "../domain/feed";
-import { savedFeedName, type Inbox, type InboxShare } from "../domain/inbox";
+import { savedFeedName, shareFromSent, type Inbox, type InboxShare } from "../domain/inbox";
+import type { SentShare } from "../domain/sending";
 import { fitsInBar, uniqueName } from "../domain/tabs";
 import type { Feed } from "../domain/types";
 
@@ -7,6 +8,8 @@ import type { Feed } from "../domain/types";
 export type InboxAction =
   /** Adds a share unless one with its id is already there. */
   | Readonly<{ type: "receive_share"; share: InboxShare }>
+  /** Adds shares other users sent by username, newest first, and remembers the newest one's id. */
+  | Readonly<{ type: "receive_sent"; shares: readonly SentShare[] }>
   /** Opens a share in the Shared with you feed and marks it read. */
   | Readonly<{ type: "open_share"; id: string }>
   /** Back to the inbox. */
@@ -19,6 +22,7 @@ type WithInbox = Readonly<{ feeds: readonly Feed[]; currentFeed: string; inbox: 
 
 const INBOX_ACTION_TYPES: ReadonlySet<string> = new Set<InboxAction["type"]>([
   "receive_share",
+  "receive_sent",
   "open_share",
   "close_share",
   "remove_share",
@@ -39,7 +43,7 @@ function openShare<S extends WithInbox>(state: S, id: string): S {
   const { inbox } = state;
   if (!inbox.shares.some((s) => s.id === id)) return state;
   const shares = inbox.shares.map((s) => (s.id === id && s.unread ? { ...s, unread: false } : s));
-  const opened = { ...state, inbox: { shares, open: id, sessionShare: id } };
+  const opened = { ...state, inbox: { ...inbox, shares, open: id, sessionShare: id } };
   return inbox.sessionShare === id ? opened : withSharedSession(opened, freshSession);
 }
 
@@ -48,7 +52,10 @@ function removeShare<S extends WithInbox>(state: S, id: string): S {
   if (!inbox.shares.some((s) => s.id === id)) return state;
   const shares = inbox.shares.filter((s) => s.id !== id);
   const ownedSession = inbox.sessionShare === id;
-  const removed = { ...state, inbox: { shares, open: inbox.open === id ? null : inbox.open, sessionShare: ownedSession ? null : inbox.sessionShare } };
+  const removed = {
+    ...state,
+    inbox: { ...inbox, shares, open: inbox.open === id ? null : inbox.open, sessionShare: ownedSession ? null : inbox.sessionShare },
+  };
   return ownedSession ? withSharedSession(removed, freshSession) : removed;
 }
 
@@ -62,11 +69,22 @@ function saveShare<S extends WithInbox>(state: S, id: string): S {
   return { ...state, feeds: [...state.feeds, saved], currentFeed: name };
 }
 
+function receiveSent<S extends WithInbox>(state: S, sent: readonly SentShare[]): S {
+  const { inbox } = state;
+  const known = new Set(inbox.shares.map((s) => s.id));
+  const fresh = sent.filter((s) => s.id > inbox.sentCursor).map(shareFromSent).filter((s) => !known.has(s.id));
+  const sentCursor = Math.max(inbox.sentCursor, ...sent.map((s) => s.id));
+  if (fresh.length === 0 && sentCursor === inbox.sentCursor) return state;
+  return { ...state, inbox: { ...inbox, shares: [...[...fresh].reverse(), ...inbox.shares], sentCursor } };
+}
+
 export function reduceInbox<S extends WithInbox>(state: S, action: InboxAction): S {
   const { inbox } = state;
   switch (action.type) {
     case "receive_share":
       return inbox.shares.some((s) => s.id === action.share.id) ? state : { ...state, inbox: { ...inbox, shares: [action.share, ...inbox.shares] } };
+    case "receive_sent":
+      return receiveSent(state, action.shares);
     case "open_share":
       return openShare(state, action.id);
     case "close_share":

@@ -3,7 +3,7 @@ import App from "./App";
 import { UsernamePrompt } from "./components/account/UsernamePrompt";
 import { CatalogError } from "./components/CatalogError";
 import { ACCOUNT_TEXT } from "./domain/account";
-import type { AccountPort, AssistantPort, CatalogLoader, ServerStatePort, StateStorage } from "./ports";
+import type { AccountPort, AssistantPort, CatalogLoader, ServerStatePort, SharingPort, StateStorage } from "./ports";
 import { isRestorable, type SavedState } from "./state/persistence";
 import { useAccount } from "./state/useAccount";
 import { useStateSource } from "./state/useStateSource";
@@ -16,6 +16,8 @@ type Props = Readonly<{
   serverState: ServerStatePort;
   assistant: AssistantPort;
   account: AccountPort;
+  /** Real share and send, used only when signed in. */
+  sharing: SharingPort;
 }>;
 
 /** What Bring your demo feeds would copy: the feeds of the demo this browser saved; null when it saved none it can open. */
@@ -25,7 +27,7 @@ function savedDemoFeeds(storage: StateStorage) {
 }
 
 /** The app, once it knows whose state to show: the server's when signed in (ADR 0012), the browser's in demo mode. */
-export function AppRoot({ loadCatalog, storage, serverState, assistant, account: accountPort }: Props) {
+export function AppRoot({ loadCatalog, storage, serverState, assistant, account: accountPort, sharing }: Props) {
   const account = useAccount(accountPort);
   const [expectsSignedIn] = useState(accountPort.expectsSignedIn);
   const source = useStateSource(account, expectsSignedIn, storage, serverState);
@@ -69,6 +71,7 @@ export function AppRoot({ loadCatalog, storage, serverState, assistant, account:
       account={account}
       saveProblem={source.saveFailed ? { retry: source.retrySave } : null}
       demoFeeds={demoFeeds}
+      sharing={signedIn ? sharing : null}
     />
   );
 }

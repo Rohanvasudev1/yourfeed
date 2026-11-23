@@ -39,6 +39,15 @@ class YouTubeCatalog:
         newest = sorted(uploads.values(), key=lambda v: v.published_at, reverse=True)
         return tuple(_video(v, now) for v in newest)
 
+    def lookup(self, ids: Sequence[str]) -> tuple[Video, ...]:
+        """Videos by id, wherever they are (share links across catalogs, ADR 0013), in the order asked; unknown ids are left out.
+        At most MAX_IDS_PER_CALL ids: one videos.list call and one channels.list call."""
+        now = self.now()
+        details = [d for d in self.client.videos(ids) if d.broadcast != "upcoming"]
+        channels = {c.id: c for c in self.client.channels(list(dict.fromkeys(d.channel_id for d in details)))} if details else {}
+        found = {d.id: _video(_cached(d, channels[d.channel_id]), now) for d in details if d.channel_id in channels}
+        return tuple(found[i] for i in dict.fromkeys(ids) if i in found)
+
     def _fetch(self, channel_ids: Sequence[str]) -> dict[str, tuple[CachedVideo, ...]]:
         if not channel_ids:
             return {}

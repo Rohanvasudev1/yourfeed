@@ -3,11 +3,12 @@ import { useId, useState } from "react";
 import { minutesText, videoCount } from "../../domain/format";
 import { encodeShare, shareUrl, type Share } from "../../domain/share";
 import type { GlobalFilters, Video } from "../../domain/types";
+import type { SharingPort } from "../../ports";
 import { copyText, type CopyMessages } from "../../state/copyText";
 import { FLASH_MS, useTimedValue } from "../../state/useTimedValue";
 import { Flash } from "../Flash";
 import { SharePicker } from "./SharePicker";
-import { ShareSend } from "./ShareSend";
+import { ShareSend, type SendTo } from "./ShareSend";
 import "./share.css";
 
 const COPY_MESSAGES: CopyMessages = {
@@ -25,6 +26,8 @@ type Props = Readonly<{
   filters: GlobalFilters;
   /** People the visitor blends with, offered as one-tap quick-send chips. */
   quickSend: readonly string[];
+  /** Signed in, sending is real (ADR 0013); null in demo mode. */
+  sharing: SharingPort | null;
   onClose: () => void;
 }>;
 
@@ -32,8 +35,8 @@ type Props = Readonly<{
 const notesFor = (picked: readonly Video[], notes: Readonly<Record<string, string>>) =>
   Object.fromEntries(picked.flatMap((v) => (notes[v.id]?.trim() ? [[v.id, notes[v.id]]] : [])));
 
-/** "Share this feed": pick videos, maybe include notes, then copy a working link or (demo only) send it. */
-export function SharePanel({ id, feedName, videos, notes, filters, quickSend, onClose }: Props) {
+/** "Share this feed": pick videos, maybe include notes, then copy a working link or send it (simulated in demo mode). */
+export function SharePanel({ id, feedName, videos, notes, filters, quickSend, sharing, onClose }: Props) {
   const headingId = useId();
   const [unticked, setUnticked] = useState<ReadonlySet<string>>(new Set());
   const [includeNotes, setIncludeNotes] = useState(false);
@@ -49,6 +52,8 @@ export function SharePanel({ id, feedName, videos, notes, filters, quickSend, on
   };
   const encoded = encodeShare(share);
   const link = encoded.ok ? shareUrl(window.location.href, encoded.encoded) : "";
+
+  const sendTo: SendTo | null = sharing && ((to) => sharing.send(to, share));
 
   const copy = () => copyText(link, COPY_MESSAGES, showFlash);
 
@@ -85,7 +90,7 @@ export function SharePanel({ id, feedName, videos, notes, filters, quickSend, on
       </div>
       <Flash message={flash} />
 
-      <ShareSend disabled={!encoded.ok} quickSend={quickSend} />
+      <ShareSend disabled={!encoded.ok} quickSend={quickSend} sendTo={sendTo} />
 
       {notedCount > 0 && (
         <div className="share-notes">
@@ -96,7 +101,7 @@ export function SharePanel({ id, feedName, videos, notes, filters, quickSend, on
           <p className="muted small">Anyone with the link can read notes you include.</p>
         </div>
       )}
-      <p className="share-demo muted">Demo only: nothing is actually sent to anyone.</p>
+      {!sharing && <p className="share-demo muted">Demo only: nothing is actually sent to anyone.</p>}
     </section>
   );
 }

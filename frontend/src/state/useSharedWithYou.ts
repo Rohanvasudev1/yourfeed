@@ -9,6 +9,8 @@ type Options = Readonly<{
   state: AppState;
   feed: Feed;
   catalog: readonly Video[] | null;
+  /** Signed in, finds a link's videos outside the catalog; null in demo mode. */
+  lookup: ((ids: readonly string[]) => Promise<readonly Video[]>) | null;
   byId: ReadonlyMap<string, Video>;
   dispatch: Dispatch<Action>;
   /** Opens a feed the way its tab does. */
@@ -31,7 +33,7 @@ export type SharedWithYou = Readonly<{
 }>;
 
 /** The Shared with you feed: its inbox, the open share, and share links opened from the address bar. */
-export function useSharedWithYou({ state, feed, catalog, byId, dispatch, openFeed }: Options): SharedWithYou {
+export function useSharedWithYou({ state, feed, catalog, lookup, byId, dispatch, openFeed }: Options): SharedWithYou {
   const [flash, showFlash] = useTimedValue<string>(FLASH_MS);
   const isShared = feed.kind === "shared";
   const open = isShared ? openShareOf(state.inbox) : null;
@@ -39,6 +41,7 @@ export function useSharedWithYou({ state, feed, catalog, byId, dispatch, openFee
 
   useShareLinks({
     catalog,
+    lookup,
     onBroken: showFlash,
     onReceive: (share) => {
       dispatch({ type: "receive_share", share });

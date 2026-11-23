@@ -5,7 +5,7 @@ type Envelope<T> = { success: boolean; data: T | null; error: string | null };
 
 const VIDEO_KEYS = ["id", "title", "honestTitle", "channel", "topic"] as const;
 
-const isVideo = (x: unknown): x is Video =>
+export const isVideo = (x: unknown): x is Video =>
   typeof x === "object" &&
   x !== null &&
   VIDEO_KEYS.every((k) => typeof (x as Record<string, unknown>)[k] === "string") &&

@@ -7,6 +7,7 @@ from sqlmodel import SQLModel
 
 import app.accounts.tables  # noqa: F401  (registers the tables on SQLModel.metadata)
 import app.user_state.tables  # noqa: F401
+import app.sharing.tables  # noqa: F401
 import app.youtube.tables  # noqa: F401
 from app.accounts.config import DEFAULT_DATABASE_URL
 from app.db import make_engine

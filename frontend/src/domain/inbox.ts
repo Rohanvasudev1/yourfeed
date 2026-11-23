@@ -1,12 +1,13 @@
 import { ago } from "./format";
 import { hash } from "./hash";
+import type { SentShare } from "./sending";
 import type { Share } from "./share";
 import { MS_PER_HOUR } from "./time";
 import type { Composition, Feed, Video } from "./types";
 
 /** One feed someone sent: who sent it (null for a link, which carries no sender), what's in it, and whether it's been opened. */
 export type InboxShare = Readonly<{
-  /** Demo shares are `demo-share-N`; a link's id is a hash of its contents, so the same link is only added once. */
+  /** Demo shares are `demo-share-N`, a link's id is a hash of its contents (so the same link is only added once), and a sent one's is `sent-N`. */
   id: string;
   from: string | null;
   title: string;
@@ -22,9 +23,16 @@ export type InboxShare = Readonly<{
  * Shared with you: the shares, newest first; the one open in the Shared with you feed;
  * and `sessionShare`, the one that feed's session belongs to, so reopening it picks up where you left off.
  */
-export type Inbox = Readonly<{ shares: readonly InboxShare[]; open: string | null; sessionShare: string | null }>;
+export type Inbox = Readonly<{
+  shares: readonly InboxShare[];
+  open: string | null;
+  sessionShare: string | null;
+  /** The id of the newest share sent by username that this inbox has had (0 for none), so a removed one isn't fetched again. */
+  sentCursor: number;
+}>;
 
 export const BROKEN_LINK = "This share link doesn't work.";
+export const LOOKUP_FAILED = "Couldn't look up this link's videos. Open it again in a minute.";
 
 /** The inbox entry for a link opened now, or null when the link names a video the catalog doesn't have. */
 export function shareFromLink(share: Share, catalogIds: ReadonlySet<string>, now: number): InboxShare | null {
@@ -34,6 +42,18 @@ export function shareFromLink(share: Share, catalogIds: ReadonlySet<string>, now
   const contents = JSON.stringify([share.title, share.videos, message, Object.entries(notes)]);
   return { id: `link-${hash(contents).toString(36)}`, from: null, title: share.title, videos: share.videos, message, notes, received: now, unread: true };
 }
+
+/** The inbox entry for a share another user sent by username. */
+export const shareFromSent = (sent: SentShare): InboxShare => ({
+  id: `sent-${sent.id}`,
+  from: sent.from,
+  title: sent.title,
+  videos: sent.videos,
+  message: sent.message,
+  notes: sent.notes,
+  received: sent.sentAt,
+  unread: true,
+});
 
 export const unreadCount = (inbox: Inbox): number => inbox.shares.filter((s) => s.unread).length;
 

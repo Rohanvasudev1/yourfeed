@@ -35,7 +35,7 @@ import { shareStartingVideos } from "./domain/share";
 import { CATALOG_REASON, reasonText, type Reason } from "./domain/rank";
 import { hasSessionStarted } from "./domain/session";
 import type { Feed, Video } from "./domain/types";
-import type { AssistantPort, SourceCatalogLoader, StateStorage } from "./ports";
+import type { AssistantPort, SharingPort, SourceCatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf } from "./state/appState";
 import { providerNotice } from "./domain/assistantInfo";
 import { ACCOUNT_TEXT } from "./domain/account";
@@ -45,6 +45,9 @@ import { useAssistantInfo } from "./state/useAssistantInfo";
 import { useBlend } from "./state/useBlend";
 import { useCardActions } from "./state/useCardActions";
 import { useCatalog } from "./state/useCatalog";
+import { useLookedUpVideos } from "./state/useLookedUpVideos";
+import { useSentShares } from "./state/useSentShares";
+import { unknownVideoIds } from "./domain/sending";
 import { useDemoFeedsOffer } from "./state/useDemoFeedsOffer";
 import { useComposeInput } from "./state/useComposeInput";
 import { useClaudeBar } from "./state/useClaudeBar";
@@ -74,6 +77,8 @@ type Props = Readonly<{
   saveProblem: Readonly<{ retry: () => void }> | null;
   /** The browser's demo feeds, which a new signed-in account is offered once; null in demo mode. */
   demoFeeds: readonly Feed[] | null;
+  /** Real share and send when signed in (ADR 0013); null in demo mode, where sending is simulated. */
+  sharing: SharingPort | null;
 }>;
 
 const NO_VIDEOS: readonly Video[] = [];
@@ -87,7 +92,7 @@ const withPinnedReasons = (pinned: readonly string[], reasons: ReadonlyMap<strin
 
 const reasonOf = (reasons: ReadonlyMap<string, Reason>, id: string): string => reasonText(reasons.get(id) ?? CATALOG_REASON);
 
-export default function App({ loadCatalog, storage, assistant, account, saveProblem, demoFeeds }: Props) {
+export default function App({ loadCatalog, storage, assistant, account, saveProblem, demoFeeds, sharing }: Props) {
   const [history, dispatch] = useStoredHistory(storage);
   const state = history.present;
   const passedOver = useSessionEnd(dispatch);
@@ -96,7 +101,10 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
 
   const feed = currentFeedOf(state);
   const ready = catalog.status === "ready" ? catalog.catalog : null;
-  const byId = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
+  const catalogById = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
+  const unknownIds = useMemo(() => (ready && sharing ? unknownVideoIds(state, catalogById) : []), [ready, sharing, state, catalogById]);
+  const lookedUp = useLookedUpVideos(sharing, unknownIds);
+  const byId = useMemo(() => new Map([...lookedUp.videos, ...catalogById]), [lookedUp.videos, catalogById]);
   const input = useComposeInput(state, feed, ready, byId);
   const composed = useMemo(() => input && composeFeed(input), [input]);
   const session = useSession(feed, byId, dispatch);
@@ -107,7 +115,8 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);
-  const shared = useSharedWithYou({ state, feed, catalog: ready, byId, dispatch, openFeed: tabs.open });
+  const shared = useSharedWithYou({ state, feed, catalog: ready, lookup: lookedUp.lookup, byId, dispatch, openFeed: tabs.open });
+  useSentShares({ sharing, cursor: state.inbox.sentCursor, looking: feed.kind === "shared", dispatch });
   const composition = feed.kind === "shared" ? shared.composition : composed;
   const shareToggle = useShareToggle(feed.name);
   const shareVideos = shareStartingVideos(sessionVideos, pinned, composition?.upNext ?? NO_VIDEOS);
@@ -309,6 +318,7 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
                     notes={state.notes}
                     filters={state.filters}
                     quickSend={state.blends.map((b) => b.name)}
+                    sharing={sharing}
                     onClose={share.close}
                   />
                 )}
