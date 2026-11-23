@@ -86,3 +86,33 @@ test("a request adds a recipe log line, a follow-up keeps it, undo greys the fol
   await log.getByRole("button", { name: "Clear log" }).click();
   await expect(log).toHaveCount(0);
 });
+
+test("/about argues the design with live pieces, and links to and from the app", async ({ page }) => {
+  await page.goto("/");
+  await expect(upNextCards(page).first()).toBeVisible();
+  await page.getByRole("link", { name: "About this design" }).click();
+  await expect(page).toHaveURL(/\/about$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  const recipe = page.getByRole("region", { name: "Live recipe", exact: true });
+  await recipe.getByRole("textbox", { name: "Tell Claude what to change" }).fill("add cooking");
+  await recipe.getByRole("button", { name: "Send to Claude" }).click();
+  await expect(recipe.getByRole("region", { name: "Recipe log" }).getByRole("listitem")).toHaveText(["add cooking → added Cooking"]);
+
+  const mirror = page.getByRole("region", { name: "Recipe mirror", exact: true });
+  await expect(mirror).toContainText("You removed 3 Economics videos from this feed.");
+  await mirror.getByRole("button", { name: "Remove Economics" }).click();
+  await expect(recipe.getByRole("region", { name: "Recipe log" }).getByRole("listitem").nth(1)).toHaveText(/^Recipe mirror: Remove Economics/);
+
+  await expect(page.getByRole("region", { name: "Live cards" })).toContainText(/Outside your recipe: .+, next to /);
+
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Live cards" })).toBeVisible();
+  await page.setViewportSize({ width: 375, height: 812 });
+  expect(await page.evaluate<number>("document.documentElement.scrollWidth")).toBeLessThanOrEqual(375);
+
+  await page.getByRole("link", { name: "Back to the app", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(upNextCards(page).first()).toBeVisible();
+  await expect(page.getByRole("region", { name: "Recipe log" })).toHaveCount(0);
+});
