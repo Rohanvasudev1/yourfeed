@@ -8,7 +8,9 @@ from pydantic.alias_generators import to_camel
 from app.catalog import Video
 
 MAX_REQUEST_CHARS = 300
-MAX_UP_NEXT = 20
+MAX_UP_NEXT = 15
+MAX_FOLLOW_UPS = 3
+MAX_SUMMARY_CHARS = 120
 MAX_EXPLORE = 8
 
 BarMode = Literal["edit", "new"]
@@ -18,6 +20,7 @@ FeedKind = Literal["home", "subs", "top", "news", "claude", "blend", "shared", "
 RequestText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_REQUEST_CHARS)]
 MIN_QUESTION_CHARS = 3
 QuestionText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=MIN_QUESTION_CHARS, max_length=MAX_REQUEST_CHARS)]
+SummaryText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_SUMMARY_CHARS)]
 Minutes = tuple[int, int]
 
 
@@ -68,10 +71,22 @@ class FeedContext(_Frozen):
         return f'"{top.title}" {reasons.get(self.kind, f"matches {top.topic} in this feed.")}'
 
 
+class FollowUp(_Frozen):
+    """One live line of the feed's recipe log: an earlier request and what it changed (ADR 0009)."""
+
+    request: RequestText
+    summary: SummaryText
+
+
+FollowUps = tuple[FollowUp, ...]
+
+
 class AssistantRequest(_Frozen):
     text: RequestText
     mode: BarMode
     context: FeedContext
+    follow_ups: FollowUps = Field(default=(), max_length=MAX_FOLLOW_UPS)
+    """The last live recipe log lines of the current feed, oldest first. Only a model reads them; the rules ignore them."""
 
 
 class AnswerRequest(_Frozen):
@@ -101,7 +116,9 @@ class Assistant(Protocol):
 
 
 class Model(Assistant, Protocol):
-    """An assistant backed by a real model, named for the account menu (never with its key or URL)."""
+    """An assistant backed by a real model, named for the account menu (never with its key or URL). It also reads follow-ups."""
 
     model_name: str
     provider: str
+
+    def handle(self, text: str, mode: BarMode, context: FeedContext, follow_ups: FollowUps = ()) -> Proposal: ...

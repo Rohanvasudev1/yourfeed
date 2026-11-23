@@ -17,6 +17,8 @@ const CONTEXT: FeedContext = {
 
 const answer = (status: number, body: unknown) => vi.fn(async () => new Response(JSON.stringify(body), { status }));
 
+const FOLLOW_UP = { request: "shorter videos", summary: "videos 1–15 min" };
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe("the assistant API client", () => {
@@ -25,26 +27,26 @@ describe("the assistant API client", () => {
     const fetch = answer(200, { success: true, data, error: null });
     vi.stubGlobal("fetch", fetch);
 
-    expect(await requestAssistant("add cooking", "edit", CONTEXT)).toEqual(data);
+    expect(await requestAssistant("add cooking", "edit", CONTEXT, [FOLLOW_UP])).toEqual(data);
     const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/assistant/request");
-    expect(JSON.parse(init.body as string)).toEqual({ text: "add cooking", mode: "edit", context: CONTEXT });
+    expect(JSON.parse(init.body as string)).toEqual({ text: "add cooking", mode: "edit", context: CONTEXT, followUps: [FOLLOW_UP] });
   });
 
   it("passes on the server's error", async () => {
     vi.stubGlobal("fetch", answer(422, { success: false, data: null, error: "text: too long" }));
-    await expect(requestAssistant("x", "edit", CONTEXT)).rejects.toThrow("text: too long");
+    await expect(requestAssistant("x", "edit", CONTEXT, [])).rejects.toThrow("text: too long");
   });
 
   it("rejects an answer that breaks the contract", async () => {
     const data = { actions: [{ type: "turn_on_filter" }], answeredBy: "rules" };
     vi.stubGlobal("fetch", answer(200, { success: true, data, error: null }));
-    await expect(requestAssistant("x", "edit", CONTEXT)).rejects.toThrow("didn't match the contract");
+    await expect(requestAssistant("x", "edit", CONTEXT, [])).rejects.toThrow("didn't match the contract");
   });
 
   it("says what the server answered when the body isn't JSON", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>", { status: 502 })));
-    await expect(requestAssistant("x", "edit", CONTEXT)).rejects.toThrow("The server answered 502.");
+    await expect(requestAssistant("x", "edit", CONTEXT, [])).rejects.toThrow("The server answered 502.");
   });
 });
 

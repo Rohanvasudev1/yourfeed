@@ -6,8 +6,8 @@ import type { Feed, FeedKind, Video } from "./types";
 
 /** Longest request the Claude bar sends (ADR 0006). */
 export const MAX_REQUEST_CHARS = 300;
-/** How many Up next videos the assistant is shown (ADR 0007). */
-export const CONTEXT_VIDEOS = 20;
+/** How many Up next videos the assistant is shown (ADR 0007, cut from 20 by ADR 0009 to make room for follow-ups). */
+export const CONTEXT_VIDEOS = 15;
 
 /** Edit changes the current feed; new starts a feed from the request. Built-in feeds are always new. */
 export const BAR_MODES = ["edit", "new"] as const;

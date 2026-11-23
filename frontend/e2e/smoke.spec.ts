@@ -60,3 +60,29 @@ test("with no AI key, the keyword rules add Cooking from the Claude bar and undo
 
   await expect(await openTopics(page)).not.toContainText("Cooking");
 });
+
+test("a request adds a recipe log line, a follow-up keeps it, undo greys the follow-up out and Clear log empties the log", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("navigation", { name: "Feeds" }).getByRole("button", { name: "Learn", exact: true }).click();
+  await expect(upNextCards(page).first()).toBeVisible();
+  const bar = page.getByRole("textbox", { name: "Tell Claude what to change" });
+  const log = page.getByRole("region", { name: "Recipe log" });
+
+  await bar.fill("add cooking");
+  await page.getByRole("button", { name: "Send to Claude" }).click();
+  await expect(log.getByRole("listitem")).toHaveText(["add cooking → added Cooking"]);
+
+  await bar.fill("shorter videos");
+  await page.getByRole("button", { name: "Send to Claude" }).click();
+  await expect(log.getByRole("listitem")).toHaveCount(2);
+  await expect(log.getByRole("listitem").nth(1)).toHaveText(/^shorter videos → videos 1–15 min/);
+
+  await page.getByRole("button", { name: /^Undo last change/ }).click();
+  await expect(log.getByRole("listitem").nth(1)).toHaveText(/^Undone: shorter videos/);
+  await expect(log.getByRole("listitem").first()).not.toHaveText(/Undone/);
+
+  await page.reload();
+  await expect(log.getByRole("listitem")).toHaveCount(2);
+  await log.getByRole("button", { name: "Clear log" }).click();
+  await expect(log).toHaveCount(0);
+});

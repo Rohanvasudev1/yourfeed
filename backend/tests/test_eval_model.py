@@ -2,7 +2,9 @@
 
 import pytest
 
+from app.assistant.model import MAX_FOLLOW_UPS, MAX_UP_NEXT, AssistantRequest
 from scripts.eval_model import CASES, _args, replies_with_a_pin_claim, replies_without_a_pin_claim
+from tests.assistant_helpers import request
 
 
 @pytest.mark.parametrize(
@@ -37,3 +39,20 @@ def test_the_eval_is_paced_by_default_and_refuses_negative_waits():
     assert _args(["--delay", "0"]).delay == 0
     with pytest.raises(SystemExit):
         _args(["--delay", "-1"])
+
+
+def test_follow_up_cases_send_valid_follow_ups_and_the_largest_case_comes_last():
+    follow_up_cases = [c for c in CASES if c.follow_ups]
+    assert len(follow_up_cases) >= 3
+    largest = CASES[-1]
+    assert len(largest.follow_ups) == MAX_FOLLOW_UPS
+    assert len(largest.context["upNext"]) == MAX_UP_NEXT
+    for case in follow_up_cases:
+        AssistantRequest.model_validate({**request(case.text, mode=case.mode, **case.context), "followUps": [dict(f) for f in case.follow_ups]})
+
+
+def test_a_follow_up_that_adds_must_keep_what_the_earlier_line_added():
+    case = next(c for c in CASES if c.text == "and travel too")
+    travel = {"type": "set_topics", "add": ["Travel"], "remove": []}
+    assert case.check([travel], None)
+    assert not case.check([{"type": "set_topics", "add": ["Travel"], "remove": ["Cooking"]}], None)

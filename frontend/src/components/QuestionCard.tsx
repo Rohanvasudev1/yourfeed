@@ -1,6 +1,6 @@
 import { IconAsterisk, IconCheck, IconThumbDown, IconThumbUp, IconX } from "@tabler/icons-react";
 import type { ReactNode } from "react";
-import { feedbackVideos, type QuestionCard as Card } from "../domain/questionCard";
+import { FEEDBACK_BAD, FEEDBACK_GOOD, feedbackVideos, type QuestionCard as Card } from "../domain/questionCard";
 import type { GlobalFilters, Video } from "../domain/types";
 import type { QuestionCardState } from "../state/useQuestionCard";
 import { Thumbnail } from "./thumbnail/Thumbnail";
@@ -110,10 +110,10 @@ export function QuestionCard(props: Props) {
       <div className="qcard-actions">
         {card.kind === "feedback" ? (
           <>
-            <IconButton label="Looks good" onClick={() => questions.feedback(true)}>
+            <IconButton label={FEEDBACK_GOOD} onClick={() => questions.feedback(true)}>
               <IconThumbUp size={16} aria-hidden="true" />
             </IconButton>
-            <IconButton label="Not quite" onClick={() => questions.feedback(false)}>
+            <IconButton label={FEEDBACK_BAD} onClick={() => questions.feedback(false)}>
               <IconThumbDown size={16} aria-hidden="true" />
             </IconButton>
           </>

@@ -57,7 +57,7 @@ def assistant_router(selector: AssistantSelector) -> APIRouter:
 
     @router.post("/request", response_model=Envelope[AssistantResult], response_model_by_alias=True)
     def handle_request(body: AssistantRequest, http: Request):
-        proposal, answered_by, notice = selector.handle(body.text, body.mode, body.context, _visitor(http))
+        proposal, answered_by, notice = selector.handle(body.text, body.mode, body.context, _visitor(http), body.follow_ups)
         actions = check_actions(proposal.actions, body.mode, body.context, catalog_topics())
         reply = proposal.reply if proposal.reply or actions else NOTHING_DONE
         return ok(AssistantResult(actions=actions, reply=reply, answered_by=answered_by, notice=notice))

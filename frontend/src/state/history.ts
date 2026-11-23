@@ -1,4 +1,5 @@
 import type { BlendPartner } from "../domain/blend";
+import { setLive } from "../domain/recipeLog";
 import type { Feed, GlobalFilters } from "../domain/types";
 import type { Action, AppState } from "./appState";
 import { toggleFeed, type FeedToggle } from "./feedToggle";
@@ -22,7 +23,10 @@ type RangeKey = (typeof RANGE_KEYS)[number];
  * The settings to go back (or forward) to, and the feed to open so the change is on screen.
  * `range` names the one range the change moved, when that was all it changed.
  */
-type Step = Readonly<{ settings: Settings; feed: string; range?: RangeKey; toggle?: FeedToggle }>;
+type Step = Readonly<{ settings: Settings; feed: string; range?: RangeKey; toggle?: FeedToggle; line?: LineFlip }>;
+
+/** The recipe log line a request's step greys out (undo) or restores (redo), and which of the two this step does. */
+type LineFlip = Readonly<{ feed: string; id: string; live: boolean }>;
 
 /** Where a change landed: its feed, and the range it moved when that was all it changed. */
 type Change = Readonly<{ feed: string; range?: RangeKey }>;
@@ -92,6 +96,11 @@ function applySettings(state: AppState, { settings, feed }: Step): AppState {
   };
 }
 
+const flipLine = (state: AppState, line: LineFlip | undefined): AppState =>
+  line
+    ? { ...state, feeds: state.feeds.map((f) => (f.name === line.feed ? { ...f, log: setLive(f.log, line.id, line.live) } : f)) }
+    : state;
+
 /** Adds a step, dropping the oldest past the limit. */
 const pushCapped = (steps: readonly Step[], step: Step) => [...steps, step].slice(-UNDO_LIMIT);
 
@@ -100,11 +109,12 @@ function travel(present: AppState, from: readonly Step[], to: readonly Step[]) {
   const step = from.at(-1);
   if (!step) return null;
   const toggled = step.toggle ? toggleFeed(present, step.toggle) : null;
-  const settled = applySettings(toggled?.state ?? present, step);
+  const settled = flipLine(applySettings(toggled?.state ?? present, step), step.line);
   // Going back over a toggle returns to the feed open now; any other step reopens its own feed.
+  const line = step.line && { ...step.line, live: !step.line.live };
   const back: Step = toggled
     ? { settings: settingsOf(present), feed: present.currentFeed, toggle: toggled.back }
-    : { settings: settingsOf(present), feed: step.feed };
+    : { settings: settingsOf(present), feed: step.feed, ...(line && { line }) };
   return {
     present: toggled?.open ? { ...settled, currentFeed: toggled.open } : settled,
     from: from.slice(0, -1),
@@ -142,7 +152,8 @@ export function withHistory(reduce: (state: AppState, action: Action) => AppStat
         const before = settingsOf(history.present);
         const change = asOwnStep(action, changeBetween(before, settingsOf(present), history.present.currentFeed));
         if (change === null || extendsNewestStep(history, change)) return { ...history, present };
-        return { present, undo: pushCapped(history.undo, { settings: before, ...change }), redo: [] };
+        const line = action.type === "apply_request" ? { line: { feed: action.feed, id: action.line.id, live: false } } : {};
+        return { present, undo: pushCapped(history.undo, { settings: before, ...change, ...line }), redo: [] };
       }
     }
   };

@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 import httpx
 from pydantic import BaseModel, ValidationError
 
-from app.assistant.model import AnsweredBy, BarMode, FeedContext, Proposal
+from app.assistant.model import AnsweredBy, BarMode, FeedContext, FollowUps, Proposal
 from app.assistant.tools import ToolCall, actions_from, tools
 from app.catalog import Video, catalog_topics
 
@@ -89,11 +89,17 @@ class _Completion(BaseModel):
     choices: list[_Choice]
 
 
-def _user_message(text: str, mode: BarMode, context: FeedContext) -> str:
-    """The feed, compact and with the reason its first video is first, so the model never has to guess one."""
+def _earlier(follow_ups: FollowUps) -> str:
+    """The follow-ups as one short line each, oldest first, or nothing when there are none."""
+    lines = "".join(f"\n- {json.dumps(f.request, ensure_ascii=False)} -> {json.dumps(f.summary, ensure_ascii=False)}" for f in follow_ups)
+    return f"\nEarlier requests, already applied to the feed above. Change only what the new request asks, read against them (\"no, shorter\" means shorter than now):{lines}" if lines else ""
+
+
+def _user_message(text: str, mode: BarMode, context: FeedContext, follow_ups: FollowUps = ()) -> str:
+    """The feed, compact and with the reason its first video is first, so the model never has to guess one, then any follow-ups."""
     feed = {**context.model_dump(by_alias=True, mode="json", exclude_defaults=True), "whyFirst": context.why_first()}
     task = "Start a new feed from this request." if mode == "new" else "Change this feed."
-    return f"{task}\nFeed: {json.dumps(feed, separators=(',', ':'))}\nRequest: {text}"
+    return f"{task}\nFeed: {json.dumps(feed, separators=(',', ':'))}{_earlier(follow_ups)}\nRequest: {text}"
 
 
 class OpenAICompatibleModel:
@@ -121,11 +127,11 @@ class OpenAICompatibleModel:
         except (ValidationError, IndexError) as exc:
             raise ProviderError(f"{self.provider}'s answer isn't a chat completion") from exc
 
-    def handle(self, text: str, mode: BarMode, context: FeedContext) -> Proposal:
+    def handle(self, text: str, mode: BarMode, context: FeedContext, follow_ups: FollowUps = ()) -> Proposal:
         topics = catalog_topics()
         body = {
             "model": self._config.model,
-            "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": _user_message(text, mode, context)}],
+            "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": _user_message(text, mode, context, follow_ups)}],
             "tools": tools(mode, context, topics),
             "tool_choice": "auto",
             "temperature": TEMPERATURE,

@@ -17,6 +17,7 @@ import { HistorySection } from "./components/library/HistorySection";
 import { SavedSection } from "./components/library/SavedSection";
 import { NameFeed } from "./components/NameFeed";
 import { QuestionCard } from "./components/QuestionCard";
+import { RecipeLog } from "./components/recipeLog/RecipeLog";
 import { SearchBox } from "./components/search/SearchBox";
 import { SearchPage } from "./components/search/SearchPage";
 import { SettingsLine } from "./components/SettingsLine";
@@ -201,6 +202,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
               </div>
             </div>
             <ClaudeBar bar={claudeBar} providerNotice={state.providerNoticeSeen ? null : providerNotice(info)} />
+            <RecipeLog feedName={feed.name} log={feed.log} onClear={() => dispatch({ type: "clear_log", feed: feed.name })} />
             {feed.draft ? (
               <NameFeed onName={tabs.name} />
             ) : (

@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { BAR_MODES } from "../domain/assistant";
+import { BAR_MODES, MAX_REQUEST_CHARS } from "../domain/assistant";
 import { BLEND_STATUSES, MATCH_SCORE } from "../domain/blend";
+import { LOG_LIMIT, MAX_LOG_REPLY_CHARS, MAX_SUMMARY_CHARS } from "../domain/recipeLog";
 import { RECENT_LIMIT } from "../domain/search";
 import { SHARE_LIMITS } from "../domain/share";
 import { FEED_KINDS, NEWS_CATEGORIES, TOP_RANGES } from "../domain/types";
@@ -18,6 +19,19 @@ const partnerSchema = z.object({
   topics: ids,
   score: z.number().int().min(MATCH_SCORE.min).max(MATCH_SCORE.max),
 });
+
+const logSchema = z
+  .array(
+    z.object({
+      id: z.string().min(1),
+      request: z.string().min(1).max(MAX_REQUEST_CHARS),
+      summary: z.string().min(1).max(MAX_SUMMARY_CHARS),
+      reply: z.string().min(1).max(MAX_LOG_REPLY_CHARS).optional(),
+      live: z.boolean(),
+    }),
+  )
+  .max(LOG_LIMIT)
+  .refine((log) => new Set(log.map((l) => l.id)).size === log.length, "log line ids must be unique");
 
 const feedSchema = z.object({
   name: z.string().min(1),
@@ -42,6 +56,8 @@ const feedSchema = z.object({
   note: z.string().default(""),
   connected: z.boolean(),
   partner: partnerSchema.extend({ status: z.enum(BLEND_STATUSES) }).nullable(),
+  // Saved before recipe logs existed: start with an empty log rather than discarding the save.
+  log: logSchema.default([]),
 });
 
 const shareSchema = z

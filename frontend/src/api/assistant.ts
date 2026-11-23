@@ -1,6 +1,7 @@
 import { answerResultSchema, type AnswerResult } from "../domain/askNotes";
 import { assistantInfoSchema, type AssistantInfo } from "../domain/assistantInfo";
 import { assistantResultSchema, type AssistantResult, type BarMode, type FeedContext } from "../domain/assistant";
+import type { FollowUp } from "../domain/recipeLog";
 import type { AssistantPort } from "../ports";
 
 type Envelope = { success?: boolean; data?: unknown; error?: string | null };
@@ -21,8 +22,8 @@ const post = <T>(path: string, payload: unknown, schema: Schema<T>): Promise<T> 
   call(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }, schema);
 
 /** Sends one Claude bar request to the backend. */
-export const requestAssistant = (text: string, mode: BarMode, context: FeedContext): Promise<AssistantResult> =>
-  post("/api/assistant/request", { text, mode, context }, assistantResultSchema);
+export const requestAssistant = (text: string, mode: BarMode, context: FeedContext, followUps: readonly FollowUp[]): Promise<AssistantResult> =>
+  post("/api/assistant/request", { text, mode, context, followUps }, assistantResultSchema);
 
 /** Asks the backend a question from a video's notes; it looks the video up itself. */
 export const answerQuestion = (videoId: string, question: string): Promise<AnswerResult> =>
