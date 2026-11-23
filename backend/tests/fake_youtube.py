@@ -55,6 +55,9 @@ class FakeYouTube:
         if resource in ("channels", "videos"):
             items = [RECORDED[resource][i] for i in params["id"].split(",") if i in RECORDED[resource]]
             return httpx.Response(200, json={"items": items})
+        if resource == "search":
+            found = RECORDED["search"].get(params["q"], [])
+            return httpx.Response(200, json={"items": [{"id": {"kind": "youtube#video", "videoId": i}} for i in found]})
         return _error(404, "notFound")
 
 

@@ -10,6 +10,8 @@ from cryptography.fernet import Fernet
 SECRETS = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET", "TOKEN_ENCRYPTION_KEY", "YOUTUBE_API_KEY")
 MIN_SESSION_SECRET_LENGTH = 32
 DEFAULT_APP_URL = "http://localhost:5173"
+# search.list has its own bucket of 100 calls a day per project (ADR 0011).
+DEFAULT_SEARCHES_PER_DAY = 100
 DEFAULT_DATABASE_URL = f"sqlite:///{Path(__file__).resolve().parents[2] / 'yourfeed.db'}"
 
 
@@ -28,6 +30,8 @@ class AuthConfig:
     app_url: str
     # The server's Data API key: uploads and video details, cached and shared across users (ADR 0011).
     youtube_api_key: str = ""
+    # Topic searches the whole site may start each day, shared by every user.
+    topic_searches_per_day: int = DEFAULT_SEARCHES_PER_DAY
 
     @property
     def secure_cookies(self) -> bool:
@@ -56,6 +60,7 @@ class AuthConfig:
             database_url=env.get("DATABASE_URL", "").strip() or DEFAULT_DATABASE_URL,
             app_url=_app_url(env.get("APP_URL", "").strip() or DEFAULT_APP_URL),
             youtube_api_key=values["YOUTUBE_API_KEY"],
+            topic_searches_per_day=_searches_per_day(env.get("YOUTUBE_SEARCHES_PER_DAY", "").strip()),
         )
 
 
@@ -64,6 +69,14 @@ def _check_fernet_key(key: str) -> None:
         Fernet(key.encode())
     except ValueError as exc:
         raise AuthConfigError("TOKEN_ENCRYPTION_KEY must be a Fernet key (see .env.example for how to make one).") from exc
+
+
+def _searches_per_day(value: str) -> int:
+    if not value:
+        return DEFAULT_SEARCHES_PER_DAY
+    if not value.isdigit() or int(value) < 1:
+        raise AuthConfigError("YOUTUBE_SEARCHES_PER_DAY must be a whole number of searches, at least 1.")
+    return int(value)
 
 
 def _app_url(url: str) -> str:

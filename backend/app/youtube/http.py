@@ -62,8 +62,9 @@ class HttpYouTubeClient:
     def videos(self, ids: Sequence[str]) -> list[VideoDetails]:
         return wire.videos(self._get("videos", {"part": "snippet,contentDetails,statistics,topicDetails", "id": _ids(ids)}))
 
-    def search(self, topic: str) -> list[str]:
-        raise NotImplementedError("Topic searches come with #64.")
+    def search(self, topic: str, limit: int) -> list[str]:
+        params = {"part": "id", "type": "video", "q": topic, "maxResults": str(min(limit, PAGE_SIZE))}
+        return wire.search_video_ids(self._get("search", params))[:limit]
 
     def _get(self, resource: str, params: dict[str, str], *, access_token: str | None = None) -> object:
         # The user's token or the server key, never both: API Data for one user isn't fetched with the shared key.

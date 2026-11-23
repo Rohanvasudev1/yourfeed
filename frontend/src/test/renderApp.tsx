@@ -1,12 +1,13 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AppRoot } from "../AppRoot";
-import type { AccountPort, AssistantPort, CatalogLoader, ServerStatePort, SharingPort, StateStorage } from "../ports";
+import type { AccountPort, AssistantPort, CatalogLoader, ServerStatePort, SharingPort, StateStorage, TopicSearchPort } from "../ports";
 import { fakeAccount } from "./account";
 import { scriptedAssistant } from "./assistant";
 import { CATALOG, memoryStorage } from "./fixtures";
 import { fakeServerState } from "./serverState";
 import { fakeSharing } from "./sharing";
+import { fakeTopicSearch } from "./topicSearch";
 
 export type RenderAppOptions = {
   loadCatalog?: CatalogLoader;
@@ -15,11 +16,12 @@ export type RenderAppOptions = {
   assistant?: AssistantPort;
   account?: AccountPort;
   sharing?: SharingPort;
+  searchTopics?: TopicSearchPort;
 };
 
 /**
  * Renders the whole app the way production does, with a fixed catalog, in-memory browser storage, an in-memory server,
- * a scripted assistant, an in-memory sharing API and no sign-in set up by default.
+ * a scripted assistant, an in-memory sharing API, topic searches that find nothing and no sign-in set up by default.
  */
 export function renderApp({
   loadCatalog = async () => CATALOG,
@@ -28,8 +30,9 @@ export function renderApp({
   assistant = scriptedAssistant(),
   account = fakeAccount(),
   sharing = fakeSharing(),
+  searchTopics = fakeTopicSearch().search,
 }: RenderAppOptions = {}) {
-  return render(<AppRoot loadCatalog={loadCatalog} storage={storage} serverState={serverState} assistant={assistant} account={account} sharing={sharing} />);
+  return render(<AppRoot loadCatalog={loadCatalog} storage={storage} serverState={serverState} assistant={assistant} account={account} sharing={sharing} searchTopics={searchTopics} />);
 }
 
 /** The open page's title: its first h2. Session and Feed notes sections add more h2s below it. */

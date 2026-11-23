@@ -6,6 +6,7 @@ import type { AssistantInfo } from "./domain/assistantInfo";
 import type { FollowUp } from "./domain/recipeLog";
 import type { SendAnswer, SentShare } from "./domain/sending";
 import type { Share } from "./domain/share";
+import type { TopicVideos } from "./domain/topicSearch";
 import type { Video } from "./domain/types";
 
 /** Where the catalog comes from: the demo's mock videos, or a signed-in user's YouTube (ADR 0011). */
@@ -16,6 +17,9 @@ export type CatalogLoader = (source: CatalogSource) => Promise<readonly Video[]>
 
 /** Loads the catalog of the visitor's source, already chosen: their YouTube when signed in, else the demo's. */
 export type SourceCatalogLoader = () => Promise<readonly Video[]>;
+
+/** Searches YouTube for a feed's topics outside the user's subscriptions, at most 5 at a time (ADR 0011). Production calls the backend; tests pass a fake. */
+export type TopicSearchPort = (topics: readonly string[]) => Promise<TopicVideos>;
 
 /** Keeps app state between visits. `load` returns untrusted data (or null when nothing is saved). */
 export type StateStorage = Readonly<{

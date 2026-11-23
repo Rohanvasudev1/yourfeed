@@ -36,7 +36,8 @@ import { shareStartingVideos } from "./domain/share";
 import { CATALOG_REASON, reasonText, type Reason } from "./domain/rank";
 import { hasSessionStarted } from "./domain/session";
 import type { Feed, Video } from "./domain/types";
-import type { AssistantPort, SharingPort, SourceCatalogLoader, StateStorage } from "./ports";
+import type { AssistantPort, SharingPort, SourceCatalogLoader, StateStorage, TopicSearchPort } from "./ports";
+import { withFoundVideos } from "./domain/topicSearch";
 import { currentFeedOf } from "./state/appState";
 import { providerNotice } from "./domain/assistantInfo";
 import { ACCOUNT_TEXT } from "./domain/account";
@@ -67,6 +68,7 @@ import { useSharedWithYou } from "./state/useSharedWithYou";
 import { useStoredHistory } from "./state/useStoredHistory";
 import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
+import { useTopicSearch } from "./state/useTopicSearch";
 
 type Props = Readonly<{
   loadCatalog: SourceCatalogLoader;
@@ -80,6 +82,8 @@ type Props = Readonly<{
   demoFeeds: readonly Feed[] | null;
   /** Real share and send when signed in (ADR 0013); null in demo mode, where sending is simulated. */
   sharing: SharingPort | null;
+  /** Topic searches for feeds' topics outside subscriptions when signed in (ADR 0011); null in demo mode. */
+  searchTopics: TopicSearchPort | null;
 }>;
 
 const NO_VIDEOS: readonly Video[] = [];
@@ -94,7 +98,7 @@ const withPinnedReasons = (pinned: readonly string[], reasons: ReadonlyMap<strin
 
 const reasonOf = (reasons: ReadonlyMap<string, Reason>, id: string): string => reasonText(reasons.get(id) ?? CATALOG_REASON);
 
-export default function App({ loadCatalog, storage, assistant, account, saveProblem, demoFeeds, sharing }: Props) {
+export default function App({ loadCatalog, storage, assistant, account, saveProblem, demoFeeds, sharing, searchTopics }: Props) {
   const [history, dispatch] = useStoredHistory(storage);
   const state = history.present;
   const passedOver = useSessionEnd(dispatch);
@@ -107,7 +111,10 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
   const loaded = catalog.status === "ready" ? catalog.catalog : null;
   // Channel topics are for your YouTube only; the demo catalog's topics are fixed.
   const channelTopics = realCatalog ? state.channelTopics : NO_CHANNEL_TOPICS;
-  const ready = useMemo(() => loaded && withChannelTopics(loaded, channelTopics), [loaded, channelTopics]);
+  const own = useMemo(() => loaded && withChannelTopics(loaded, channelTopics), [loaded, channelTopics]);
+  // Topics the feeds name that are thin in your own catalog bring in shared topic searches; they're found as that topic.
+  const topicSearch = useTopicSearch(searchTopics, own, state.feeds);
+  const ready = useMemo(() => own && withFoundVideos(own, topicSearch.videos), [own, topicSearch.videos]);
   const catalogById = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const unknownIds = useMemo(() => (ready && sharing ? unknownVideoIds(state, catalogById) : []), [ready, sharing, state, catalogById]);
   const lookedUp = useLookedUpVideos(sharing, unknownIds);
@@ -206,7 +213,7 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
       <TabBar feeds={state.feeds} current={feed} tabs={tabs} edit={edit} unread={shared.unread} />
       {edit.editing && <EditBar edit={edit} onAllTabs={tabs.page === "all"} />}
       {saveProblem && <CatalogError message={ACCOUNT_TEXT.saveFailed} retryLabel={ACCOUNT_TEXT.retrySave} onRetry={saveProblem.retry} />}
-      <Flash message={account.flash ?? tabs.flash ?? search.flash ?? shared.flash} />
+      <Flash message={account.flash ?? tabs.flash ?? search.flash ?? shared.flash ?? topicSearch.flash} />
       <main>
         {demoOffer && <DemoFeedsOfferCard offer={demoOffer} />}
         {tabs.page === "all" ? (

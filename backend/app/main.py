@@ -33,6 +33,8 @@ from app.youtube.catalog import YouTubeCatalog
 from app.youtube.client import YouTubeAccessExpired, YouTubeClient, YouTubeError
 from app.youtube.http import HttpYouTubeClient
 from app.youtube.signed_in import SignedInCatalog, signed_in_catalog
+from app.youtube.topic_router import demo_topic_search_router, topic_search_router
+from app.youtube.topic_search import TopicSearches, TopicSearchStore
 
 log = logging.getLogger("yourfeed")
 
@@ -105,13 +107,15 @@ def create_app(
 def _signed_in(app: FastAPI, auth: AuthSetup | None) -> tuple[list[APIRouter], SignedInCatalog | None]:
     """The account and state routes and the signed-in catalog; without `auth`, the demo-only routes and no catalog."""
     if auth is None:
-        return [demo_only_router(), demo_only_state_router()], None
+        return [demo_only_router(), demo_only_state_router(), demo_topic_search_router()], None
     engine = make_engine(auth.config.database_url)
     migrate(engine)
     app.state.engine = engine
     store = AccountStore(engine, Keys(auth.config.session_secret, auth.config.token_encryption_key), auth.now)
     guards = session_guards(store)
-    youtube = YouTubeCatalog(auth.youtube or HttpYouTubeClient(auth.config.youtube_api_key), ChannelCacheStore(engine), auth.now)
+    client = auth.youtube or HttpYouTubeClient(auth.config.youtube_api_key)
+    youtube = YouTubeCatalog(client, ChannelCacheStore(engine), auth.now)
+    searches = TopicSearches(client, TopicSearchStore(engine), auth.config.topic_searches_per_day, auth.now)
     catalog = signed_in_catalog(guards.session_of, store, auth.google, youtube)
     misses = DailyLimit(MISSES_PER_DAY, auth.now)
     return [
@@ -119,6 +123,7 @@ def _signed_in(app: FastAPI, auth: AuthSetup | None) -> tuple[list[APIRouter], S
         state_router(guards, StateStore(engine, auth.now)),
         sharing_router(guards, store, InboxStore(engine, auth.now), youtube, misses, auth.now),
         blends_router(guards, store, BlendStore(engine, auth.now), misses, auth.now),
+        topic_search_router(guards, searches, auth.now),
     ], catalog
 
 
