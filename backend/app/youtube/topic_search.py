@@ -14,7 +14,7 @@ from sqlmodel import Session, delete, select
 from app.catalog import Video
 from app.youtube.cache import DELETE_AFTER, REFRESH_AFTER, VIDEOS, CachedVideo, aware
 from app.youtube.catalog import as_video, watchable_videos
-from app.youtube.client import YouTubeClient, YouTubeQuotaExceeded
+from app.youtube.client import YouTubeClient, YouTubeError, YouTubeQuotaExceeded
 from app.youtube.tables import SearchBudget, TopicSearchCache
 
 log = logging.getLogger("yourfeed.youtube")
@@ -88,6 +88,16 @@ class TopicSearchStore:
             db.commit()
             return taken.rowcount == 1
 
+    def refund(self, now: datetime) -> None:
+        """Gives back a search YouTube never answered, so a flaky network doesn't use up the day."""
+        with Session(self.engine) as db:
+            db.execute(
+                update(SearchBudget)
+                .where(SearchBudget.day == now.date(), SearchBudget.calls > 0)
+                .values(calls=SearchBudget.calls - 1)
+            )
+            db.commit()
+
 
 @dataclass(frozen=True)
 class TopicSearches:
@@ -129,5 +139,8 @@ class TopicSearches:
         except YouTubeQuotaExceeded:
             log.warning("YouTube refused a topic search: the project's quota is used up")
             return stale, True
+        except YouTubeError:
+            self.store.refund(now)
+            raise
         self.store.save(key, found, now)
         return found, False

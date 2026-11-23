@@ -182,6 +182,14 @@ def test_youtubes_own_quota_refusal_reads_as_paused(app, youtube: FakeYouTube):
     assert found(client, "Chess") == {"videos": [], "paused": True}
 
 
+def test_a_search_youtube_never_answered_doesnt_use_up_the_budget(tmp_path, youtube: FakeYouTube, clock: Clock):
+    client = signed_in(make_app(tmp_path, youtube, clock, searches_per_day=1))
+    youtube.failure = Failure(unreachable=True)
+    assert search(client, "Chess").status_code == 503
+    youtube.failure = None
+    assert found(client, "Chess")["paused"] is False
+
+
 def test_youtube_failing_says_so(app, youtube: FakeYouTube):
     client = signed_in(app)
     youtube.failure = Failure()

@@ -111,10 +111,10 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
   const loaded = catalog.status === "ready" ? catalog.catalog : null;
   // Channel topics are for your YouTube only; the demo catalog's topics are fixed.
   const channelTopics = realCatalog ? state.channelTopics : NO_CHANNEL_TOPICS;
-  const own = useMemo(() => loaded && withChannelTopics(loaded, channelTopics), [loaded, channelTopics]);
+  const ownCatalog = useMemo(() => loaded && withChannelTopics(loaded, channelTopics), [loaded, channelTopics]);
   // Topics the feeds name that are thin in your own catalog bring in shared topic searches; they're found as that topic.
-  const topicSearch = useTopicSearch(searchTopics, own, state.feeds);
-  const ready = useMemo(() => own && withFoundVideos(own, topicSearch.videos), [own, topicSearch.videos]);
+  const topicSearch = useTopicSearch(searchTopics, ownCatalog, state.feeds);
+  const ready = useMemo(() => ownCatalog && withFoundVideos(ownCatalog, topicSearch.videos), [ownCatalog, topicSearch.videos]);
   const catalogById = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const unknownIds = useMemo(() => (ready && sharing ? unknownVideoIds(state, catalogById) : []), [ready, sharing, state, catalogById]);
   const lookedUp = useLookedUpVideos(sharing, unknownIds);

@@ -20,6 +20,7 @@ export function useTopicSearch(search: TopicSearchPort | null, catalog: readonly
   const [flash, showFlash] = useTimedValue<string>(FLASH_MS);
   const asked = useRef<ReadonlySet<string>>(new Set());
   const toldPaused = useRef(false);
+  // Joined into one string so the effect runs when the thin topics change, not whenever the feeds do.
   const wanted = useMemo(() => (search && catalog ? thinTopics(feeds, catalog).join(SEPARATOR) : ""), [search, catalog, feeds]);
 
   useEffect(() => {
