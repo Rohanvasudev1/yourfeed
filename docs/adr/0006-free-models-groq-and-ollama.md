@@ -9,8 +9,9 @@ ADR 0004 picked any OpenAI-compatible API with Groq's free tier as the default, 
 - **Default (development and the hosted demo):** Groq's free tier with `openai/gpt-oss-20b`, an open-weight model with tool calling. Setting it up is a free key in `AI_API_KEY`; nothing to install.
 - **Offline option:** Ollama's OpenAI-compatible endpoint with `qwen3:4b` (small enough for 8 GB; weaker at tool calling). It's documented, not required.
 - **Fallback:** the mockup's keyword rules answer whenever no model is set up, the provider errors, a call takes over 15 seconds, or an AI limit is reached. The demo never breaks.
-- **AI limits**, kept in memory on the backend and set in config: per visitor IP about 10 requests a minute and 100 a day, plus one site-wide daily cap kept below the provider's free quota. Requests and note questions are at most 300 characters. Past a limit, the rules answer and the user sees one quiet line.
+- **AI limits**, kept in memory on the backend and set in config: per visitor IP about 5 requests a minute (what Groq's free gpt-oss-20b, at 8,000 tokens a minute, can serve) and 100 a day, plus one site-wide daily cap kept below the provider's free quota. Requests and note questions are at most 300 characters. Past a limit, the rules answer and the user sees one quiet line.
 - The backend depends on one `Assistant` interface with three versions: the OpenAI-compatible model, the keyword rules, and a scripted fake for tests. Tests never call a real model; an optional eval script does, outside CI.
+- **One tool call per request.** gpt-oss-20b on Groq makes one tool call per answer, so the model is offered `edit_feed` (every field optional) and `ask_user`. The backend turns `edit_feed`'s fields into the feed actions of ADR 0007, and gives a new feed the catalog topics its name or request names when the model left them out. The feed context sent carries the reason its first video is first, so the model never invents one.
 - The UI keeps the mockup's "Claude" wording; the account menu names the model actually answering, and a **provider notice** says requests and note questions go to that provider.
 
 ## Consequences

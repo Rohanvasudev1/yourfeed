@@ -9,8 +9,8 @@ from urllib.parse import urlsplit
 import httpx
 from pydantic import BaseModel, ValidationError
 
-from app.assistant.actions import LENGTH_LIMITS, SESSION_LIMITS, Limits
 from app.assistant.model import AnsweredBy, BarMode, FeedContext, Proposal
+from app.assistant.tools import ToolCall, actions_from, tools
 from app.catalog import Video, catalog_topics
 
 log = logging.getLogger("yourfeed")
@@ -19,19 +19,15 @@ GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 DEFAULT_MODEL = "openai/gpt-oss-20b"
 MODEL_TIMEOUT_S = 15.0
 TEMPERATURE = 0.2
-MAX_FEED_NAME = 40
-MAX_QUESTION = 200
-MAX_CARD_ITEMS = 8
 OLLAMA_PORT = 11434
 KNOWN_PROVIDERS = {"api.groq.com": "Groq", "openrouter.ai": "OpenRouter"}
 
-SYSTEM_PROMPT = """You change one YouTube feed for the user by calling tools. Rules:
-- Only use the tools. Topics must come from the tool's list; pin only the videos listed.
-- Lengths are minutes per video; a session is the total minutes the user has for one sitting.
-- Make every change the request asks for in one answer, then say what you did in one short sentence.
-- If you can't do it with these tools (filters, tabs, saving or deleting videos), call no tool and say in one sentence what you can change instead: topics, muted topics, video length, session time and which video comes first.
-- If the request is broad ("something fun", "sport"), ask with ask_user instead of guessing.
-- If the user asks why a video is first, answer in one sentence without calling a tool."""
+SYSTEM_PROMPT = """Change one YouTube feed with one edit_feed call holding every change asked for, then say what you did in one short sentence.
+- "add travel and under 15 min" is one call with add and length. Keep the feed's topics unless asked to drop them.
+- "no X" or "less X" for a topic the feed lacks: mute it. "Deep dives" is length 20-120.
+- Can't do it (filters, tabs, saving videos)? Call no tool; say you can change topics, muted topics, video length, session time and which video is first.
+- ask_user only when nothing is named: no topic, length or time ("something fun").
+- "Why is this first?": call no tool; reply with the feed's whyFirst. Never invent a reason."""
 
 NOTE_PROMPT = """You answer a question someone wrote in their notes about one YouTube video.
 You only know the video's details below, never its transcript. Answer in at most two sentences.
@@ -93,60 +89,11 @@ class _Completion(BaseModel):
     choices: list[_Choice]
 
 
-def _function(name: str, description: str, properties: dict, required: list[str]) -> dict:
-    parameters = {"type": "object", "properties": properties, "required": required, "additionalProperties": False}
-    return {"type": "function", "function": {"name": name, "description": description, "parameters": parameters}}
-
-
-def _range(limits: Limits) -> dict:
-    return {"type": "integer", "minimum": limits.lowest, "maximum": limits.highest}
-
-
-def _tools(mode: BarMode, context: FeedContext, topics: frozenset[str]) -> list[dict]:
-    """One tool per feed action the model may take. Schemas limit topics to the catalog and pins to the videos shown (ADR 0007)."""
-    topic = {"type": "string", "enum": sorted(topics)}
-    topic_list = {"type": "array", "items": topic}
-    tools = [
-        _function("set_topics", "Add topics to the feed and remove topics from it.", {"add": topic_list, "remove": topic_list}, ["add", "remove"]),
-        _function("mute_topic", "Hide a topic from this feed.", {"topic": topic}, ["topic"]),
-        _function("set_length_range", "Set the shortest and longest video, in minutes.", {"min": _range(LENGTH_LIMITS), "max": _range(LENGTH_LIMITS)}, ["min", "max"]),
-        _function("set_session_range", "Set the least and most total minutes for one sitting.", {"min": _range(SESSION_LIMITS), "max": _range(SESSION_LIMITS)}, ["min", "max"]),
-    ]
-    if context.up_next:
-        video = {"type": "string", "enum": [v.id for v in context.up_next]}
-        tools.append(_function("pin_video", "Put one of the listed videos first in Up next.", {"id": video}, ["id"]))
-    tools.append(_ask_user(context, topics))
-    if mode == "new":
-        name = {"type": "string", "maxLength": MAX_FEED_NAME}
-        tools.append(_function("create_feed", "Start a new feed; then add its topics with set_topics.", {"name": name}, []))
-    return tools
-
-
-def _ask_user(context: FeedContext, topics: frozenset[str]) -> dict:
-    """A question card: chips and feedback name topics, videos name ids the frontend sent (Up next or explore)."""
-    choices = sorted(topics) + [v.id for v in (*context.up_next, *context.explore)]
-    properties = {
-        "kind": {"type": "string", "enum": ["chips", "videos", "feedback"]},
-        "question": {"type": "string", "maxLength": MAX_QUESTION},
-        "items": {"type": "array", "items": {"type": "string", "enum": choices}, "minItems": 1, "maxItems": MAX_CARD_ITEMS},
-    }
-    description = "Ask before acting when the request is broad: chips offer topics, videos offer listed video ids, feedback asks whether added topics fit."
-    return _function("ask_user", description, properties, ["kind", "question", "items"])
-
-
 def _user_message(text: str, mode: BarMode, context: FeedContext) -> str:
-    feed = context.model_dump(by_alias=True, mode="json")
+    """The feed, compact and with the reason its first video is first, so the model never has to guess one."""
+    feed = {**context.model_dump(by_alias=True, mode="json", exclude_defaults=True), "whyFirst": context.why_first()}
     task = "Start a new feed from this request." if mode == "new" else "Change this feed."
-    return f"{task}\nFeed: {json.dumps(feed)}\nRequest: {text}"
-
-
-def _action(call: _ToolCall) -> dict:
-    """A tool call as a raw feed action; arguments that aren't a JSON object become an action the checks drop."""
-    try:
-        args = json.loads(call.function.arguments or "{}")
-    except json.JSONDecodeError:
-        return {"type": call.function.name, "arguments": call.function.arguments}
-    return {**args, "type": call.function.name} if isinstance(args, dict) else {"type": call.function.name}
+    return f"{task}\nFeed: {json.dumps(feed, separators=(',', ':'))}\nRequest: {text}"
 
 
 class OpenAICompatibleModel:
@@ -175,16 +122,18 @@ class OpenAICompatibleModel:
             raise ProviderError(f"{self.provider}'s answer isn't a chat completion") from exc
 
     def handle(self, text: str, mode: BarMode, context: FeedContext) -> Proposal:
+        topics = catalog_topics()
         body = {
             "model": self._config.model,
             "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": _user_message(text, mode, context)}],
-            "tools": _tools(mode, context, catalog_topics()),
+            "tools": tools(mode, context, topics),
             "tool_choice": "auto",
             "temperature": TEMPERATURE,
         }
         message = self._message(body)
         reply = (message.content or "").strip() or None
-        return Proposal(actions=tuple(_action(c) for c in message.tool_calls or ()), reply=reply)
+        calls = [ToolCall(c.function.name, c.function.arguments) for c in message.tool_calls or ()]
+        return Proposal(actions=actions_from(calls, text, mode, topics), reply=reply)
 
     def answer(self, question: str, video: Video) -> str:
         details = video.model_dump(by_alias=True, mode="json")
