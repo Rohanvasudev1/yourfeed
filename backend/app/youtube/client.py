@@ -68,6 +68,6 @@ class YouTubeClient(Protocol):
         """At most MAX_IDS_PER_CALL ids; private and deleted ones are left out."""
         ...
 
-    def search(self, topic: str) -> list[str]:
-        """Video ids for a topic outside subscriptions: not used yet (#64)."""
+    def search(self, topic: str, limit: int) -> list[str]:
+        """Video ids YouTube finds for a topic, most relevant first, at most `limit` (at most MAX_IDS_PER_CALL)."""
         ...

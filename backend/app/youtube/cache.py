@@ -35,7 +35,7 @@ class CachedVideo(BaseModel):
     published_at: datetime
 
 
-_VIDEOS = TypeAdapter(tuple[CachedVideo, ...])
+VIDEOS = TypeAdapter(tuple[CachedVideo, ...])
 
 
 @dataclass(frozen=True)
@@ -50,17 +50,17 @@ class ChannelCacheStore:
             rows = db.exec(select(ChannelCache).where(ChannelCache.channel_id.in_(channel_ids))).all()
         found = {}
         for row in rows:
-            if now - _aware(row.fetched_at) >= REFRESH_AFTER:
+            if now - aware(row.fetched_at) >= REFRESH_AFTER:
                 continue
             try:
-                found[row.channel_id] = _VIDEOS.validate_json(row.videos)
+                found[row.channel_id] = VIDEOS.validate_json(row.videos)
             except ValidationError:
                 log.warning("Channel %s's cached uploads failed validation; fetching them again", row.channel_id)
         return found
 
     def save(self, uploads: Mapping[str, tuple[CachedVideo, ...]], now: datetime) -> None:
         for channel_id, videos in uploads.items():
-            row = ChannelCache(channel_id=channel_id, fetched_at=now, videos=_VIDEOS.dump_json(videos, by_alias=True).decode())
+            row = ChannelCache(channel_id=channel_id, fetched_at=now, videos=VIDEOS.dump_json(videos, by_alias=True).decode())
             with Session(self.engine) as db:
                 db.merge(row)
                 try:
@@ -75,6 +75,6 @@ class ChannelCacheStore:
             db.commit()
 
 
-def _aware(moment: datetime) -> datetime:
+def aware(moment: datetime) -> datetime:
     """SQLite hands datetimes back without their zone; they were stored as UTC."""
     return moment if moment.tzinfo else moment.replace(tzinfo=UTC)

@@ -93,6 +93,15 @@ class _Video(_Wire):
     topic_details: _Topics = _Topics()
 
 
+class _SearchId(_Wire):
+    # A search for videos only still names the kind; anything else has no videoId.
+    video_id: str | None = None
+
+
+class _SearchResult(_Wire):
+    id: _SearchId
+
+
 class _Page(BaseModel):
     items: list[dict] = Field(default_factory=list)
 
@@ -154,3 +163,7 @@ def videos(body: object) -> list[VideoDetails]:
         )
         for v in _items(body, _Video)
     ]
+
+
+def search_video_ids(body: object) -> list[str]:
+    return [r.id.video_id for r in _items(body, _SearchResult) if r.id.video_id]

@@ -45,6 +45,7 @@ def test_a_malformed_subscriptions_page_reads_as_none():
     assert client_answering({"items": 3}).subscriptions("t", 10) == []
 
 
-def test_search_waits_for_topic_searches():
-    with pytest.raises(NotImplementedError):
-        FakeYouTube().client().search("Jazz")
+def test_search_keeps_only_videos_and_reads_a_malformed_answer_as_none():
+    body = {"items": [{"id": {"kind": "youtube#channel", "channelId": "UC_x"}}, {"id": {"kind": "youtube#video", "videoId": "v1"}}]}
+    assert client_answering(body).search("Jazz", 10) == ["v1"]
+    assert client_answering({"items": "nope"}).search("Jazz", 10) == []

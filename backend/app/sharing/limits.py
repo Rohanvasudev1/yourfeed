@@ -38,3 +38,12 @@ class DailyLimit:
         with self._lock:
             self._roll(self.now())
             self._counts[user_id] += 1
+
+    def take(self, user_id: int) -> bool:
+        """Counts one event if the user has any left today; whether it was counted."""
+        with self._lock:
+            self._roll(self.now())
+            if self._counts[user_id] >= self.per_day:
+                return False
+            self._counts[user_id] += 1
+            return True

@@ -37,16 +37,13 @@ class YouTubeCatalog:
         self.cache.save(refreshed, now)
         uploads = {v.id: v for videos in (cached | refreshed).values() for v in videos}
         newest = sorted(uploads.values(), key=lambda v: v.published_at, reverse=True)
-        return tuple(_video(v, now) for v in newest)
+        return tuple(as_video(v, now) for v in newest)
 
     def lookup(self, ids: Sequence[str]) -> tuple[Video, ...]:
         """Videos by id, wherever they are (share links across catalogs, ADR 0013), in the order asked; unknown ids are left out.
         At most MAX_IDS_PER_CALL ids: one videos.list call and one channels.list call."""
         now = self.now()
-        details = [d for d in self.client.videos(ids) if d.broadcast != "upcoming"]
-        channels = {c.id: c for c in self.client.channels(list(dict.fromkeys(d.channel_id for d in details)))} if details else {}
-        found = {d.id: _video(_cached(d, channels[d.channel_id]), now) for d in details if d.channel_id in channels}
-        return tuple(found[i] for i in dict.fromkeys(ids) if i in found)
+        return tuple(as_video(v, now) for v in watchable_videos(self.client, ids))
 
     def _fetch(self, channel_ids: Sequence[str]) -> dict[str, tuple[CachedVideo, ...]]:
         if not channel_ids:
@@ -57,6 +54,15 @@ class YouTubeCatalog:
         details = [d for chunk in _chunks([i for ids in upload_ids for i in ids]) for d in self.client.videos(chunk)]
         # A channel YouTube no longer returns (closed, say) is cached as empty, so it isn't asked for on every load.
         return {channel_id: () for channel_id in channel_ids} | {c.id: _watchable_uploads(c, details) for c in channels}
+
+
+def watchable_videos(client: YouTubeClient, ids: Sequence[str]) -> list[CachedVideo]:
+    """Videos by id that can be watched now, in the order asked; unknown ids are left out.
+    At most MAX_IDS_PER_CALL ids: one videos.list call and one channels.list call."""
+    details = [d for d in client.videos(ids) if d.broadcast != "upcoming"]
+    channels = {c.id: c for c in client.channels(list(dict.fromkeys(d.channel_id for d in details)))} if details else {}
+    found = {d.id: _cached(d, channels[d.channel_id]) for d in details if d.channel_id in channels}
+    return [found[i] for i in dict.fromkeys(ids) if i in found]
 
 
 def _watchable_uploads(channel: Channel, details: Sequence[VideoDetails]) -> tuple[CachedVideo, ...]:
@@ -78,7 +84,7 @@ def _cached(details: VideoDetails, channel: Channel) -> CachedVideo:
     )
 
 
-def _video(v: CachedVideo, now: datetime) -> Video:
+def as_video(v: CachedVideo, now: datetime) -> Video:
     # No AI tags for API Data (ADR 0011): never clickbait, and the honest title is the title itself.
     return Video(
         id=v.id,

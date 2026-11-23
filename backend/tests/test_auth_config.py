@@ -92,3 +92,14 @@ def test_demo_still_works_without_secrets():
 @pytest.mark.parametrize("url", ["postgres://u:p@db.example/yf", "postgresql://u:p@db.example/yf", "postgresql+psycopg://u:p@db.example/yf"])
 def test_hosted_postgres_urls_use_the_installed_driver(url: str):
     assert make_engine(url).url.drivername == "postgresql+psycopg"
+
+
+def test_the_daily_topic_search_budget_defaults_to_100_and_comes_from_the_environment():
+    assert AuthConfig.from_env(full_env()).topic_searches_per_day == 100
+    assert AuthConfig.from_env(full_env(YOUTUBE_SEARCHES_PER_DAY="40")).topic_searches_per_day == 40
+
+
+@pytest.mark.parametrize("value", ["0", "-3", "lots"])
+def test_a_daily_topic_search_budget_that_isnt_a_positive_number_stops_startup(value):
+    with pytest.raises(AuthConfigError, match="YOUTUBE_SEARCHES_PER_DAY"):
+        AuthConfig.from_env(full_env(YOUTUBE_SEARCHES_PER_DAY=value))

@@ -128,6 +128,25 @@
         "hiddenSubscriberCount": true,
         "videoCount": "800"
       }
+    },
+    "UC_chess": {
+      "id": "UC_chess",
+      "snippet": {
+        "title": "Chess Corner"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "uploads": "UU_chess"
+        }
+      },
+      "statistics": {
+        "subscriberCount": "3200"
+      },
+      "topicDetails": {
+        "topicCategories": [
+          "https://en.wikipedia.org/wiki/Hobby"
+        ]
+      }
     }
   },
   "playlistItems": {
@@ -278,6 +297,74 @@
           "https://en.wikipedia.org/wiki/Association_football"
         ]
       }
+    },
+    "chess-opening": {
+      "id": "chess-opening",
+      "snippet": {
+        "publishedAt": "2026-11-22T12:00:00Z",
+        "channelId": "UC_chess",
+        "title": "Five openings in five minutes",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT5M10S"
+      },
+      "statistics": {
+        "viewCount": "2100"
+      },
+      "topicDetails": {
+        "topicCategories": [
+          "https://en.wikipedia.org/wiki/Hobby"
+        ]
+      }
+    },
+    "chess-endgame": {
+      "id": "chess-endgame",
+      "snippet": {
+        "publishedAt": "2026-11-20T12:00:00Z",
+        "channelId": "UC_chess",
+        "title": "Rook endgames for humans",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT24M"
+      },
+      "statistics": {
+        "viewCount": "880"
+      },
+      "topicDetails": {
+        "topicCategories": []
+      }
+    },
+    "chess-stream": {
+      "id": "chess-stream",
+      "snippet": {
+        "publishedAt": "2026-11-24T20:00:00Z",
+        "channelId": "UC_chess",
+        "title": "Blitz night, starting soon",
+        "liveBroadcastContent": "upcoming"
+      },
+      "contentDetails": {
+        "duration": "PT0S"
+      },
+      "statistics": {
+        "viewCount": "0"
+      },
+      "topicDetails": {
+        "topicCategories": []
+      }
     }
+  },
+  "search": {
+    "Chess": [
+      "chess-opening",
+      "chess-endgame",
+      "chess-stream",
+      "rust-borrow"
+    ],
+    "Jazz": [],
+    "Origami": [
+      "chess-endgame"
+    ]
   }
 }
