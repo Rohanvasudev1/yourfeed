@@ -5,12 +5,16 @@ import type { Feed, Range, Video } from "./types";
 /** What Bring your demo feeds copies of a demo feed (ADR 0012): its name, ranges and topics, nothing else. */
 export type DemoRecipe = Readonly<{ name: string; topics: readonly string[]; length: Range; session: Range }>;
 
-/** The visitor's own demo feeds as recipes, keeping only the topics `catalog` has. Built-in feeds and drafts aren't recipes to bring. */
+/**
+ * The visitor's own demo feeds as recipes, keeping only the topics `catalog` has. Built-in feeds and drafts aren't
+ * recipes to bring, and neither is a feed none of whose topics the catalog has: it would show nothing.
+ */
 export function demoRecipes(demoFeeds: readonly Feed[], catalog: readonly Video[]): readonly DemoRecipe[] {
   const known = new Set(catalog.map((v) => v.topic));
   return demoFeeds
     .filter((f) => f.kind === "topics" && !f.draft)
-    .map((f) => ({ name: f.name, topics: f.topics.filter((t) => known.has(t)), length: f.length, session: f.session }));
+    .map((f) => ({ name: f.name, topics: f.topics.filter((t) => known.has(t)), length: f.length, session: f.session }))
+    .filter((r) => r.topics.length > 0);
 }
 
 const sameName = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();

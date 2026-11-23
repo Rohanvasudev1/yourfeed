@@ -82,11 +82,10 @@ describe("choosing a username at first sign-in", () => {
     expect(usernameBox()).toHaveValue("maya.k");
   });
 
-  it("is reachable by keyboard, and Enter saves", async () => {
+  it("puts focus in the username box, and Enter saves", async () => {
     renderApp({ account: fakeAccount({ status: NEW_USER }) });
     await usernameForm();
 
-    await userEvent.tab();
     expect(usernameBox()).toHaveFocus();
     await userEvent.keyboard("maya.k{Enter}");
     await feedTitles();
@@ -112,13 +111,15 @@ describe("choosing a username at first sign-in", () => {
 });
 
 describe("Bring your demo feeds", () => {
+  const knitting = makeFeed({ name: "Knitting club", topics: ["Knitting"] });
   const jazz = makeFeed({ name: "Jazz nights", topics: ["AI", "Knitting"], length: [5, 15], session: [10, 30], color: 1, muted: ["Gardening"] });
 
   it("is offered to a new account, and copies the demo feeds' names, ranges and the topics the real catalog has", async () => {
     const server = fakeServerState();
-    renderApp({ account: fakeAccount({ status: SIGNED_IN }), storage: demoStateWith(jazz), serverState: server });
+    renderApp({ account: fakeAccount({ status: SIGNED_IN }), storage: demoStateWith(jazz, knitting), serverState: server });
 
     const region = await screen.findByRole("region", { name: OFFER });
+    expect(region).toHaveTextContent("Copy Learn, Jazz nights into your account");
     await userEvent.click(within(region).getByRole("button", { name: OFFER }));
 
     expect(offer()).not.toBeInTheDocument();
@@ -128,6 +129,15 @@ describe("Bring your demo feeds", () => {
     // A feed the starting example also has takes the demo's recipe: Learn's demo topics aren't in this catalog.
     expect(savedFeed(server.saved(), "Learn")).toMatchObject({ topics: ["AI"] });
     expect(screen.getAllByText("Jazz nights").length).toBeGreaterThan(0);
+    // None of its topics is in the catalog, so it would show nothing; Sport's demo topics aren't either, so it keeps its own.
+    expect(savedFeed(server.saved(), "Knitting club")).toBeUndefined();
+    expect(savedFeed(server.saved(), "Sport")).toEqual(DEMO_SEED.feeds.find((f) => f.name === "Sport"));
+  });
+
+  it("isn't offered when this browser never saved a demo", async () => {
+    renderApp({ account: fakeAccount({ status: SIGNED_IN }), storage: memoryStorage() });
+    await feedTitles();
+    expect(offer()).not.toBeInTheDocument();
   });
 
   it("brings nothing on No thanks, and is offered only once", async () => {

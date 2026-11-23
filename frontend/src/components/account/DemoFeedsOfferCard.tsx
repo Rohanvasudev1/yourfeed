@@ -1,8 +1,7 @@
 import { useId } from "react";
+import { ACCOUNT_TEXT } from "../../domain/account";
 import type { DemoFeedsOffer } from "../../state/useDemoFeedsOffer";
 import "./onboarding.css";
-
-const TITLE = "Bring your demo feeds";
 
 type Props = Readonly<{ offer: DemoFeedsOffer }>;
 
@@ -13,17 +12,17 @@ export function DemoFeedsOfferCard({ offer }: Props) {
   return (
     <section className="onboarding-card onboarding-offer" aria-labelledby={titleId}>
       <h2 id={titleId} className="onboarding-title">
-        {TITLE}
+        {ACCOUNT_TEXT.demoOffer}
       </h2>
       <p className="onboarding-hint">
-        Copy {names} into your account: their names, lengths and the topics your YouTube has. Nothing else comes along.
+        {ACCOUNT_TEXT.demoOfferText(names)}
       </p>
       <div className="onboarding-actions">
         <button type="button" onClick={offer.bring}>
-          {TITLE}
+          {ACCOUNT_TEXT.demoOffer}
         </button>
         <button type="button" className="text-button" onClick={offer.decline}>
-          No thanks
+          {ACCOUNT_TEXT.demoOfferNo}
         </button>
       </div>
     </section>

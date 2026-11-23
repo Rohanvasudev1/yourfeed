@@ -33,10 +33,13 @@ export function UsernamePrompt({ account }: Props) {
         <input
           id={`${ids}-input`}
           type="text"
+          // This question is the whole page, so the box is where the visitor is headed.
+          autoFocus
           value={typed}
           autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}
+          // Room for the "@" people often type first, which doesn't count.
           maxLength={USERNAME_LENGTH.max + 1}
           aria-describedby={problem ? `${hintId} ${problemId}` : hintId}
           aria-invalid={problem ? true : undefined}
@@ -53,7 +56,7 @@ export function UsernamePrompt({ account }: Props) {
       )}
       <div className="onboarding-actions">
         <button type="button" className="text-button" onClick={account.signOut} disabled={account.busy}>
-          Sign out
+          {ACCOUNT_TEXT.signOut}
         </button>
       </div>
     </form>

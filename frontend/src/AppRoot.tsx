@@ -4,8 +4,7 @@ import { UsernamePrompt } from "./components/account/UsernamePrompt";
 import { CatalogError } from "./components/CatalogError";
 import { ACCOUNT_TEXT } from "./domain/account";
 import type { AccountPort, AssistantPort, CatalogLoader, ServerStatePort, StateStorage } from "./ports";
-import { restoreState } from "./state/persistence";
-import { DEMO_SEED } from "./state/seed";
+import { isRestorable, type SavedState } from "./state/persistence";
 import { useAccount } from "./state/useAccount";
 import { useStateSource } from "./state/useStateSource";
 
@@ -19,6 +18,12 @@ type Props = Readonly<{
   account: AccountPort;
 }>;
 
+/** What Bring your demo feeds would copy: the feeds of the demo this browser saved; null when it saved none it can open. */
+function savedDemoFeeds(storage: StateStorage) {
+  const saved = storage.load();
+  return isRestorable(saved) ? (saved as SavedState).state.feeds : null;
+}
+
 /** The app, once it knows whose state to show: the server's when signed in (ADR 0012), the browser's in demo mode. */
 export function AppRoot({ loadCatalog, storage, serverState, assistant, account: accountPort }: Props) {
   const account = useAccount(accountPort);
@@ -27,10 +32,9 @@ export function AppRoot({ loadCatalog, storage, serverState, assistant, account:
   const signedIn = account.status?.kind === "signedIn";
   const catalogSource = signedIn ? "youtube" : "demo";
   const loadSourceCatalog = useCallback(() => loadCatalog(catalogSource), [loadCatalog, catalogSource]);
-  // What Bring your demo feeds would copy: the demo as this browser keeps it.
-  const demoFeeds = useMemo(() => (signedIn ? restoreState(storage.load(), DEMO_SEED).feeds : null), [signedIn, storage]);
+  const demoFeeds = useMemo(() => (signedIn ? savedDemoFeeds(storage) : null), [signedIn, storage]);
 
-  if (account.status?.kind === "signedIn" && account.status.username === null) {
+  if (signedIn && account.status?.kind === "signedIn" && account.status.username === null) {
     return (
       <div className="app">
         <main>

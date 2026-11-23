@@ -28,5 +28,9 @@ export const ACCOUNT_TEXT = {
   usernameLabel: "Username",
   saveUsername: "Save username",
   usernameFailed: "Couldn't save your username. Try again.",
+  signOut: "Sign out",
+  demoOffer: "Bring your demo feeds",
+  demoOfferNo: "No thanks",
+  demoOfferText: (names: string) => `Copy ${names} into your account: their names, lengths and the topics your YouTube has. Nothing else comes along.`,
   confirmDelete: "Delete your account and everything Yourfeed stored for it, and remove its access to your Google account? This can't be undone.",
 } as const;

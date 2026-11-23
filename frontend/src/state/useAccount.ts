@@ -56,6 +56,7 @@ export function useAccount(account: AccountPort): AccountControls {
     async (action: () => Promise<string | null>, failure: string, what: string) => {
       setBusy(true);
       setProblem(null);
+      setUsernameProblem(null);
       try {
         setProblem(await action());
         setStatus(SIGNED_OUT);
