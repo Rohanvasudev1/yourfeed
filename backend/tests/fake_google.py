@@ -7,6 +7,7 @@ from app.accounts.google import GoogleAccessRevoked, GoogleError, GoogleGrant
 
 GOOD_CODE = "good-code"
 OTHER_CODE = "other-code"
+THIRD_CODE = "third-code"
 NO_REFRESH_CODE = "no-refresh-code"
 
 
@@ -25,6 +26,7 @@ class FakeGoogle:
         default_factory=lambda: {
             GOOD_CODE: GoogleGrant(subject="google-sub-1", refresh_token="refresh-1"),
             OTHER_CODE: GoogleGrant(subject="google-sub-2", refresh_token="refresh-2"),
+            THIRD_CODE: GoogleGrant(subject="google-sub-3", refresh_token="refresh-3"),
             NO_REFRESH_CODE: GoogleGrant(subject="google-sub-1", refresh_token=None),
         }
     )

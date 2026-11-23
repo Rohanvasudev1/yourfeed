@@ -8,6 +8,11 @@ from datetime import datetime
 
 from app.accounts.store import Now
 
+NO_ONE = "No one has that username."
+# Usernames that weren't found, across Share and Blend: one cap so no one can list who's on Yourfeed by guessing.
+MISSES_PER_DAY = 20
+TOO_MANY_MISSES = "Too many usernames weren't found today. Try again tomorrow."
+
 
 @dataclass
 class DailyLimit:

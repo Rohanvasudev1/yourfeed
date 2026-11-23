@@ -18,9 +18,12 @@ from app.assistant.provider import MODEL_TIMEOUT_S, ModelConfig, OpenAICompatibl
 from app.assistant.router import assistant_router
 from app.assistant.rules import KeywordRules
 from app.assistant.selector import AssistantSelector
+from app.blends.router import blends_router
+from app.blends.store import BlendStore
 from app.catalog import SignInRequired, Source, Video, load_catalog
 from app.db import make_engine, migrate
 from app.envelope import Envelope, fail, ok
+from app.sharing.limits import MISSES_PER_DAY, DailyLimit
 from app.sharing.router import sharing_router
 from app.sharing.store import InboxStore
 from app.user_state.router import demo_only_state_router, state_router
@@ -110,10 +113,12 @@ def _signed_in(app: FastAPI, auth: AuthSetup | None) -> tuple[list[APIRouter], S
     guards = session_guards(store)
     youtube = YouTubeCatalog(auth.youtube or HttpYouTubeClient(auth.config.youtube_api_key), ChannelCacheStore(engine), auth.now)
     catalog = signed_in_catalog(guards.session_of, store, auth.google, youtube)
+    misses = DailyLimit(MISSES_PER_DAY, auth.now)
     return [
         accounts_router(auth.config, auth.google, store, guards),
         state_router(guards, StateStore(engine, auth.now)),
-        sharing_router(guards, store, InboxStore(engine, auth.now), youtube, auth.now),
+        sharing_router(guards, store, InboxStore(engine, auth.now), youtube, misses, auth.now),
+        blends_router(guards, store, BlendStore(engine, auth.now), misses, auth.now),
     ], catalog
 
 

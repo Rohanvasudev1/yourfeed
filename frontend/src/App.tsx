@@ -142,7 +142,7 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
   });
   const mirror = useMirror({ feed, byId, now: input?.now ?? null, dispatch });
   const edit = useEditMode(state.feeds, dispatch);
-  const blend = useBlend(state.feeds, feed, ready ?? NO_VIDEOS, dispatch);
+  const blend = useBlend({ feeds: state.feeds, feed, catalog: ready ?? NO_VIDEOS, sharing, dispatch });
   const info = useAssistantInfo(assistant);
   const demoOffer = useDemoFeedsOffer({ demoFeeds, offered: state.demoFeedsOffered, catalog: ready, dispatch });
   const sections = useSections();
