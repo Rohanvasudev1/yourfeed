@@ -1,0 +1,25 @@
+/* /about: a reading page around live pieces of the demo. Text keeps a reading measure; the live pieces get the app's width. */
+.showcase { max-width: 1120px; min-height: 100vh; margin: 0 auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 24px; }
+.showcase main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 48px; }
+.showcase-header { display: flex; align-items: center; }
+.showcase-brand { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; font-size: 15px; color: var(--text-primary); text-decoration: none; border-radius: 6px; }
+.showcase-brand:hover { color: var(--text-accent); }
+
+.showcase-intro { margin: 0; max-width: 64ch; }
+.showcase-intro h1 { margin: 0 0 12px; font-family: var(--font-voice); font-weight: 400; font-size: clamp(28px, 5vw, 40px); line-height: 1.15; text-wrap: balance; }
+.showcase-intro p { margin: 0; font-size: 17px; line-height: 1.55; color: var(--text-secondary); text-wrap: pretty; }
+
+.showcase-idea { display: flex; flex-direction: column; gap: 12px; }
+.showcase-idea h2 { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.3; text-wrap: balance; }
+.showcase-idea > p, .showcase-points { max-width: 64ch; margin: 0; font-size: 15px; line-height: 1.6; text-wrap: pretty; }
+.showcase-points { padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.showcase-try { color: var(--text-secondary); font-size: 14px; }
+
+.showcase-live { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 16px; border: 0.5px solid var(--border-strong); border-radius: 12px; background: var(--surface-1); }
+.showcase-live > * { margin-block: 0; }
+.showcase-live-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.showcase-recipe { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-secondary); overflow-wrap: anywhere; }
+.showcase-recipe b { font-weight: 500; color: var(--text-primary); }
+
+.showcase-back { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); }
+.showcase a:focus-visible { outline: 2px solid var(--border-accent); outline-offset: 2px; }
