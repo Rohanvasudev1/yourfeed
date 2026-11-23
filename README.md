@@ -57,6 +57,47 @@ Without these the app is demo-only, and the account menu says signing in isn't s
 
 The session is an httpOnly, SameSite=Lax cookie, and sign out and Delete my data also need the session's CSRF token. Google refresh tokens are encrypted at rest and never reach the browser. Delete my data deletes the account's rows and revokes the token.
 
+## Host it (free tiers)
+
+Going live is the owner's job (ADR 0014): only you can create the Google Cloud project, the Neon and Render accounts, and the secrets. Everything else runs locally with the YouTube fake and SQLite. The hosted app is the [`render.yaml`](render.yaml) Blueprint: the backend as a free Render web service (`yourfeed-api`) and the frontend as a free static site (`yourfeed`) that rewrites `/api/*` to the backend, so the browser only ever talks to one origin and the session cookie stays first-party. The database is Neon's free Postgres.
+
+Run the wizard. It opens each page, says what to click, and saves what you paste to `backend/.env.hosting` (git-ignored, readable only by you); it never prints a secret back and a re-run keeps what's saved:
+
+```bash
+scripts/setup-hosting
+```
+
+Its stages, so you can also do them by hand:
+
+1. **Google Cloud project**, with **YouTube Data API v3** enabled.
+2. **OAuth consent screen**: External, publishing status **Testing**, scope `youtube.readonly`, and every person who will sign in added as a **test user** (at most 100; ADR 0012).
+3. **OAuth client** (Web application) with two redirect URIs: `https://yourfeed.onrender.com/api/auth/callback` (your `APP_URL` plus `/api/auth/callback`) and `http://localhost:5173/api/auth/callback`. Gives `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+4. **API key**, restricted to YouTube Data API v3: `YOUTUBE_API_KEY`.
+5. **`SESSION_SECRET` and `TOKEN_ENCRYPTION_KEY`**, made locally (`.env.example` says how). Keep the encryption key: a new one makes every stored sign-in unreadable.
+6. **Neon** project (AWS US West, Oregon) and its connection string with **pooling off**: `DATABASE_URL`. Then create the tables:
+
+   ```bash
+   cd backend && uv run --env-file .env.hosting alembic upgrade head
+   ```
+
+   The backend also migrates at startup, so this is a check that the database is reachable. `DATABASE_URL` may start `postgres://` or `postgresql://`.
+7. **Groq key** (optional): `AI_API_KEY`. Without it the Claude bar uses the keyword rules.
+8. **Render**: New → Blueprint → this repo. Render asks once for each `sync: false` variable in `render.yaml`: `APP_URL`, the five sign-in secrets, `DATABASE_URL` and `AI_API_KEY`. Apply, and wait until both services are Live.
+9. **Check the addresses.** If Render gave the site another address than `https://yourfeed.onrender.com`, set `APP_URL` on `yourfeed-api` and the OAuth client's redirect URI to it. If the backend isn't at `https://yourfeed-api.onrender.com`, change the `/api/*` rewrite's `destination` in `render.yaml` and push. `APP_URL/api/health` should answer `{"success": true, ...}`.
+10. **Sign in** on the site as a test user, pick a username, and run the YouTube smoke test below.
+
+Free Render services sleep after 15 idle minutes, so the first visit after a while takes about a minute. Render's proxy sets `X-Forwarded-For`, which the backend trusts (`--forwarded-allow-ips '*'`) so AI limits are per visitor; a visitor can forge that header to get a fresh per-visitor limit, but the site-wide daily cap still holds.
+
+### YouTube smoke test (manual)
+
+`backend/scripts/youtube_smoke.py` checks one real signed-in account end to end against the real Google and YouTube APIs: the stored grant, a fresh access token, subscriptions, the catalog, topics and a video lookup. It reads the backend's variables, never prints a token, only reads the database (uploads go to a throwaway cache, not the shared one) and uses a few quota units and no searches. Because it calls real APIs it never runs in CI or pytest; only its checks are tested, against the fakes. Sign in and pick a username first, then:
+
+```bash
+cd backend && uv run --env-file .env.hosting python -m scripts.youtube_smoke --username yourname
+```
+
+Locally, after signing in at http://localhost:5173, use `--env-file .env` instead.
+
 ## Tests
 
 ```bash
