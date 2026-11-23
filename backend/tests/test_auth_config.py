@@ -5,6 +5,7 @@ from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 
 from app.accounts.config import AuthConfig, AuthConfigError
+from app.db import make_engine
 from app.main import create_app
 
 NOT_SET_UP = "Signing in isn't set up on this server."
@@ -79,3 +80,8 @@ def test_demo_only_app_refuses_account_routes(method: str, path: str):
 
 def test_demo_still_works_without_secrets():
     assert len(demo.get("/api/catalog").json()["data"]) == 38
+
+
+@pytest.mark.parametrize("url", ["postgres://u:p@db.example/yf", "postgresql://u:p@db.example/yf", "postgresql+psycopg://u:p@db.example/yf"])
+def test_hosted_postgres_urls_use_the_installed_driver(url: str):
+    assert make_engine(url).url.drivername == "postgresql+psycopg"

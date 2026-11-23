@@ -1,5 +1,6 @@
 """A stand-in for Google's OAuth endpoints: the auth API tests never reach the network."""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from app.accounts.google import GoogleError, GoogleGrant
@@ -28,6 +29,8 @@ class FakeGoogle:
         }
     )
     revoke_fails: bool = False
+    # Runs as Google revokes, so a test can see what the database held at that moment.
+    on_revoke: Callable[[], None] | None = None
     exchanges: list[Exchange] = field(default_factory=list)
     revoked: list[str] = field(default_factory=list)
 
@@ -42,6 +45,8 @@ class FakeGoogle:
         return grant
 
     def revoke(self, refresh_token: str) -> None:
+        if self.on_revoke:
+            self.on_revoke()
         if self.revoke_fails:
             raise GoogleError("Google couldn't be reached.")
         self.revoked.append(refresh_token)

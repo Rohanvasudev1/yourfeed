@@ -47,7 +47,9 @@ class DeleteResult(_Camel):
     revoked: bool
 
 
-class _Refusal(Exception):
+class Refusal(Exception):
+    """A write the API turns down; `install_refusals` answers it in the envelope."""
+
     def __init__(self, status: int, message: str):
         self.status, self.message = status, message
 
@@ -66,10 +68,13 @@ def accounts_router(config: AuthConfig, google: GoogleOAuth, store: AccountStore
         """The signed-in session behind a write, which must carry that session's CSRF token."""
         session = session_of(request)
         if session is None:
-            raise _Refusal(401, SIGN_IN_FIRST)
+            raise Refusal(401, SIGN_IN_FIRST)
         if not csrf or not hmac.compare_digest(csrf, session.csrf_token):
-            raise _Refusal(403, BAD_CSRF)
+            raise Refusal(403, BAD_CSRF)
         return session
+
+    def set_cookie(res: Response, name: str, value: str, *, max_age: int, path: str) -> None:
+        res.set_cookie(name, value, max_age=max_age, path=path, httponly=True, samesite="lax", secure=config.secure_cookies)
 
     def failed() -> RedirectResponse:
         res = RedirectResponse(f"{config.app_url}{SIGN_IN_FAILED_PATH}", status_code=303)
@@ -88,23 +93,20 @@ def accounts_router(config: AuthConfig, google: GoogleOAuth, store: AccountStore
         state, verifier = new_token(), new_token()
         url = google.authorization_url(redirect_uri=config.redirect_uri, state=state, code_challenge=pkce_challenge(verifier))
         res = RedirectResponse(url, status_code=303)
-        res.set_cookie(
-            LOGIN_COOKIE, store.keys.sign_login(state, verifier), max_age=LOGIN_TTL_S, path=LOGIN_COOKIE_PATH,
-            httponly=True, samesite="lax", secure=config.secure_cookies,
-        )
+        set_cookie(res, LOGIN_COOKIE, store.keys.sign_login(state, verifier), max_age=LOGIN_TTL_S, path=LOGIN_COOKIE_PATH)
         return res
 
     @router.get("/auth/callback")
     def callback(request: Request, code: str | None = None, state: str | None = None, error: str | None = None):
         login = store.keys.open_login(request.cookies.get(LOGIN_COOKIE, ""))
-        if login is None or state is None or not hmac.compare_digest(state, login[0]):
+        if login is None or state is None or not hmac.compare_digest(state, login.state):
             log.warning("Sign-in callback with a missing or mismatched state")
             return failed()
         if error or not code:
             log.info("Google sign-in didn't finish: %s", error or "no code")
             return failed()
         try:
-            grant = google.exchange(code=code, redirect_uri=config.redirect_uri, code_verifier=login[1])
+            grant = google.exchange(code=code, redirect_uri=config.redirect_uri, code_verifier=login.verifier)
         except GoogleError as exc:
             log.warning("Google sign-in failed: %s", exc)
             return failed()
@@ -114,10 +116,7 @@ def accounts_router(config: AuthConfig, google: GoogleOAuth, store: AccountStore
             return failed()
         res = RedirectResponse(f"{config.app_url}/", status_code=303)
         res.delete_cookie(LOGIN_COOKIE, path=LOGIN_COOKIE_PATH)
-        res.set_cookie(
-            SESSION_COOKIE, store.start_session(user_id), max_age=int(SESSION_TTL.total_seconds()), path="/",
-            httponly=True, samesite="lax", secure=config.secure_cookies,
-        )
+        set_cookie(res, SESSION_COOKIE, store.start_session(user_id), max_age=int(SESSION_TTL.total_seconds()), path="/")
         return res
 
     @router.post("/auth/logout", response_model=Envelope[AccountStatus], response_model_by_alias=True)
@@ -128,9 +127,11 @@ def accounts_router(config: AuthConfig, google: GoogleOAuth, store: AccountStore
 
     @router.delete("/account", response_model=Envelope[DeleteResult], response_model_by_alias=True)
     def delete_account(response: Response, session: Annotated[SignedIn, Depends(writer)]):
-        refresh_token = store.delete_user(session.user_id)
+        # Revoke first: if deleting then fails, the token is already dead rather than orphaned.
+        revoked = _revoke(google, store.refresh_token_of(session.user_id))
+        store.delete_user(session.user_id)
         response.delete_cookie(SESSION_COOKIE, path="/")
-        return ok(DeleteResult(revoked=_revoke(google, refresh_token)))
+        return ok(DeleteResult(revoked=revoked))
 
     return router
 
@@ -141,7 +142,7 @@ def _revoke(google: GoogleOAuth, refresh_token: str | None) -> bool:
     try:
         google.revoke(refresh_token)
     except GoogleError as exc:
-        log.error("Deleted a user but couldn't revoke their Google token: %s", exc)
+        log.error("Couldn't revoke a Google token before deleting its user: %s", exc)
         return False
     return True
 
@@ -165,6 +166,6 @@ def demo_only_router() -> APIRouter:
 
 
 def install_refusals(app) -> None:
-    @app.exception_handler(_Refusal)
-    async def on_refusal(_: Request, exc: _Refusal):
+    @app.exception_handler(Refusal)
+    async def on_refusal(_: Request, exc: Refusal):
         return fail(exc.status, exc.message)

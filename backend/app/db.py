@@ -10,7 +10,14 @@ from sqlmodel import create_engine
 MIGRATIONS = Path(__file__).resolve().parent.parent / "migrations"
 
 
+POSTGRES_SCHEMES = ("postgres://", "postgresql://")
+POSTGRES_DRIVER = "postgresql+psycopg://"
+
+
 def make_engine(url: str) -> Engine:
+    if url.startswith(POSTGRES_SCHEMES):
+        # Hosts such as Neon hand out plain postgres URLs; SQLAlchemy would pick psycopg2, which isn't installed.
+        url = POSTGRES_DRIVER + url.split("://", 1)[1]
     if not url.startswith("sqlite"):
         return create_engine(url, pool_pre_ping=True)
     engine = create_engine(url, connect_args={"check_same_thread": False})

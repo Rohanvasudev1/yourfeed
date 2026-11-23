@@ -223,3 +223,29 @@ def test_a_session_lasts_30_days(client: TestClient, clock: Clock):
     assert me(client)["signedIn"] is True
     clock.moment += timedelta(days=1)
     assert me(client)["signedIn"] is False
+
+
+def test_delete_my_data_revokes_before_it_deletes(client: TestClient, google: FakeGoogle):
+    sign_in(client)
+    at_revoke: list[int] = []
+    google.on_revoke = lambda: at_revoke.append(len(users(client)))
+
+    client.request("DELETE", "/api/account", headers=csrf(client))
+
+    assert at_revoke == [1]
+    assert users(client) == []
+
+
+def test_delete_my_data_still_deletes_when_the_stored_token_cant_be_read(client: TestClient, google: FakeGoogle):
+    sign_in(client)
+    with Session(client.app.state.engine) as db:
+        [user] = db.exec(select(User)).all()
+        user.refresh_token = Fernet(Fernet.generate_key()).encrypt(b"other-key").decode()
+        db.add(user)
+        db.commit()
+
+    res = client.request("DELETE", "/api/account", headers=csrf(client))
+
+    assert res.json()["data"] == {"revoked": False}
+    assert google.revoked == []
+    assert users(client) == []

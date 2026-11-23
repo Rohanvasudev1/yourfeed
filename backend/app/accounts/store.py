@@ -1,14 +1,18 @@
 """Users and their sessions in the database."""
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from cryptography.fernet import InvalidToken
 from sqlalchemy import Engine
 from sqlmodel import Session, delete, select
 
 from app.accounts.keys import Keys, new_token
 from app.accounts.tables import LoginSession, User
+
+log = logging.getLogger("yourfeed.accounts")
 
 SESSION_DAYS = 30
 SESSION_TTL = timedelta(days=SESSION_DAYS)
@@ -76,17 +80,24 @@ class AccountStore:
             db.exec(delete(LoginSession).where(LoginSession.token_hash == session_hash))
             db.commit()
 
-    def delete_user(self, user_id: int) -> str | None:
-        """Deletes the user and every row stored for them; returns their refresh token so it can be revoked."""
+    def refresh_token_of(self, user_id: int) -> str | None:
+        """The user's Google refresh token, or None when there's no such user or the stored token can't be decrypted."""
         with Session(self.engine) as db:
             user = db.get(User, user_id)
             if user is None:
                 return None
-            refresh_token = self.keys.decrypt(user.refresh_token)
+            try:
+                return self.keys.decrypt(user.refresh_token)
+            except InvalidToken:
+                log.error("User %s's refresh token can't be decrypted with TOKEN_ENCRYPTION_KEY", user_id)
+                return None
+
+    def delete_user(self, user_id: int) -> None:
+        """Deletes the user and every row stored for them."""
+        with Session(self.engine) as db:
             db.exec(delete(LoginSession).where(LoginSession.user_id == user_id))
-            db.delete(user)
+            db.exec(delete(User).where(User.id == user_id))
             db.commit()
-            return refresh_token
 
 
 def _aware(moment: datetime) -> datetime:

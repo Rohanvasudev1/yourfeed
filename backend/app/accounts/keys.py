@@ -24,6 +24,14 @@ def pkce_challenge(verifier: str) -> str:
 
 
 @dataclass(frozen=True)
+class LoginState:
+    """What the login cookie carries between /api/auth/login and Google's callback."""
+
+    state: str
+    verifier: str
+
+
+@dataclass(frozen=True)
 class Keys:
     """Everything derived from SESSION_SECRET and TOKEN_ENCRYPTION_KEY."""
 
@@ -43,8 +51,8 @@ class Keys:
         payload = base64.urlsafe_b64encode(json.dumps({"s": state, "v": verifier, "t": int(now or time.time())}).encode()).decode()
         return f"{payload}.{self._mac(payload)}"
 
-    def open_login(self, cookie: str, now: float | None = None) -> tuple[str, str] | None:
-        """The (state, verifier) a login cookie carries, or None if it's forged, malformed or older than 10 minutes."""
+    def open_login(self, cookie: str, now: float | None = None) -> LoginState | None:
+        """What a login cookie carries, or None if it's forged, malformed or older than LOGIN_TTL_S."""
         payload, _, mac = cookie.partition(".")
         if not hmac.compare_digest(mac, self._mac(payload)):
             return None
@@ -57,7 +65,7 @@ class Keys:
             return None
         if (now or time.time()) - issued > LOGIN_TTL_S:
             return None
-        return state, verifier
+        return LoginState(state, verifier)
 
     def _mac(self, payload: str) -> str:
         return hmac.new(self.session_secret.encode(), f"login:{payload}".encode(), hashlib.sha256).hexdigest()
