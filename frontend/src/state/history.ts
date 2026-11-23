@@ -97,6 +97,24 @@ function applySettings(state: AppState, { settings, feed }: Step): AppState {
   };
 }
 
+/**
+ * A step's settings with the visitor's blends as they are in `present`: the server owns those, so undo never brings back old ones.
+ * A Blend feed's partner in the step stays when it's none or a blend the server still has (so undoing Change partner still works);
+ * one the server no longer has becomes the partner in `present`.
+ */
+function withBlendsOf(settings: Settings, present: AppState): Settings {
+  const live = new Map(present.feeds.filter((f) => f.kind === "blend").map((f) => [f.name, f]));
+  const known = new Set([...present.blends.map((b) => b.id), ...[...live.values()].map((f) => f.partner?.id)]);
+  const feeds = new Map(
+    [...settings.feeds].map(([name, saved]) => {
+      const blend = live.get(name);
+      const stillThere = saved.partner === null || (saved.partner.id !== undefined && known.has(saved.partner.id));
+      return [name, blend && !stillThere ? { ...saved, partner: blend.partner, topics: blend.topics } : saved];
+    }),
+  );
+  return { ...settings, feeds, blends: present.blends };
+}
+
 const flipLine = (state: AppState, line: LineFlip | undefined): AppState =>
   line
     ? { ...state, feeds: state.feeds.map((f) => (f.name === line.feed ? { ...f, log: setLive(f.log, line.id, line.live) } : f)) }
@@ -146,6 +164,12 @@ export function withHistory(reduce: (state: AppState, action: Action) => AppStat
         return startHistory(reduce(history.present, action));
       case "load":
         return startHistory(action.present);
+      case "sync_blends": {
+        const present = reduce(history.present, action);
+        if (present === history.present) return history;
+        const rebase = (step: Step): Step => ({ ...step, settings: withBlendsOf(step.settings, present) });
+        return { present, undo: history.undo.map(rebase), redo: history.redo.map(rebase) };
+      }
       default: {
         const present = reduce(history.present, action);
         if (present === history.present) return history;

@@ -1,5 +1,6 @@
 import type { AccountStatus, DeleteResult, UsernameAnswer } from "./domain/account";
 import type { AnswerResult } from "./domain/askNotes";
+import type { InviteAnswer, ServerBlend } from "./domain/blend";
 import type { AssistantResult, BarMode, FeedContext } from "./domain/assistant";
 import type { AssistantInfo } from "./domain/assistantInfo";
 import type { FollowUp } from "./domain/recipeLog";
@@ -58,4 +59,12 @@ export type SharingPort = Readonly<{
   send: (to: string, share: Share) => Promise<SendAnswer>;
   /** What was sent to this user after the share with id `after`, oldest first, already checked against the share limits. */
   inbox: (after: number) => Promise<readonly SentShare[]>;
+  /** This user's pending and accepted blends, newest first. */
+  blends: () => Promise<readonly ServerBlend[]>;
+  /** Invites a username to blend with this user's recipe topics; rejects when the server couldn't answer. */
+  inviteBlend: (to: string, topics: readonly string[]) => Promise<InviteAnswer>;
+  /** Approves an invite to this user with their recipe topics; resolves to the blend, with the inviter's topics. */
+  acceptBlend: (id: number, topics: readonly string[]) => Promise<ServerBlend>;
+  /** Cancels, declines or removes a blend, from either side. */
+  cancelBlend: (id: number) => Promise<void>;
 }>;

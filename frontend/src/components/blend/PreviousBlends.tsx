@@ -7,7 +7,7 @@ type Props = Readonly<{
   /** The name of the blend open in the feed, if any. */
   open: string | null;
   onOpen: (name: string) => void;
-  onForget: (name: string) => void;
+  onForget: (blend: BlendPartner) => void;
 }>;
 
 /** The visitor's blends, newest first: open one in the Blend feed, or remove it. Starts expanded, as in the mockup. */
@@ -26,7 +26,7 @@ export function PreviousBlends({ blends, open, onOpen, onForget }: Props) {
       {expanded && (
         <ul id={listId} className="blend-list">
           {blends.map((b) => (
-            <BlendRow key={b.name} blend={b} isOpen={b.name === open} onOpen={() => onOpen(b.name)} onForget={() => onForget(b.name)} />
+            <BlendRow key={b.name} blend={b} isOpen={b.name === open} onOpen={() => onOpen(b.name)} onForget={() => onForget(b)} />
           ))}
         </ul>
       )}

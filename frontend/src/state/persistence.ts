@@ -20,6 +20,8 @@ const partnerSchema = z.object({
   name: z.string().regex(USERNAME_PATTERN),
   topics: ids,
   score: z.number().int().min(MATCH_SCORE.min).max(MATCH_SCORE.max),
+  // Signed in, the server's blend; saved before Blend was real, or in demo mode, none.
+  id: z.number().int().positive().optional(),
 });
 
 const logSchema = z

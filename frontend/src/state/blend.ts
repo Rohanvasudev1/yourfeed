@@ -1,4 +1,4 @@
-import { blendTopics, myTopics, type Blend, type BlendPartner } from "../domain/blend";
+import { blendTopics, matchScore, myTopics, type Blend, type BlendPartner, type ServerBlend } from "../domain/blend";
 import type { Feed } from "../domain/types";
 
 /** Changes to a Blend feed's partner and to the visitor's blends. Each names the Blend feed it changes. */
@@ -12,7 +12,12 @@ export type BlendAction =
   /** Opens one of the visitor's blends in the Blend feed. */
   | Readonly<{ type: "open_blend"; feed: string; name: string }>
   /** Removes one of the visitor's blends, clearing the Blend feed if it's the one open. */
-  | Readonly<{ type: "forget_blend"; feed: string; name: string }>;
+  | Readonly<{ type: "forget_blend"; feed: string; name: string }>
+  /**
+   * Signed in: the server's blends replace the visitor's blends, and the Blend feed follows its own (by id), opening `open` if given.
+   * Not an undo step: it already happened to someone else.
+   */
+  | Readonly<{ type: "sync_blends"; rows: readonly ServerBlend[]; open?: number }>;
 
 type WithBlends = Readonly<{ feeds: readonly Feed[]; blends: readonly BlendPartner[] }>;
 
@@ -22,6 +27,7 @@ const BLEND_ACTION_TYPES: ReadonlySet<string> = new Set<BlendAction["type"]>([
   "approve_blend",
   "open_blend",
   "forget_blend",
+  "sync_blends",
 ]);
 
 export const isBlendAction = (action: { type: string }): action is BlendAction => BLEND_ACTION_TYPES.has(action.type);
@@ -37,8 +43,30 @@ function setPartner<S extends WithBlends>(state: S, feed: string, partner: Blend
 
 const isOpen = (feed: Feed, name: string) => feed.partner?.status === "accepted" && sameName(feed.partner.name, name);
 
+const sameValue = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * The Blend feed keeps its blend while the server still has it; otherwise it shows the newest invite the visitor sent, if any.
+ * A blend with no id (from demo mode) isn't anyone real, so it goes.
+ */
+function syncBlends<S extends WithBlends>(state: S, rows: readonly ServerBlend[], open: number | undefined): S {
+  const mine = myTopics(state.feeds);
+  const partnerOf = (row: ServerBlend): BlendPartner => ({ id: row.id, name: row.with, topics: row.topics, score: matchScore(row.with, mine, row.topics) });
+  const blends = rows.filter((r) => r.status === "accepted").map(partnerOf);
+  const synced: S = sameValue(blends, state.blends) ? state : { ...state, blends };
+  return state.feeds
+    .filter((f) => f.kind === "blend")
+    .reduce((next, feed) => {
+      const wanted = open ?? feed.partner?.id;
+      const row = rows.find((r) => r.id === wanted) ?? rows.find((r) => r.role === "inviter" && r.status === "pending");
+      const partner: Blend | null = row ? { ...partnerOf(row), status: row.status } : null;
+      return sameValue(partner, feed.partner) ? next : setPartner(next, feed.name, partner);
+    }, synced);
+}
+
 /** Applies a blend action; one naming a feed that isn't a Blend feed changes nothing. */
 export function reduceBlend<S extends WithBlends>(state: S, action: BlendAction): S {
+  if (action.type === "sync_blends") return syncBlends(state, action.rows, action.open);
   const feed = blendFeed(state, action.feed);
   if (!feed) return state;
   switch (action.type) {

@@ -14,12 +14,11 @@ from app.accounts.store import AccountStore, Now, SignedIn
 from app.accounts.usernames import clean_username
 from app.catalog import Video
 from app.envelope import Envelope, fail, ok
-from app.sharing.limits import DailyLimit
+from app.sharing.limits import MISSES_PER_DAY, NO_ONE, TOO_MANY_MISSES, DailyLimit
 from app.sharing.share import VIDEO_ID, VIDEOS_MAX, InboxEntry, SendRequest, Sent
 from app.sharing.store import InboxStore
 from app.youtube.catalog import YouTubeCatalog
 
-NO_ONE = "No one has that username."
 NO_USERNAME = "Choose a username before sending."
 BAD_IDS = f"Look up 1–{VIDEOS_MAX} video ids at a time."
 SENDS_PER_DAY = 50
@@ -27,9 +26,6 @@ TOO_MANY = f"You've sent {SENDS_PER_DAY} feeds today. Try again tomorrow."
 # Each lookup spends up to two units of the site's one YouTube quota (ADR 0011).
 LOOKUPS_PER_DAY = 200
 TOO_MANY_LOOKUPS = "You've looked up a lot of videos today. Try again tomorrow."
-# Usernames that weren't found: a cap so no one can list who's on Yourfeed by guessing.
-MISSES_PER_DAY = 20
-TOO_MANY_MISSES = "Too many usernames weren't found today. Try again tomorrow."
 INBOX_READS_PER_DAY = 2000
 TOO_MANY_READS = "Shared with you was checked too often today. Try again tomorrow."
 INBOX_PAGE = 50
@@ -42,9 +38,13 @@ def _ids(ids: str) -> list[str] | None:
     return parsed
 
 
-def sharing_router(guards: Guards, accounts: AccountStore, inbox: InboxStore, youtube: YouTubeCatalog, now: Now) -> APIRouter:
+__all__ = ["MISSES_PER_DAY", "NO_ONE", "sharing_router"]
+
+
+def sharing_router(guards: Guards, accounts: AccountStore, inbox: InboxStore, youtube: YouTubeCatalog, misses: DailyLimit, now: Now) -> APIRouter:
+    """`misses` counts usernames that weren't found; Blend shares it."""
     router = APIRouter(prefix="/api")
-    lookups, misses, reads = DailyLimit(LOOKUPS_PER_DAY, now), DailyLimit(MISSES_PER_DAY, now), DailyLimit(INBOX_READS_PER_DAY, now)
+    lookups, reads = DailyLimit(LOOKUPS_PER_DAY, now), DailyLimit(INBOX_READS_PER_DAY, now)
 
     @router.get("/videos", response_model=Envelope[list[Video]], response_model_by_alias=True)
     def videos(session: Annotated[SignedIn, Depends(guards.reader)], ids: str = ""):

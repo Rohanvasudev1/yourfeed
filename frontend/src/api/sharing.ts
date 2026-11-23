@@ -1,8 +1,10 @@
 import { z } from "zod";
+import { BLEND_STATUSES, type InviteAnswer, type ServerBlend } from "../domain/blend";
 import type { SendAnswer, SentShare } from "../domain/sending";
 import { notesFit, sharedContentFields, type Share } from "../domain/share";
 import type { Video } from "../domain/types";
 import type { SharingPort } from "../ports";
+import { USERNAME_PATTERN } from "../domain/username";
 import { isVideo } from "./catalog";
 import { ApiError, type ApiSession } from "./session";
 
@@ -20,6 +22,22 @@ const sentSchema = z
   .refine((s) => Object.keys(s.notes).every((id) => s.videos.includes(id)), "notes name a video that isn't shared");
 
 const sentToSchema = z.object({ to: z.string().min(1) });
+
+const blendSchema = z.object({
+  id: z.number().int().positive(),
+  with: z.string().regex(USERNAME_PATTERN),
+  role: z.enum(["inviter", "invitee"]),
+  status: z.enum(BLEND_STATUSES),
+  topics: z.array(z.string().min(1)),
+}) satisfies z.ZodType<ServerBlend>;
+
+/** 404: no one has that username. 409: you haven't chosen yours, or you already blend with them. 422: it's yours. 429: today's invites are used up. */
+const INVITE_REFUSED = new Set([404, 409, 422, 429]);
+
+const toBlend = (item: unknown): ServerBlend | null => {
+  const parsed = blendSchema.safeParse(item);
+  return parsed.success ? parsed.data : null;
+};
 
 /** Keeps the items that fit, saying how many didn't. */
 function valid<T>(items: unknown, keep: (item: unknown) => T | null, what: string): T[] {
@@ -50,5 +68,18 @@ export function apiSharing(session: ApiSession): SharingPort {
       }
     },
     inbox: async (after) => valid(await session.call(`/api/inbox?after=${after}`), toSent, "shares"),
+    blends: async () => valid(await session.call("/api/blends"), toBlend, "blends"),
+    inviteBlend: async (to, topics): Promise<InviteAnswer> => {
+      try {
+        return { ok: true, blend: blendSchema.parse(await session.write("/api/blends", "POST", { to, topics })) };
+      } catch (err: unknown) {
+        if (err instanceof ApiError && INVITE_REFUSED.has(err.status)) return { ok: false, problem: err.message };
+        throw err;
+      }
+    },
+    acceptBlend: async (id, topics) => blendSchema.parse(await session.write(`/api/blends/${id}/accept`, "POST", { topics })),
+    cancelBlend: async (id) => {
+      await session.write(`/api/blends/${id}/cancel`, "POST");
+    },
   };
 }
