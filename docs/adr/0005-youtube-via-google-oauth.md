@@ -1,6 +1,6 @@
 # 5. Connect YouTube with Google OAuth (youtube.readonly)
 
-Date: 2026-11-15 · Status: accepted
+Date: 2026-11-15 · Status: accepted; RSS and quota parts superseded by [ADR 0011](0011-youtube-catalog-documented-api-only.md), accounts extended by [ADR 0012](0012-accounts-and-server-state.md)
 
 ## Decision
 - "Sign in with Google" requests the `youtube.readonly` permission and reads subscriptions, liked videos and playlists.

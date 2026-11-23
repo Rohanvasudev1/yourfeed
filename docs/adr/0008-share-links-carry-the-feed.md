@@ -1,6 +1,6 @@
 # 8. Share links carry the feed in the URL fragment; other people are simulated in demo mode
 
-Date: 2026-11-18 · Status: accepted
+Date: 2026-11-18 · Status: accepted; simulations replaced in signed-in mode by [ADR 0013](0013-real-people-at-recipe-level.md)
 
 ## Context
 Share, Shared with you and Blend need other people. Demo mode has no accounts, and spec #2 stays in demo mode (sign-in is spec #3). The mockup simulated all of it: links that open nothing, sends that go nowhere, a "Simulate their approval" button.
