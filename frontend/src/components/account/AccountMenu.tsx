@@ -1,7 +1,9 @@
 import { IconAsterisk, IconBookmark, IconHistory, IconInbox, IconLayoutGrid, IconNotebook, IconUsers, type Icon } from "@tabler/icons-react";
 import { answeredByLabel, providerNotice, type AssistantInfo } from "../../domain/assistantInfo";
+import type { AccountControls } from "../../state/useAccount";
 import type { AccountJump } from "../../state/useAccountJumps";
 import { usePopupController } from "../popup/usePopupController";
+import { AccountSignIn } from "./AccountSignIn";
 import "./account.css";
 
 /** How many of each thing the menu's jumps lead to. */
@@ -12,6 +14,7 @@ type Props = Readonly<{
   claudeConnected: boolean;
   /** Which assistant answers; `null` until the server says. */
   info: AssistantInfo | null;
+  account: AccountControls;
   onJump: (to: AccountJump) => void;
 }>;
 
@@ -27,8 +30,8 @@ const itemsFor = (counts: AccountCounts, claudeConnected: boolean): readonly Ite
   { to: "claude", icon: IconAsterisk, label: claudeConnected ? "Claude connected" : "Connect Claude" },
 ];
 
-/** The avatar button and its menu: who you are in the demo, jumps with counts, and which assistant answers. */
-export function AccountMenu({ counts, claudeConnected, info, onJump }: Props) {
+/** The avatar button and its menu: who you are, jumps with counts, which assistant answers, and signing in or out. */
+export function AccountMenu({ counts, claudeConnected, info, account, onJump }: Props) {
   const popups = usePopupController<"account">();
   const jump = (to: AccountJump) => {
     popups.finish();
@@ -48,7 +51,7 @@ export function AccountMenu({ counts, claudeConnected, info, onJump }: Props) {
             </span>
             <div>
               <p className="account-name">You</p>
-              <p className="account-handle">@you · demo account</p>
+              <p className="account-handle">{account.status?.kind === "signedIn" ? "Signed in with Google" : "@you · demo account"}</p>
             </div>
           </div>
           {itemsFor(counts, claudeConnected).map(({ to, icon: ItemIcon, label, count }) => (
@@ -62,7 +65,7 @@ export function AccountMenu({ counts, claudeConnected, info, onJump }: Props) {
             {info && <p className="account-answers">{answeredByLabel(info)}</p>}
             <p className="popup-hint">{providerNotice(info)}</p>
           </div>
-          <p className="popup-hint">Signing in isn't part of the demo.</p>
+          <AccountSignIn account={account} />
         </div>
       )}
     </div>

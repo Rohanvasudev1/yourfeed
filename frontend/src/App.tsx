@@ -32,12 +32,13 @@ import { composeFeed } from "./domain/compose";
 import { TOP_RANGE_HOURS } from "./domain/feed";
 import { shareStartingVideos } from "./domain/share";
 import type { ComposeInput, Video } from "./domain/types";
-import type { AssistantPort, CatalogLoader, StateStorage } from "./ports";
+import type { AccountPort, AssistantPort, CatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf, makeReducer } from "./state/appState";
 import { providerNotice } from "./domain/assistantInfo";
 import { startHistory, withHistory } from "./state/history";
 import { restoreState } from "./state/persistence";
 import { DEMO_SEED } from "./state/seed";
+import { useAccount } from "./state/useAccount";
 import { useAccountJumps } from "./state/useAccountJumps";
 import { useAssistantInfo } from "./state/useAssistantInfo";
 import { useBlend } from "./state/useBlend";
@@ -57,7 +58,7 @@ import { useSharedWithYou } from "./state/useSharedWithYou";
 import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
 
-type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage; assistant: AssistantPort }>;
+type Props = Readonly<{ loadCatalog: CatalogLoader; storage: StateStorage; assistant: AssistantPort; account: AccountPort }>;
 
 const baseReducer = makeReducer(DEMO_SEED);
 const NO_VIDEOS: readonly Video[] = [];
@@ -68,7 +69,7 @@ const reducer = withHistory(baseReducer);
 const restore = (storage: StateStorage) =>
   startHistory(baseReducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" }));
 
-export default function App({ loadCatalog, storage, assistant }: Props) {
+export default function App({ loadCatalog, storage, assistant, account: accountPort }: Props) {
   const [history, dispatch] = useReducer(reducer, storage, restore);
   const state = history.present;
   usePersist(storage, state);
@@ -120,6 +121,7 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
   const edit = useEditMode(state.feeds, dispatch);
   const blend = useBlend(state.feeds, feed, ready ?? NO_VIDEOS, dispatch);
   const info = useAssistantInfo(assistant);
+  const account = useAccount(accountPort);
   const sections = useSections();
   const jump = useAccountJumps({ feeds: state.feeds, current: feed, tabs, sections, dispatch });
   const search = useSearch({
@@ -163,13 +165,14 @@ export default function App({ loadCatalog, storage, assistant }: Props) {
             }}
             claudeConnected={state.feeds.some((f) => f.kind === "claude" && f.connected)}
             info={info}
+            account={account}
             onJump={jump}
           />
         }
       />
       <TabBar feeds={state.feeds} current={feed} tabs={tabs} edit={edit} unread={shared.unread} />
       {edit.editing && <EditBar edit={edit} onAllTabs={tabs.page === "all"} />}
-      <Flash message={tabs.flash ?? search.flash ?? shared.flash} />
+      <Flash message={account.flash ?? tabs.flash ?? search.flash ?? shared.flash} />
       <main>
         {tabs.page === "all" ? (
           <AllTabsPage feeds={state.feeds} tabs={tabs} edit={edit} />

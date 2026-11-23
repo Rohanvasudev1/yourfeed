@@ -1,3 +1,4 @@
+import type { AccountStatus, DeleteResult } from "./domain/account";
 import type { AnswerResult } from "./domain/askNotes";
 import type { AssistantResult, BarMode, FeedContext } from "./domain/assistant";
 import type { AssistantInfo } from "./domain/assistantInfo";
@@ -18,4 +19,13 @@ export type AssistantPort = Readonly<{
   answer: (videoId: string, question: string) => Promise<AnswerResult>;
   /** Which assistant answers, for the account menu and the provider notice. */
   info: () => Promise<AssistantInfo>;
+}>;
+
+/** Signing in with Google and leaving. Production calls the backend; tests pass a fake. */
+export type AccountPort = Readonly<{
+  status: () => Promise<AccountStatus>;
+  /** Leaves the page for Google's sign-in; Google sends the visitor back to the app. */
+  signIn: () => void;
+  signOut: () => Promise<void>;
+  deleteData: () => Promise<DeleteResult>;
 }>;

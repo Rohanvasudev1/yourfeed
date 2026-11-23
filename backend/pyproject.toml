@@ -5,9 +5,12 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.20.1",
+    "cryptography>=50.0.2",
     "fastapi>=0.163.1",
     "httpx>=0.28.1",
     "pydantic>=2.14.3",
+    "sqlmodel>=0.0.50",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -18,7 +21,7 @@ dev = [
     "pytest-cov>=7.1.0",
 ]
 
-# Coverage gate for the assistant modules: `uv run pytest --cov=app.assistant`
+# Coverage gate for the assistant and accounts modules: `uv run pytest --cov=app.assistant --cov=app.accounts`
 [tool.coverage.report]
 fail_under = 80
 show_missing = true
