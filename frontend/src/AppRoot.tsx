@@ -1,8 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import App from "./App";
+import { UsernamePrompt } from "./components/account/UsernamePrompt";
 import { CatalogError } from "./components/CatalogError";
 import { ACCOUNT_TEXT } from "./domain/account";
 import type { AccountPort, AssistantPort, CatalogLoader, ServerStatePort, StateStorage } from "./ports";
+import { isRestorable, type SavedState } from "./state/persistence";
 import { useAccount } from "./state/useAccount";
 import { useStateSource } from "./state/useStateSource";
 
@@ -16,13 +18,31 @@ type Props = Readonly<{
   account: AccountPort;
 }>;
 
+/** What Bring your demo feeds would copy: the feeds of the demo this browser saved; null when it saved none it can open. */
+function savedDemoFeeds(storage: StateStorage) {
+  const saved = storage.load();
+  return isRestorable(saved) ? (saved as SavedState).state.feeds : null;
+}
+
 /** The app, once it knows whose state to show: the server's when signed in (ADR 0012), the browser's in demo mode. */
 export function AppRoot({ loadCatalog, storage, serverState, assistant, account: accountPort }: Props) {
   const account = useAccount(accountPort);
   const [expectsSignedIn] = useState(accountPort.expectsSignedIn);
   const source = useStateSource(account, expectsSignedIn, storage, serverState);
-  const catalogSource = account.status?.kind === "signedIn" ? "youtube" : "demo";
+  const signedIn = account.status?.kind === "signedIn";
+  const catalogSource = signedIn ? "youtube" : "demo";
   const loadSourceCatalog = useCallback(() => loadCatalog(catalogSource), [loadCatalog, catalogSource]);
+  const demoFeeds = useMemo(() => (signedIn ? savedDemoFeeds(storage) : null), [signedIn, storage]);
+
+  if (signedIn && account.status?.kind === "signedIn" && account.status.username === null) {
+    return (
+      <div className="app">
+        <main>
+          <UsernamePrompt account={account} />
+        </main>
+      </div>
+    );
+  }
 
   if (source.phase !== "ready") {
     return (
@@ -48,6 +68,7 @@ export function AppRoot({ loadCatalog, storage, serverState, assistant, account:
       assistant={assistant}
       account={account}
       saveProblem={source.saveFailed ? { retry: source.retrySave } : null}
+      demoFeeds={demoFeeds}
     />
   );
 }

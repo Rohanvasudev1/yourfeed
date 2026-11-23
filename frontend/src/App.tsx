@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { AccountMenu } from "./components/account/AccountMenu";
+import { DemoFeedsOfferCard } from "./components/account/DemoFeedsOfferCard";
 import { AllTabsPage } from "./components/AllTabsPage";
 import { BlendPanel } from "./components/blend/BlendPanel";
 import { CatalogError } from "./components/CatalogError";
@@ -33,7 +34,7 @@ import { composeFeed } from "./domain/compose";
 import { shareStartingVideos } from "./domain/share";
 import { CATALOG_REASON, reasonText, type Reason } from "./domain/rank";
 import { hasSessionStarted } from "./domain/session";
-import type { Video } from "./domain/types";
+import type { Feed, Video } from "./domain/types";
 import type { AssistantPort, SourceCatalogLoader, StateStorage } from "./ports";
 import { currentFeedOf } from "./state/appState";
 import { providerNotice } from "./domain/assistantInfo";
@@ -44,6 +45,7 @@ import { useAssistantInfo } from "./state/useAssistantInfo";
 import { useBlend } from "./state/useBlend";
 import { useCardActions } from "./state/useCardActions";
 import { useCatalog } from "./state/useCatalog";
+import { useDemoFeedsOffer } from "./state/useDemoFeedsOffer";
 import { useComposeInput } from "./state/useComposeInput";
 import { useClaudeBar } from "./state/useClaudeBar";
 import { useEditMode } from "./state/useEditMode";
@@ -70,6 +72,8 @@ type Props = Readonly<{
   account: AccountControls;
   /** A save to the server that failed, with a way to send it again; null when there's none. */
   saveProblem: Readonly<{ retry: () => void }> | null;
+  /** The browser's demo feeds, which a new signed-in account is offered once; null in demo mode. */
+  demoFeeds: readonly Feed[] | null;
 }>;
 
 const NO_VIDEOS: readonly Video[] = [];
@@ -83,7 +87,7 @@ const withPinnedReasons = (pinned: readonly string[], reasons: ReadonlyMap<strin
 
 const reasonOf = (reasons: ReadonlyMap<string, Reason>, id: string): string => reasonText(reasons.get(id) ?? CATALOG_REASON);
 
-export default function App({ loadCatalog, storage, assistant, account, saveProblem }: Props) {
+export default function App({ loadCatalog, storage, assistant, account, saveProblem, demoFeeds }: Props) {
   const [history, dispatch] = useStoredHistory(storage);
   const state = history.present;
   const passedOver = useSessionEnd(dispatch);
@@ -131,6 +135,7 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
   const edit = useEditMode(state.feeds, dispatch);
   const blend = useBlend(state.feeds, feed, ready ?? NO_VIDEOS, dispatch);
   const info = useAssistantInfo(assistant);
+  const demoOffer = useDemoFeedsOffer({ demoFeeds, offered: state.demoFeedsOffered, catalog: ready, dispatch });
   const sections = useSections();
   const jump = useAccountJumps({ feeds: state.feeds, current: feed, tabs, sections, dispatch });
   const search = useSearch({
@@ -184,6 +189,7 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
       {saveProblem && <CatalogError message={ACCOUNT_TEXT.saveFailed} retryLabel={ACCOUNT_TEXT.retrySave} onRetry={saveProblem.retry} />}
       <Flash message={account.flash ?? tabs.flash ?? search.flash ?? shared.flash} />
       <main>
+        {demoOffer && <DemoFeedsOfferCard offer={demoOffer} />}
         {tabs.page === "all" ? (
           <AllTabsPage feeds={state.feeds} tabs={tabs} edit={edit} />
         ) : tabs.page === "search" ? (

@@ -15,7 +15,8 @@ function serverSays(...replies: Reply[]) {
 }
 
 const ok = (data: unknown): Reply => ({ body: { success: true, data, error: null } });
-const SIGNED_IN = ok({ signInAvailable: true, signedIn: true, csrfToken: "csrf-123" });
+const SIGNED_IN = ok({ signInAvailable: true, signedIn: true, csrfToken: "csrf-123", username: "maya.k" });
+const refused = (status: number, error: string): Reply => ({ status, body: { success: false, data: null, error } });
 const SIGNED_OUT = ok({ signInAvailable: true, signedIn: false, csrfToken: null });
 
 const headersOf = (fetch: ReturnType<typeof serverSays>, call: number) => (fetch.mock.calls[call][1]?.headers ?? {}) as Record<string, string>;
@@ -32,7 +33,35 @@ describe("the account API client", () => {
     const account = apiAccount();
     expect(await account.status()).toEqual({ kind: "unavailable" });
     expect(await account.status()).toEqual({ kind: "signedOut", signInFailed: false });
-    expect(await account.status()).toEqual({ kind: "signedIn" });
+    expect(await account.status()).toEqual({ kind: "signedIn", username: "maya.k" });
+  });
+
+  it("reads a new user's missing username, from a server that sends none or null", async () => {
+    serverSays(ok({ signInAvailable: true, signedIn: true, csrfToken: "c" }), ok({ signInAvailable: true, signedIn: true, csrfToken: "c", username: null }));
+    const account = apiAccount();
+    expect(await account.status()).toEqual({ kind: "signedIn", username: null });
+    expect(await account.status()).toEqual({ kind: "signedIn", username: null });
+  });
+
+  it("chooses a username with the CSRF token, and passes on the server's refusal in its words", async () => {
+    const fetch = serverSays(SIGNED_IN, ok({ username: "maya.k" }), refused(409, "That username is taken. Try another."), refused(422, "Bad name"));
+    const account = apiAccount();
+    await account.status();
+    expect(await account.chooseUsername("maya.k")).toEqual({ ok: true, username: "maya.k" });
+    expect(fetch.mock.calls[1][0]).toBe("/api/account/username");
+    expect(fetch.mock.calls[1][1]?.method).toBe("PUT");
+    expect(fetch.mock.calls[1][1]?.body).toBe(JSON.stringify({ username: "maya.k" }));
+    expect(headersOf(fetch, 1)).toMatchObject({ "X-CSRF-Token": "csrf-123" });
+    expect(await account.chooseUsername("maya.k")).toEqual({ ok: false, problem: "That username is taken. Try another." });
+    expect(await account.chooseUsername("maya.k")).toEqual({ ok: false, problem: "Bad name" });
+  });
+
+  it("rejects a username choice the server couldn't answer", async () => {
+    serverSays(SIGNED_IN, { status: 503, body: null }, ok({ username: "NOT VALID" }));
+    const account = apiAccount();
+    await account.status();
+    await expect(account.chooseUsername("maya.k")).rejects.toThrow("The server answered 503.");
+    await expect(account.chooseUsername("maya.k")).rejects.toThrow();
   });
 
   it("sends the session's CSRF token with sign out and Delete my data", async () => {
@@ -104,7 +133,7 @@ describe("the account API client", () => {
     serverSays(SIGNED_IN);
     const account = apiAccount();
     expect(account.expectsSignedIn()).toBe(false);
-    expect(await account.status()).toEqual({ kind: "signedIn" });
+    expect(await account.status()).toEqual({ kind: "signedIn", username: "maya.k" });
   });
 
   it("signs in by leaving for the backend's login route", () => {

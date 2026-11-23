@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ACCOUNT_TEXT, type AccountStatus } from "../domain/account";
+import { cleanUsername, usernameProblem as ruleProblem } from "../domain/username";
 import type { AccountPort } from "../ports";
 import { FLASH_MS, useTimedValue } from "./useTimedValue";
 
@@ -15,7 +16,11 @@ export type AccountControls = Readonly<{
   busy: boolean;
   /** A sign-in that just failed, said once on return from Google. */
   flash: string | null;
+  /** Why the last username choice wasn't kept; null when there's nothing to say. */
+  usernameProblem: string | null;
   signIn: () => void;
+  /** Checks the typed username against the rules, then asks the server for it. */
+  chooseUsername: (typed: string) => void;
   signOut: () => void;
   deleteData: () => void;
 }>;
@@ -27,6 +32,7 @@ export function useAccount(account: AccountPort): AccountControls {
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [flash, showFlash] = useTimedValue<string>(FLASH_MS);
+  const [usernameProblem, setUsernameProblem] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -50,6 +56,7 @@ export function useAccount(account: AccountPort): AccountControls {
     async (action: () => Promise<string | null>, failure: string, what: string) => {
       setBusy(true);
       setProblem(null);
+      setUsernameProblem(null);
       try {
         setProblem(await action());
         setStatus(SIGNED_OUT);
@@ -72,5 +79,28 @@ export function useAccount(account: AccountPort): AccountControls {
     [account, run],
   );
 
-  return { status, checked, problem, busy, flash, signIn: account.signIn, signOut, deleteData };
+  const chooseUsername = useCallback(
+    (typed: string) => {
+      // Usernames are kept lowercase, so uniqueness ignores case.
+      const name = cleanUsername(typed).toLowerCase();
+      const broken = ruleProblem(name, []);
+      setUsernameProblem(broken);
+      if (broken) return;
+      setBusy(true);
+      account
+        .chooseUsername(name)
+        .then((answer) => {
+          if (answer.ok) setStatus({ kind: "signedIn", username: answer.username });
+          else setUsernameProblem(answer.problem);
+        })
+        .catch((err: unknown) => {
+          console.error("Couldn't save your username", err);
+          setUsernameProblem(ACCOUNT_TEXT.usernameFailed);
+        })
+        .finally(() => setBusy(false));
+    },
+    [account],
+  );
+
+  return { status, checked, problem, busy, flash, usernameProblem, signIn: account.signIn, signOut, chooseUsername, deleteData };
 }

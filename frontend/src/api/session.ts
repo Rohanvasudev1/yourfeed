@@ -4,6 +4,17 @@ const KEEPALIVE_MAX_CHARS = 60_000;
 
 type Envelope = { success?: boolean; data?: unknown; error?: string | null };
 
+/** The server answered, but not with success: `status` is its HTTP status and the message its error, when it sent one. */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 /**
  * Calls to the backend in the visitor's session. It keeps the session's CSRF token, which `/api/auth/me` hands out
  * and every write sends back, so the account and state clients share one.
@@ -17,7 +28,7 @@ export type ApiSession = Readonly<{
 async function call(path: string, init: RequestInit = {}): Promise<unknown> {
   const res = await fetch(path, { credentials: "same-origin", ...init });
   const body = (await res.json().catch(() => null)) as Envelope | null;
-  if (!body?.success) throw new Error(body?.error ?? `The server answered ${res.status}.`);
+  if (!body?.success) throw new ApiError(body?.error ?? `The server answered ${res.status}.`, res.status);
   return body.data;
 }
 

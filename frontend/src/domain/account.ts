@@ -2,7 +2,11 @@
 export type AccountStatus =
   | Readonly<{ kind: "unavailable" }>
   | Readonly<{ kind: "signedOut"; signInFailed: boolean }>
-  | Readonly<{ kind: "signedIn" }>;
+  /** `username` is null until the user chooses one, which first sign-in asks for (ADR 0013). */
+  | Readonly<{ kind: "signedIn"; username: string | null }>;
+
+/** The server kept the username (as it stores it), or said why not. */
+export type UsernameAnswer = Readonly<{ ok: true; username: string }> | Readonly<{ ok: false; problem: string }>;
 
 /** Delete my data always deletes; `revoked` says whether Google confirmed it removed Yourfeed's access too. */
 export type DeleteResult = Readonly<{ revoked: boolean }>;
@@ -19,5 +23,14 @@ export const ACCOUNT_TEXT = {
   retrySave: "Try saving again",
   loadFailed: "Couldn't load your feeds from your account.",
   loading: "Loading…",
+  chooseUsername: "Choose a username",
+  usernameHint: "People send you feeds and invite you to Blends by your username.",
+  usernameLabel: "Username",
+  saveUsername: "Save username",
+  usernameFailed: "Couldn't save your username. Try again.",
+  signOut: "Sign out",
+  demoOffer: "Bring your demo feeds",
+  demoOfferNo: "No thanks",
+  demoOfferText: (names: string) => `Copy ${names} into your account: their names, lengths and the topics your YouTube has. Nothing else comes along.`,
   confirmDelete: "Delete your account and everything Yourfeed stored for it, and remove its access to your Google account? This can't be undone.",
 } as const;

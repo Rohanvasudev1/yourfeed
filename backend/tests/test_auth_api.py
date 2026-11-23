@@ -20,7 +20,7 @@ def users(client: TestClient) -> list[User]:
 
 
 def test_signed_out_visitor_can_sign_in(client: TestClient):
-    assert me(client) == {"signInAvailable": True, "signedIn": False, "csrfToken": None}
+    assert me(client) == {"signInAvailable": True, "signedIn": False, "csrfToken": None, "username": None}
 
 
 def test_callback_creates_a_user_and_sets_an_httponly_lax_session_cookie(client: TestClient):

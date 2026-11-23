@@ -1,5 +1,6 @@
 import { insertAnswer } from "../domain/askNotes";
 import { applyFeedActions, type BarMode, type FeedAction } from "../domain/assistant";
+import { bringRecipes, type DemoRecipe } from "../domain/demoFeeds";
 import { forgetSignals, recordSignals, withBehaviour, withSessionSignals, type Forget } from "../domain/behaviour";
 import type { BlendPartner } from "../domain/blend";
 import { listKeyOf } from "../domain/feedList";
@@ -46,6 +47,8 @@ export type AppState = Readonly<{
   inbox: Inbox;
   /** Whether a request or note question has gone to the assistant yet; until then the provider notice shows under the Claude bar. */
   providerNoticeSeen: boolean;
+  /** Whether Bring your demo feeds has been offered; a new signed-in account is offered it once (ADR 0012). */
+  demoFeedsOffered: boolean;
 }>;
 
 export type Action =
@@ -104,6 +107,8 @@ export type Action =
   | Readonly<{ type: "set_bar_mode"; mode: BarMode }>
   /** A request or note question went to the assistant, so the provider notice moves to the account menu only. */
   | Readonly<{ type: "see_provider_notice" }>
+  /** Answers Bring your demo feeds: copies `recipes` (none on No thanks), and the offer is never made again. */
+  | Readonly<{ type: "answer_demo_offer"; recipes: readonly DemoRecipe[] }>
   /** Connects From Claude (filling its topics from the summary) or disconnects it (clearing them). */
   | Readonly<{ type: "set_claude_connection"; feed: string; connected: boolean }>;
 
@@ -145,7 +150,8 @@ export function makeReducer(seed: AppState) {
     if (isInboxAction(action)) return closeShareOnLeave(state, reduceInbox(state, action));
     switch (action.type) {
       case "reset":
-        return seed;
+        // Starting over doesn't make the one-time offer again.
+        return { ...seed, demoFeedsOffered: state.demoFeedsOffered };
       case "setView":
         return state.view === action.view ? state : { ...state, view: action.view };
       case "toggle_filter":
@@ -225,6 +231,8 @@ export function makeReducer(seed: AppState) {
         return state.barMode === action.mode ? state : { ...state, barMode: action.mode };
       case "see_provider_notice":
         return state.providerNoticeSeen ? state : { ...state, providerNoticeSeen: true };
+      case "answer_demo_offer":
+        return state.demoFeedsOffered ? state : { ...state, feeds: bringRecipes(state.feeds, action.recipes), demoFeedsOffered: true };
       case "forget_watch":
         return reduceLibrary(forgetEverywhere(state, { kinds: ["watched"], video: action.video }), action);
       case "clear_history":

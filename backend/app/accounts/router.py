@@ -18,6 +18,7 @@ from app.accounts.google import GoogleError, GoogleOAuth
 from app.accounts.guards import SESSION_COOKIE, Guards, Refusal
 from app.accounts.keys import LOGIN_TTL_S, new_token, pkce_challenge
 from app.accounts.store import SESSION_TTL, AccountStore, SignedIn
+from app.accounts.usernames import INVALID, TAKEN, clean_username
 from app.envelope import Envelope, fail, ok
 
 log = logging.getLogger("yourfeed.accounts")
@@ -36,6 +37,17 @@ class AccountStatus(_Camel):
     sign_in_available: bool
     signed_in: bool
     csrf_token: str | None
+    username: str | None = None
+
+
+class UsernameChoice(BaseModel):
+    """Any JSON value: the rules, not the request's shape, decide what's refused, so every refusal says the same."""
+
+    username: object = None
+
+
+class Username(_Camel):
+    username: str
 
 
 class DeleteResult(_Camel):
@@ -65,7 +77,8 @@ def accounts_router(config: AuthConfig, google: GoogleOAuth, store: AccountStore
         session = session_of(request)
         if session is None:
             return ok(SIGNED_OUT)
-        return ok(AccountStatus(sign_in_available=True, signed_in=True, csrf_token=session.csrf_token))
+        username = store.username_of(session.user_id)
+        return ok(AccountStatus(sign_in_available=True, signed_in=True, csrf_token=session.csrf_token, username=username))
 
     @router.get("/auth/login")
     def login():
@@ -104,6 +117,15 @@ def accounts_router(config: AuthConfig, google: GoogleOAuth, store: AccountStore
         response.delete_cookie(SESSION_COOKIE, path="/")
         return ok(SIGNED_OUT)
 
+    @router.put("/account/username", response_model=Envelope[Username], response_model_by_alias=True)
+    def choose_username(choice: UsernameChoice, session: Annotated[SignedIn, Depends(writer)]):
+        username = clean_username(choice.username)
+        if username is None:
+            return fail(422, INVALID)
+        if not store.set_username(session.user_id, username):
+            return fail(409, TAKEN)
+        return ok(Username(username=username))
+
     @router.delete("/account", response_model=Envelope[DeleteResult], response_model_by_alias=True)
     def delete_account(response: Response, session: Annotated[SignedIn, Depends(writer)]):
         # Revoke first: if deleting then fails, the token is already dead rather than orphaned.
@@ -138,6 +160,7 @@ def demo_only_router() -> APIRouter:
     @router.api_route("/auth/callback", methods=["GET"])
     @router.api_route("/auth/logout", methods=["POST"])
     @router.api_route("/account", methods=["DELETE"])
+    @router.api_route("/account/username", methods=["PUT"])
     def not_set_up():
         return fail(404, NOT_SET_UP)
 
