@@ -34,7 +34,7 @@ const WEIGHTS = {
 } as const;
 const MAX_COUNTED = 5;
 const MATCHES_TOPIC = 4;
-const FOLLOWED_NEW = 3;
+const FOLLOWED_NEW = 2;
 const FOLLOWED_OLD = 1;
 const RECENCY = 1.5;
 /** The seed only breaks near-ties: always under the smallest weight's half. */
