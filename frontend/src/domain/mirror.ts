@@ -13,7 +13,7 @@ import type { Feed, Range } from "./types";
 const DAY_MS = HOURS_PER_DAY * MS_PER_HOUR;
 /** Only behaviour from the last this-many days counts. */
 export const MIRROR_DAYS = 14;
-/** How many signals (distinct videos) it takes to propose anything. */
+/** How many signals it takes to propose anything; each counts once per video, so one video Finished three times isn't a pattern. */
 export const MIRROR_SIGNALS = 3;
 /** A dismissed proposal stays hidden this long. */
 export const DISMISS_DAYS = 7;
@@ -99,8 +99,10 @@ function mutedPinsRule(feed: Feed, signals: readonly Signal[], now: number): Pro
 /** The rules, in the order they're offered: one proposal at a time. */
 const RULES = [lengthRule, removedTopicRule, mutedPinsRule] as const;
 
-const isDismissed = (feed: Feed, id: string, now: number) =>
-  feed.dismissed.some((d) => d.proposal === id && now - d.at < DISMISS_DAYS * DAY_MS);
+/** Whether a dismissal still hides its proposal at `now`. */
+const inForce = (d: Dismissal, now: number) => now - d.at < DISMISS_DAYS * DAY_MS;
+
+const isDismissed = (feed: Feed, id: string, now: number) => feed.dismissed.some((d) => d.proposal === id && inForce(d, now));
 
 /**
  * The one change `feed`'s own behaviour proposes at `now`, or null: the first rule that finds at
@@ -118,4 +120,4 @@ export function mirror(feed: Feed, behaviour: readonly Signal[], now: number): P
 
 /** The feed's dismissals with `proposal` dismissed at `at`, dropping any no longer in force. */
 export const dismissProposal = (dismissed: readonly Dismissal[], proposal: string, at: number): readonly Dismissal[] =>
-  [...dismissed.filter((d) => d.proposal !== proposal && at - d.at < DISMISS_DAYS * DAY_MS), { proposal, at }].slice(-DISMISSAL_LIMIT);
+  [...dismissed.filter((d) => d.proposal !== proposal && inForce(d, at)), { proposal, at }].slice(-DISMISSAL_LIMIT);

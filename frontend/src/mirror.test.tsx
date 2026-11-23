@@ -115,6 +115,15 @@ describe("the recipe mirror", () => {
     expect(await card()).toHaveTextContent("You removed 3 Gardening videos from this feed.");
   });
 
+  it("keeps an old save that has no dismissals", async () => {
+    const saved = learnWith(finishedLong(1)).saved() as ReturnType<typeof toSaved>;
+    const feeds = saved.state.feeds.map((f) => Object.fromEntries(Object.entries(f).filter(([key]) => key !== "dismissed")));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    renderLearn(memoryStorage({ ...saved, state: { ...saved.state, feeds } }));
+    expect(await card()).toHaveTextContent("You Finished 3 videos");
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it("ignores a save whose dismissals aren't valid, starting from the demo", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     renderLearn(learnWith(finishedLong(1), [{ proposal: "", at: -1 }]));

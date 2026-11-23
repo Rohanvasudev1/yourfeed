@@ -14,7 +14,7 @@ export function MirrorCard({ mirror }: Readonly<{ mirror: MirrorState }>) {
         <button type="button" className="mirror-accept" onClick={() => mirror.accept(proposal)}>
           {proposal.accept}
         </button>
-        <button type="button" className="mirror-dismiss" onClick={() => mirror.dismiss(proposal)} title="Hidden for 7 days">
+        <button type="button" className="mirror-dismiss" onClick={() => mirror.dismiss(proposal)}>
           Dismiss
         </button>
       </div>

@@ -61,7 +61,7 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Behaviour**: Yourfeed's own record of what the user did (Finished, removed, skipped, pinned, watched, notes). Not YouTube data.
 - **Skipped** (behaviour): an Up next video passed over when a session ended (the logo's new set or leaving the page, while something is Watching now or Finished); at most once a day per video. Not the same as a feed set's skipped videos, which only hide a set for now.
 - **Reason**: the short line on a card saying why it's there ("Because you Finished 3 Cooking videos"); the Ranker gives it, and "why is this first?" repeats the first card's.
-- **Recipe mirror**: a card proposing a recipe change when at least 3 behaviour signals in 14 days disagree with the recipe. Accept applies it as one undo step; dismiss hides it for 7 days.
+- **Recipe mirror**: a card proposing a recipe change when at least 3 behaviour signals in 14 days (each on a different video) disagree with the recipe: Finished outside the length range, a topic repeatedly removed, or pins from a muted topic. At most one per feed per visit. Accept applies it as one undo step with a recipe log line; dismiss hides it for 7 days.
 - **Outside your recipe**: one labelled video per session from topics next to the feed's; can be turned off per feed.
 - **Channel topic**: a topic the user set for a channel; it wins over YouTube's category.
 - **Showcase page**: `/about`, the page that argues the design case with live pieces of the demo.
