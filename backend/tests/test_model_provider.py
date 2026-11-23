@@ -304,6 +304,14 @@ def test_a_new_feed_without_topics_gets_the_catalog_topics_its_request_names(tex
     assert ask(app_with(provider), text, mode="new")["actions"] == expected
 
 
+def test_a_new_feed_cant_pin_a_video_from_the_open_feed():
+    provider = FakeProvider(completion(None, tool_call("edit_feed", {"add": ["Tennis"], "pin": "demo-22"})))
+    assert ask(app_with(provider), "a feed for tennis", mode="new")["actions"] == [
+        {"type": "create_feed", "name": None},
+        {"type": "set_topics", "add": ["Tennis"], "remove": []},
+    ]
+
+
 def test_a_topic_is_only_filled_in_for_a_new_feed():
     provider = FakeProvider(completion("Can't.", tool_call("edit_feed", {"name": "Tennis"})))
     assert ask(app_with(provider), "a feed for tennis")["actions"] == []

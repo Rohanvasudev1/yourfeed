@@ -14,7 +14,8 @@ import os
 import re
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from types import MappingProxyType
 from typing import Any, NamedTuple
 
 import httpx
@@ -37,7 +38,7 @@ class Case(NamedTuple):
     text: str
     mode: str
     check: Check
-    context: dict[str, Any] = {}
+    context: Mapping[str, Any] = MappingProxyType({})
 
 
 def adds(topic: str) -> Check:
@@ -110,7 +111,7 @@ class TokenMeter:
         try:
             self.calls.append(int(res.json()["usage"]["total_tokens"]))
         except (ValueError, KeyError, TypeError):
-            pass
+            print(f"      no token usage in a {res.status_code} answer", file=sys.stderr)
 
 
 def _ask(client: TestClient, case: Case, retries: int, retry_wait: float) -> dict:

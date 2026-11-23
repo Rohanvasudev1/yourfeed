@@ -102,7 +102,7 @@ def _edits(args: dict, text: str, mode: BarMode, topics: frozenset[str]) -> list
     actions += [{"type": "mute_topic", "topic": t} for t in _list(args.get("mute"))]
     actions += _range_action("set_length_range", args.get("length"))
     actions += _range_action("set_session_range", args.get("session"))
-    if "pin" in args:
+    if mode == "edit" and "pin" in args:
         actions.append({"type": "pin_video", "id": args["pin"]})
     return actions
 
