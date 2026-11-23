@@ -1,10 +1,16 @@
 import logging
 import os
 import time
+from dataclasses import dataclass
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 
+from app.accounts.config import AuthConfig
+from app.accounts.google import GoogleOAuth, HttpGoogleOAuth
+from app.accounts.keys import Keys
+from app.accounts.router import accounts_router, demo_only_router, install_refusals
+from app.accounts.store import AccountStore, Now, utc_now
 from app.assistant.limits import AiLimits, Clock, LimitConfig
 from app.assistant.model import Assistant, Model
 from app.assistant.provider import MODEL_TIMEOUT_S, ModelConfig, OpenAICompatibleModel
@@ -12,9 +18,19 @@ from app.assistant.router import assistant_router
 from app.assistant.rules import KeywordRules
 from app.assistant.selector import AssistantSelector
 from app.catalog import SignInRequired, Source, Video, load_catalog
+from app.db import make_engine, migrate
 from app.envelope import Envelope, fail, ok
 
 log = logging.getLogger("yourfeed")
+
+
+@dataclass(frozen=True)
+class AuthSetup:
+    """Signed-in mode: its settings and Google's OAuth endpoints (a fake in tests)."""
+
+    config: AuthConfig
+    google: GoogleOAuth
+    now: Now = utc_now
 
 
 def _describe(exc: RequestValidationError) -> str:
@@ -27,9 +43,12 @@ def create_app(
     limits: LimitConfig = LimitConfig(),
     timeout: float = MODEL_TIMEOUT_S,
     clock: Clock = time.time,
+    auth: AuthSetup | None = None,
 ) -> FastAPI:
-    """Builds the API. `assistant` is the model that answers Claude bar requests within the AI limits; without one, the keyword rules answer."""
+    """Builds the API. `assistant` is the model that answers Claude bar requests within the AI limits; without one, the keyword rules answer.
+    Without `auth` the app is demo-only and the account routes say signing in isn't set up."""
     app = FastAPI(title="Yourfeed API")
+    install_refusals(app)
 
     @app.exception_handler(RequestValidationError)
     async def on_invalid(_: Request, exc: RequestValidationError):
@@ -51,7 +70,18 @@ def create_app(
     model = assistant if assistant is not None and assistant.answered_by == "model" else None
     selector = AssistantSelector(model, KeywordRules(), AiLimits(limits, clock), timeout)
     app.include_router(assistant_router(selector))
+    app.include_router(_accounts(app, auth))
     return app
+
+
+def _accounts(app: FastAPI, auth: AuthSetup | None):
+    if auth is None:
+        return demo_only_router()
+    engine = make_engine(auth.config.database_url)
+    migrate(engine)
+    app.state.engine = engine
+    store = AccountStore(engine, Keys(auth.config.session_secret, auth.config.token_encryption_key), auth.now)
+    return accounts_router(auth.config, auth.google, store)
 
 
 def create_app_from_env() -> FastAPI:
@@ -60,7 +90,10 @@ def create_app_from_env() -> FastAPI:
     model = OpenAICompatibleModel(config) if config else None
     if model:
         log.info("Claude bar answers by %s via %s", model.model_name, model.provider)
-    return create_app(model, limits=LimitConfig.from_env(os.environ))
+    config = AuthConfig.from_env(os.environ)
+    auth = AuthSetup(config, HttpGoogleOAuth(config.google_client_id, config.google_client_secret)) if config else None
+    log.info("Sign in with Google is %s", "on" if auth else "not set up: demo only")
+    return create_app(model, limits=LimitConfig.from_env(os.environ), auth=auth)
 
 
 app = create_app_from_env()

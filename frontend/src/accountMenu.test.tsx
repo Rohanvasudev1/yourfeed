@@ -46,7 +46,7 @@ describe("the account menu", () => {
     expect(item("Shared with you")).toHaveTextContent("Shared with you3");
     expect(item("Blends")).toHaveTextContent("Blends2");
     expect(item("Connect Claude")).toBeInTheDocument();
-    expect(opened).toHaveTextContent("Signing in isn't part of the demo.");
+    expect(await within(opened).findByText("Signing in isn't set up here.")).toBeInTheDocument();
   });
 
   it("counts what's in the app right now", async () => {

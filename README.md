@@ -47,16 +47,26 @@ To compare models, run a fixed set of requests against the one you set up. It ca
 cd backend && uv run --env-file .env python -m scripts.eval_model
 ```
 
+### Sign in with Google (optional)
+
+Without these the app is demo-only, and the account menu says signing in isn't set up. To turn it on (see [ADR 0012](docs/adr/0012-accounts-and-server-state.md)):
+
+1. In Google Cloud, create an OAuth client of type *Web application* with the authorized redirect URI `http://localhost:5173/api/auth/callback` (your `APP_URL` plus `/api/auth/callback` when hosted). Its consent screen stays in testing mode, so add each person who signs in as a test user; Google warns them that the app isn't verified.
+2. In `backend/.env`, set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SESSION_SECRET` and `TOKEN_ENCRYPTION_KEY` (`.env.example` says how to make the last two). Set any of them and the backend refuses to start until all four are set.
+3. Start the backend with the file. It creates and migrates the database itself: SQLite in `backend/yourfeed.db` unless `DATABASE_URL` points at Postgres.
+
+The session is an httpOnly, SameSite=Lax cookie, and sign out and Delete my data also need the session's CSRF token. Google refresh tokens are encrypted at rest and never reach the browser. Delete my data deletes the account's rows and revokes the token.
+
 ## Tests
 
 ```bash
 cd backend && uv run pytest
 ```
 
-Backend coverage on the assistant modules (`app/assistant`), measured through the API tests. It fails below 80% (`fail_under` in `backend/pyproject.toml`):
+Backend coverage on the assistant and accounts modules (`app/assistant`, `app/accounts`), measured through the API tests. It fails below 80% (`fail_under` in `backend/pyproject.toml`):
 
 ```bash
-cd backend && uv run pytest --cov=app.assistant
+cd backend && uv run pytest --cov=app.assistant --cov=app.accounts
 ```
 
 ```bash

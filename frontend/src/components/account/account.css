@@ -11,3 +11,8 @@ button.account-avatar:hover, button.account-avatar[aria-expanded="true"] { box-s
 .account-assistant { margin-top: 6px; padding-top: 8px; border-top: 0.5px solid var(--border); }
 .account-answers { margin: 0; font-size: 13px; font-weight: 500; }
 .account-assistant .popup-hint { margin-top: 2px; }
+.account-signin { margin-top: 6px; padding-top: 8px; border-top: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 2px; }
+.account-signin > .popup-hint:first-child { margin-top: 0; }
+.account-problem { color: var(--text-danger); }
+.account-confirm-text { margin: 0 4px; font-size: 13px; line-height: 1.4; }
+.account-confirm-actions { display: flex; gap: 4px; margin-top: 6px; }
