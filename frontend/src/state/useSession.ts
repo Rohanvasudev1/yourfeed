@@ -17,9 +17,9 @@ export function useSession(feed: Feed, byId: ReadonlyMap<string, Video>, dispatc
 
   const play = (video: Video) => {
     if (!window.open(youtubeSearchUrl(video), "_blank", "noopener")) showFlash(POPUP_BLOCKED);
-    dispatch({ type: "watch_video", feed: feed.name, video: video.id });
+    dispatch({ type: "watch_video", feed: feed.name, video: video.id, at: Date.now() });
   };
-  const finish = () => dispatch({ type: "finish_current", feed: feed.name });
+  const finish = () => dispatch({ type: "finish_current", feed: feed.name, at: Date.now() });
   const moveBack = (video: Video) => dispatch({ type: "move_back_to_up_next", feed: feed.name, video: video.id });
 
   return { current, finished, nudge, flash, showFlash, play, finish, moveBack };

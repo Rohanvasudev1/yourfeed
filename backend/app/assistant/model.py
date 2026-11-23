@@ -12,6 +12,7 @@ MAX_UP_NEXT = 15
 MAX_FOLLOW_UPS = 3
 MAX_SUMMARY_CHARS = 120
 MAX_EXPLORE = 8
+MAX_REASON_CHARS = 200
 
 BarMode = Literal["edit", "new"]
 AnsweredBy = Literal["model", "rules"]
@@ -20,6 +21,7 @@ FeedKind = Literal["home", "subs", "top", "news", "claude", "blend", "shared", "
 RequestText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_REQUEST_CHARS)]
 MIN_QUESTION_CHARS = 3
 QuestionText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=MIN_QUESTION_CHARS, max_length=MAX_REQUEST_CHARS)]
+ReasonText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_REASON_CHARS)]
 SummaryText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_SUMMARY_CHARS)]
 Minutes = tuple[int, int]
 
@@ -49,6 +51,8 @@ class FeedContext(_Frozen):
     up_next: tuple[ContextVideo, ...] = Field(max_length=MAX_UP_NEXT)
     explore: tuple[ContextVideo, ...] = Field(default=(), max_length=MAX_EXPLORE)
     """Videos from topics the feed doesn't have, one per topic, for a question card to offer."""
+    first_reason: ReasonText | None = None
+    """Why the top of Up next is there, in the words its card shows (ADR 0010), so the answer and the card agree."""
 
     def first_video(self) -> ContextVideo | None:
         """The video at the top of Up next: the first pinned one, else the first composed one."""
@@ -61,6 +65,8 @@ class FeedContext(_Frozen):
         top = self.first_video()
         if top is None:
             return "Up next is empty, so nothing is first yet."
+        if self.first_reason:
+            return f'"{top.title}" is first. {self.first_reason}.'
         if top.id in self.pinned:
             return f'"{top.title}" is first because you added it yourself.'
         reasons = {

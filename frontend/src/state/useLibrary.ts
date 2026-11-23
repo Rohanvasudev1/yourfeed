@@ -47,7 +47,7 @@ export function useLibrary(state: AppState, feed: Feed, byId: ReadonlyMap<string
     removeFromFolder: (folder: string, video: Video) => dispatch({ type: "remove_from_folder", folder, video: video.id }),
     forgetWatch: (video: Video) => dispatch({ type: "forget_watch", video: video.id }),
     clearHistory: () => dispatch({ type: "clear_history" }),
-    pin: (video: Video) => dispatch({ type: "pin_video", feed: feed.name, video: video.id }),
+    pin: (video: Video) => dispatch({ type: "pin_video", feed: feed.name, video: video.id, at: Date.now() }),
     inSession: (video: Video) => isInSession(feed, video.id),
   };
 }

@@ -1,3 +1,4 @@
+import type { BehaviourRecord } from "../domain/behaviour";
 import { myTopics, tasteOf } from "../domain/blend";
 import { makeFeed } from "../domain/feed";
 import type { InboxShare } from "../domain/inbox";
@@ -62,8 +63,12 @@ const DEMO_TOPICS = [
 ];
 const DEMO_BLENDS = ["maya.k", "devon_r"];
 
+const DEMO_WATCHED = ["demo-6", "demo-13", "demo-0", "demo-8"];
+/** The demo's watch history as Everything's behaviour, a day apart, so its first cards can say why they're there. */
+const DEMO_BEHAVIOUR: BehaviourRecord = DEMO_WATCHED.map((video, i) => ({ kind: "watched", video, at: hoursAgo(24 * (DEMO_WATCHED.length - i)) }));
+
 const DEMO_FEEDS: readonly Feed[] = [
-    makeFeed({ name: "Everything", kind: "home", color: 2 }),
+    makeFeed({ name: "Everything", kind: "home", color: 2, behaviour: DEMO_BEHAVIOUR }),
     makeFeed({
       name: "Subscriptions",
       kind: "subs",
@@ -107,7 +112,7 @@ export const DEMO_SEED: AppState = {
     { name: "Weekend", videoIds: ["demo-11", "demo-15"] },
     { name: "Learning", videoIds: ["demo-2"] },
   ],
-  watched: ["demo-6", "demo-13", "demo-0", "demo-8"],
+  watched: DEMO_WATCHED,
   view: "grid",
   recentSearches: ["mcp server", "premier league highlights"],
   barMode: "edit",

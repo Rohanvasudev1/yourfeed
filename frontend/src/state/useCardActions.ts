@@ -73,10 +73,10 @@ export function useCardActions(state: AppState, feed: Feed, catalog: readonly Vi
     },
     isWatched,
     toggleWatched: (video) =>
-      dispatch(isWatched(video) ? { type: "forget_watch", video: video.id } : { type: "mark_watched", video: video.id }),
+      dispatch(isWatched(video) ? { type: "forget_watch", video: video.id } : { type: "mark_watched", feed: feed.name, video: video.id, at: Date.now() }),
     similarTo: (video) => similarVideos(catalog, video, activeItems(feed)),
     inSession: (video) => isInSession(feed, video.id),
-    pin: (video) => dispatch({ type: "pin_video", feed: feed.name, video: video.id }),
-    removeFromSession: (video) => dispatch({ type: "remove_from_session", feed: feed.name, video: video.id }),
+    pin: (video) => dispatch({ type: "pin_video", feed: feed.name, video: video.id, at: Date.now() }),
+    removeFromSession: (video) => dispatch({ type: "remove_from_session", feed: feed.name, video: video.id, at: Date.now() }),
   };
 }

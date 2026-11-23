@@ -25,6 +25,9 @@ export const moveBackToUpNext = (feed: Feed, id: string): Feed => ({ ...feed, fi
 
 const inSessionIds = (feed: Feed): readonly string[] => [...feed.pinned, ...feed.finished, ...(feed.current === null ? [] : [feed.current])];
 
+/** Whether a session is under way on the feed: something is Watching now or Finished. Only then can it end with videos passed over. */
+export const hasSessionStarted = (feed: Feed): boolean => feed.current !== null || feed.finished.length > 0;
+
 /** Pinned, Finished or Watching now. */
 export const isInSession = (feed: Feed, id: string): boolean => inSessionIds(feed).includes(id);
 

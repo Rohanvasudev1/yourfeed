@@ -23,7 +23,7 @@ const video = (o: Partial<Video> = {}): Video => ({
 const filters: CompositionFilters = { hideClickbait: true, boostSmallCreators: false, includeShorts: false };
 
 const compose = (o: Partial<ComposeInput>) =>
-  composeFeed({ catalog: [], feed: makeFeed(), filters, watched: [], topMaxAgeHours: Infinity, myTopics: [], ...o });
+  composeFeed({ catalog: [], feed: makeFeed(), filters, watched: [], topMaxAgeHours: Infinity, myTopics: [], behaviour: [], now: 0, following: [], ...o });
 
 const ids = (r: ReturnType<typeof composeFeed>) => r.upNext.map((v) => v.id);
 
@@ -141,8 +141,28 @@ describe("other feed kinds", () => {
   it("Everything skips watched videos and favours topics and channels you watch", () => {
     const watchedAi = video({ topic: "AI", channel: "X" });
     const moreAi = video({ topic: "AI", channel: "X", views: 100 });
-    const cooking = video({ topic: "Cooking", channel: "Y", views: 100 });
-    const r = compose({ catalog: [watchedAi, cooking, moreAi], feed: makeFeed({ kind: "home" }), watched: [watchedAi.id] });
+    const cooking = video({ topic: "Cooking", channel: "Y", views: 100_000_000 });
+    const behaviour = [{ kind: "watched", video: watchedAi, at: 0 }] as const;
+    const r = compose({ catalog: [watchedAi, cooking, moreAi], feed: makeFeed({ kind: "home" }), watched: [watchedAi.id], behaviour });
     expect(ids(r)).toEqual([moreAi.id, cooking.id]);
+    expect(r.reasons.get(moreAi.id)).toEqual({ kind: "watchedTopic", topic: "AI", count: 1 });
+  });
+
+  it("Everything never ranks by views", () => {
+    const catalog = Array.from({ length: 20 }, (_, i) => video({ topic: i % 2 ? "AI" : "Cooking", ageHours: i * 13, minutes: 5 }));
+    const feed = makeFeed({ kind: "home", seed: 4 });
+    const viewed = catalog.map((v, i) => ({ ...v, views: (i % 7) * 10_000_000 }));
+    expect(ids(compose({ catalog: viewed, feed }))).toEqual(ids(compose({ catalog, feed })));
+  });
+
+  it("gives every Up next video a reason, and Most viewed says it ranks by views", () => {
+    const catalog = [video(), video({ views: 5 })];
+    const top = compose({ catalog, feed: makeFeed({ kind: "top" }) });
+    expect([...top.reasons.values()]).toEqual([{ kind: "mostViewed" }, { kind: "mostViewed" }]);
+    const learn = compose({ catalog, feed: makeFeed({ topics: ["AI"] }) });
+    expect(learn.upNext.map((v) => learn.reasons.get(v.id))).toEqual([
+      { kind: "matchesTopic", topic: "AI" },
+      { kind: "matchesTopic", topic: "AI" },
+    ]);
   });
 });

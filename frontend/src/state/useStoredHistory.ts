@@ -4,7 +4,6 @@ import { makeReducer } from "./appState";
 import { startHistory, withHistory, type History } from "./history";
 import { restoreState } from "./persistence";
 import { DEMO_SEED } from "./seed";
-import { usePersist } from "./usePersist";
 
 const baseReducer = makeReducer(DEMO_SEED);
 const reducer = withHistory(baseReducer);
@@ -13,8 +12,8 @@ const reducer = withHistory(baseReducer);
 const restore = (storage: StateStorage) => baseReducer(restoreState(storage.load(), DEMO_SEED), { type: "leave_draft" });
 
 /**
- * App state with its undo history, restored from `storage` and saved back to it. When `storage` changes (signing out
- * swaps the server for the browser), the state is swapped for that storage's in the same render, so one storage's
+ * App state with its undo history, restored from `storage`; `usePersist` saves it back. When `storage` changes (signing
+ * out swaps the server for the browser), the state is swapped for that storage's in the same render, so one storage's
  * state is never saved to the other.
  */
 export function useStoredHistory(storage: StateStorage) {
@@ -24,6 +23,5 @@ export function useStoredHistory(storage: StateStorage) {
     setSource(storage);
     dispatch({ type: "load", present: restore(storage) });
   }
-  usePersist(storage, history.present);
   return [history, dispatch] as readonly [History, typeof dispatch];
 }
