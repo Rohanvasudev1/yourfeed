@@ -1,8 +1,11 @@
 import { HOURS_PER_DAY, MS_PER_HOUR } from "./time";
 import type { Feed, Video } from "./types";
 
-/** What the visitor did with a video on a feed. Yourfeed's own data, never YouTube's (ADR 0010). */
-export const SIGNAL_KINDS = ["watched", "finished", "pinned", "removed", "skipped"] as const;
+/**
+ * What the visitor did with a video on a feed. Yourfeed's own data, never YouTube's (ADR 0010). `noted` is a video
+ * whose note the visitor started writing on this feed.
+ */
+export const SIGNAL_KINDS = ["watched", "finished", "pinned", "removed", "skipped", "noted"] as const;
 export type SignalKind = (typeof SIGNAL_KINDS)[number];
 
 /** One saved signal: a kind, a video id and when it happened (ms since the epoch). */
@@ -19,17 +22,20 @@ export const BEHAVIOUR_DAYS = 30;
 export const BEHAVIOUR_WINDOW_MS = BEHAVIOUR_DAYS * HOURS_PER_DAY * MS_PER_HOUR;
 /** Most signals kept per feed; the oldest go first. */
 export const BEHAVIOUR_LIMIT = 300;
-/** A video passed over again within a day counts once. */
-const SKIP_REPEAT_MS = HOURS_PER_DAY * MS_PER_HOUR;
+/** How long a repeat of a signal on the same video is ignored: a skip counts once a day, a note once while it's kept. */
+const REPEAT_IGNORED_MS: Partial<Record<SignalKind, number>> = { skipped: HOURS_PER_DAY * MS_PER_HOUR, noted: Infinity };
 
 export const isRecent = (at: number, now: number): boolean => now - at <= BEHAVIOUR_WINDOW_MS;
 
-const skippedLately = (record: BehaviourRecord, video: string, at: number) =>
-  record.some((s) => s.kind === "skipped" && s.video === video && at - s.at < SKIP_REPEAT_MS);
+/** Whether a new `kind` signal for `video` repeats a kept one recently enough to be ignored. */
+function repeats(record: BehaviourRecord, kind: SignalKind, video: string, at: number): boolean {
+  const window = REPEAT_IGNORED_MS[kind];
+  return window !== undefined && record.some((s) => s.kind === kind && s.video === video && at - s.at < window);
+}
 
 /** Adds one signal of `kind` per video at `at`, trimmed to the last 30 days and the limit. */
 export function recordSignals(record: BehaviourRecord, kind: SignalKind, videos: readonly string[], at: number): BehaviourRecord {
-  const added = videos.filter((video) => kind !== "skipped" || !skippedLately(record, video, at)).map((video) => ({ kind, video, at }));
+  const added = videos.filter((video) => !repeats(record, kind, video, at)).map((video) => ({ kind, video, at }));
   if (added.length === 0) return record;
   return [...record, ...added].filter((s) => isRecent(s.at, at)).slice(-BEHAVIOUR_LIMIT);
 }

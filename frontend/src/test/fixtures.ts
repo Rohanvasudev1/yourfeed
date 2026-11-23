@@ -38,6 +38,8 @@ export const CATALOG: readonly Video[] = [
 
 /** Titles of the visible Everything feed, in order: same topic and channel, same topic, neither. */
 export const EVERYTHING_ORDER = ["Agents with memory", "Intro to transformers", "Gardening for beginners"];
+/** Everything on a new account: its watch history is empty, so the demo's watched video isn't hidden. */
+export const ACCOUNT_ORDER = [...EVERYTHING_ORDER, "Already watched agent build"];
 
 export function memoryStorage(initial: unknown = null): StateStorage & { saved: () => unknown } {
   let value: unknown = initial;

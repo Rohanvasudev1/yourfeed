@@ -42,13 +42,13 @@ export function useNotes({ feed, videos, notes, assistant, dispatch, showFlash }
     keyOf: noteKey,
     continuous: true,
     words: DICTATION,
-    onHeard: (target, heard) => dispatch({ type: "add_dictation", target, heard }),
+    onHeard: (target, heard) => dispatch({ type: "add_dictation", target, heard, at: Date.now() }),
     onMessage: showFlash,
   });
 
   const bind = (target: NoteTarget, value: string): NoteBinding => ({
     value,
-    onChange: (text) => dispatch({ type: "set_note", target, text }),
+    onChange: (text) => dispatch({ type: "set_note", target, text, at: Date.now() }),
     listening: voice.isListening(target),
     onToggleVoice: () => voice.toggle(target),
   });

@@ -126,12 +126,12 @@ describe("Bring your demo feeds", () => {
     await waitFor(() => expect(savedFeed(server.saved(), "Jazz nights")).toBeDefined());
     const brought = savedFeed(server.saved(), "Jazz nights");
     expect(brought).toMatchObject({ kind: "topics", topics: ["AI"], length: [5, 15], session: [10, 30], muted: [] });
-    // A feed the starting example also has takes the demo's recipe: Learn's demo topics aren't in this catalog.
-    expect(savedFeed(server.saved(), "Learn")).toMatchObject({ topics: ["AI"] });
+    // A new account has no feeds of its own, so Learn comes with only the topics this catalog has.
+    expect(savedFeed(server.saved(), "Learn")).toMatchObject({ kind: "topics", topics: ["AI"], length: [10, 60] });
     expect(screen.getAllByText("Jazz nights").length).toBeGreaterThan(0);
-    // None of its topics is in the catalog, so it would show nothing; Sport's demo topics aren't either, so it keeps its own.
+    // None of their topics is in the catalog, so they would show nothing.
     expect(savedFeed(server.saved(), "Knitting club")).toBeUndefined();
-    expect(savedFeed(server.saved(), "Sport")).toEqual(DEMO_SEED.feeds.find((f) => f.name === "Sport"));
+    expect(savedFeed(server.saved(), "Sport")).toBeUndefined();
   });
 
   it("isn't offered when this browser never saved a demo", async () => {

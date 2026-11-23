@@ -9,7 +9,7 @@ import type { Feed, Video } from "./types";
  * "why is this first?" is sent the same value's text, so the two never disagree.
  */
 export type Reason = Readonly<
-  | { kind: "finishedTopic" | "watchedTopic"; topic: string; count: number }
+  | { kind: "finishedTopic" | "notedTopic" | "watchedTopic"; topic: string; count: number }
   | { kind: "finishedChannel" | "watchedChannel" | "pinnedChannel"; channel: string; count: number }
   | { kind: "newFromSubscription" | "followedChannel"; channel: string }
   | { kind: "matchesTopic"; topic: string }
@@ -26,6 +26,8 @@ export type Ranked = Readonly<{ video: Video; score: number; reason: Reason }>;
 const WEIGHTS = {
   finishedTopic: 3,
   finishedChannel: 2,
+  /** Writing a note is as strong a sign you cared as Finishing; every noted video was also watched. */
+  notedTopic: 3,
   watchedTopic: 1.5,
   watchedChannel: 1,
   pinnedChannel: 2,
@@ -63,7 +65,7 @@ function behaviourTerms(video: Video, counts: Counts): Term[] {
   const { topic, channel } = video;
   const values = { topic, channel, id: video.id } as const;
   const n = (kind: SignalKind, by: keyof typeof values) => Math.min(MAX_COUNTED, counts.get(key(kind, by, values[by])) ?? 0);
-  const byTopic = (kind: "finishedTopic" | "watchedTopic", signal: SignalKind): Term => {
+  const byTopic = (kind: "finishedTopic" | "notedTopic" | "watchedTopic", signal: SignalKind): Term => {
     const c = n(signal, "topic");
     return { score: WEIGHTS[kind] * c, reason: c ? { kind, topic, count: c } : null };
   };
@@ -74,6 +76,7 @@ function behaviourTerms(video: Video, counts: Counts): Term[] {
   return [
     byTopic("finishedTopic", "finished"),
     byChannel("finishedChannel", "finished"),
+    byTopic("notedTopic", "noted"),
     byTopic("watchedTopic", "watched"),
     byChannel("watchedChannel", "watched"),
     byChannel("pinnedChannel", "pinned"),
@@ -132,6 +135,8 @@ export function reasonText(reason: Reason): string {
   switch (reason.kind) {
     case "finishedTopic":
       return `Because you Finished ${topicVideos(reason.count, reason.topic)}`;
+    case "notedTopic":
+      return `Because you took notes on ${topicVideos(reason.count, reason.topic)}`;
     case "watchedTopic":
       return `Because you watched ${topicVideos(reason.count, reason.topic)}`;
     case "finishedChannel":

@@ -4,11 +4,16 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { SentShare } from "./domain/sending";
 import { encodeShare, type Share } from "./domain/share";
 import type { Video } from "./domain/types";
+import { toSaved } from "./state/persistence";
+import { DEMO_SEED } from "./state/seed";
 import { fakeAccount, SIGNED_IN } from "./test/account";
 import { CATALOG, memoryStorage } from "./test/fixtures";
 import { feedTitles, openFeedTitle, renderApp } from "./test/renderApp";
 import { fakeServerState } from "./test/serverState";
 import { fakeSharing } from "./test/sharing";
+
+/** An account that saved the starting example's feeds, shares and blends, which these tests build on. */
+const demoAccount = () => fakeServerState(toSaved(DEMO_SEED));
 
 /** Real share and send between signed-in users (ADR 0013); demo mode keeps its simulations. */
 
@@ -47,7 +52,7 @@ const linkTo = (share: Share) => {
   return `#share=${result.encoded}`;
 };
 
-function renderSignedIn({ sharing = fakeSharing({ youtube: ELSEWHERE }), server = fakeServerState() } = {}) {
+function renderSignedIn({ sharing = fakeSharing({ youtube: ELSEWHERE }), server = demoAccount() } = {}) {
   renderApp({ account: fakeAccount({ status: SIGNED_IN }), serverState: server, sharing });
   return { sharing, server };
 }
@@ -169,7 +174,7 @@ describe("signed in, what others sent you", () => {
 
   it("isn't added again after a reload once removed", async () => {
     const sharing = fakeSharing({ youtube: ELSEWHERE, sent: [SENT] });
-    const server = fakeServerState();
+    const server = demoAccount();
     const first = renderApp({ account: fakeAccount({ status: SIGNED_IN }), serverState: server, sharing, storage: memoryStorage() });
     await feedTitles();
     await openExplore(/^Shared with you/);

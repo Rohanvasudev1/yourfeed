@@ -8,9 +8,12 @@ import { feedTitles, renderApp, settingsLine } from "./test/renderApp";
 import { fakeServerState } from "./test/serverState";
 import { fakeSharing } from "./test/sharing";
 
+/** An account that saved the starting example's feeds, shares and blends, which these tests build on. */
+const demoAccount = () => fakeServerState(toSaved(DEMO_SEED));
+
 /** Real Blend between signed-in accounts (ADR 0013): invites are server rows, the other person approves in their own account. */
 
-// The demo seed's feeds, which a new account starts from: Learn, Sport, Wind down and Cooking.
+// The starting example's feeds, which this account saved: Learn, Sport, Wind down and Cooking.
 const MY_TOPICS = ["AI", "Programming", "Economics", "Careers", "Premier League", "Tennis", "Cricket", "Wrestling", "Podcasts", "Live music", "Vlogs", "Cooking"];
 
 const tabBar = () => screen.getByRole("navigation", { name: "Feeds" });
@@ -19,7 +22,7 @@ const inPanel = () => within(blendPanel());
 const usernameBox = () => screen.getByRole("textbox", { name: "Their Yourfeed username" });
 const previousBlends = () => screen.getByRole("region", { name: "Previous blends" });
 
-function renderSignedIn(sharing = fakeSharing(), server = fakeServerState()) {
+function renderSignedIn(sharing = fakeSharing(), server = demoAccount()) {
   const view = renderApp({ account: fakeAccount({ status: SIGNED_IN }), serverState: server, sharing });
   return { sharing, server, view };
 }
@@ -215,7 +218,7 @@ describe("signed in, a long recipe", () => {
 describe("signed in, after a reload", () => {
   it("keeps which blend is open, by its server id", async () => {
     const sharing = fakeSharing();
-    const server = fakeServerState();
+    const server = demoAccount();
     const first = renderSignedIn(sharing, server);
     await openBlend();
     await invite("maya.k");

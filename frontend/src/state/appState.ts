@@ -77,9 +77,9 @@ export type Action =
   | Readonly<{ type: "watch_video"; feed: string; video: string; at: number }>
   | Readonly<{ type: "finish_current"; feed: string; at: number }>
   | Readonly<{ type: "move_back_to_up_next"; feed: string; video: string }>
-  | Readonly<{ type: "set_note"; target: NoteTarget; text: string }>
+  | Readonly<{ type: "set_note"; target: NoteTarget; text: string; at: number }>
   /** Adds words heard by voice typing to the end of a note. */
-  | Readonly<{ type: "add_dictation"; target: NoteTarget; heard: string }>
+  | Readonly<{ type: "add_dictation"; target: NoteTarget; heard: string; at: number }>
   /** Puts an answer under its question in a video's notes; nothing changes if the question is gone. */
   | Readonly<{ type: "insert_answer"; video: string; question: string; answer: string }>
   /** Adds a video to the session by hand, first in Up next. */
@@ -127,10 +127,15 @@ const mapFeed = (state: AppState, name: string, change: (feed: Feed) => Feed): A
 const updateFeed = (state: AppState, name: string, changes: Partial<Feed>): AppState =>
   mapFeed(state, name, (f) => ({ ...f, ...changes }));
 
-const writeNote = (state: AppState, target: NoteTarget, write: (note: string) => string): AppState =>
-  "video" in target
-    ? { ...state, notes: { ...state.notes, [target.video]: write(state.notes[target.video] ?? "") } }
-    : mapFeed(state, target.feed, (f) => ({ ...f, note: write(f.note) }));
+/** Writes a note. Starting a video's note (empty to written) records it as `noted` behaviour on the open feed. */
+function writeNote(state: AppState, target: NoteTarget, at: number, write: (note: string) => string): AppState {
+  if (!("video" in target)) return mapFeed(state, target.feed, (f) => ({ ...f, note: write(f.note) }));
+  const before = state.notes[target.video] ?? "";
+  const note = write(before);
+  const written = { ...state, notes: { ...state.notes, [target.video]: note } };
+  if (before.trim() || !note.trim()) return written;
+  return mapFeed(written, state.currentFeed, (f) => withBehaviour(f, (r) => recordSignals(r, "noted", [target.video], at)));
+}
 
 /** A session change on one feed, with whatever it did recorded in the feed's behaviour. */
 const sessionChange = (state: AppState, name: string, at: number, change: (feed: Feed) => Feed): AppState =>
@@ -216,9 +221,9 @@ export function makeReducer(seed: AppState) {
       case "forget_skips":
         return mapFeed(state, action.feed, (f) => withBehaviour(f, (record) => forgetSignals(record, { kinds: ["skipped"], at: action.at })));
       case "set_note":
-        return writeNote(state, action.target, () => action.text);
+        return writeNote(state, action.target, action.at, () => action.text);
       case "add_dictation":
-        return writeNote(state, action.target, (note) => appendDictation(note, action.heard));
+        return writeNote(state, action.target, action.at, (note) => appendDictation(note, action.heard));
       case "insert_answer": {
         const note = insertAnswer(state.notes[action.video] ?? "", action.question, action.answer);
         return note === null ? state : { ...state, notes: { ...state.notes, [action.video]: note } };

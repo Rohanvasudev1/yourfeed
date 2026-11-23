@@ -65,6 +65,7 @@ import { sectionControl, useSections } from "./state/useSections";
 import { useSession } from "./state/useSession";
 import { useSessionEnd } from "./state/useSessionEnd";
 import { useSharedWithYou } from "./state/useSharedWithYou";
+import { ACCOUNT_SEED, DEMO_SEED } from "./state/seed";
 import { useStoredHistory } from "./state/useStoredHistory";
 import { useShareToggle } from "./state/useShareToggle";
 import { useTabs } from "./state/useTabs";
@@ -99,15 +100,15 @@ const withPinnedReasons = (pinned: readonly string[], reasons: ReadonlyMap<strin
 const reasonOf = (reasons: ReadonlyMap<string, Reason>, id: string): string => reasonText(reasons.get(id) ?? CATALOG_REASON);
 
 export default function App({ loadCatalog, storage, assistant, account, saveProblem, demoFeeds, sharing, searchTopics }: Props) {
-  const [history, dispatch] = useStoredHistory(storage);
+  // Signed in, the catalog is your YouTube (ADR 0011): channels can take your topic, and the clickbait filters are demo-only.
+  const realCatalog = account.status?.kind === "signedIn";
+  const [history, dispatch] = useStoredHistory(storage, realCatalog ? ACCOUNT_SEED : DEMO_SEED);
   const state = history.present;
   const passedOver = useSessionEnd(dispatch);
   usePersist(storage, state);
   const [catalog, retry] = useCatalog(loadCatalog);
 
   const feed = currentFeedOf(state);
-  // Signed in, the catalog is your YouTube (ADR 0011): channels can take your topic, and the clickbait filters are demo-only.
-  const realCatalog = account.status?.kind === "signedIn";
   const loaded = catalog.status === "ready" ? catalog.catalog : null;
   // Channel topics are for your YouTube only; the demo catalog's topics are fixed.
   const channelTopics = realCatalog ? state.channelTopics : NO_CHANNEL_TOPICS;
@@ -365,7 +366,7 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
           </>
         )}
       </main>
-      <Footer onReset={() => dispatch({ type: "reset" })} />
+      <Footer onReset={realCatalog ? null : () => dispatch({ type: "reset" })} />
     </div>
   );
 }

@@ -4,7 +4,18 @@ What if you chose your YouTube feed instead of the recommendation engine choosin
 
 > Not affiliated with YouTube or Google.
 
-**Status:** demo mode is complete: the React app covers everything the original clickable mockup did, so [`prototype/index.html`](prototype/index.html) is retired and kept only as a historical reference. See [PROJECT.md](PROJECT.md) for the design and research, [CONTEXT.md](CONTEXT.md) for the vocabulary, and [docs/adr](docs/adr) for decisions.
+**Status:** demo mode covers everything the original clickable mockup did, so [`prototype/index.html`](prototype/index.html) is retired and kept only as a historical reference. On top of it, the Claude bar takes follow-ups through each feed's recipe log, a recipe-first Ranker explains every card, the recipe mirror proposes changes instead of making them, and signing in with Google turns on a real YouTube catalog, server state, sharing and Blend. The showcase page at `/about` argues the design with live pieces of the demo. See [PROJECT.md](PROJECT.md) for the design and research, [CONTEXT.md](CONTEXT.md) for the vocabulary, and [docs/adr](docs/adr) for decisions.
+
+## How it works
+
+- **Every tab is a feed, and a feed is a recipe**: topics or channels, a video length range, a session range and mutes. Only you, or an undoable change you asked for or accepted, change it.
+- **The Claude bar** turns a request ("add cooking, nothing over 20 minutes") into feed changes you can see and undo, one undo step per request ([ADR 0007](docs/adr/0007-assistant-changes-only-the-current-feed.md)).
+- **The recipe log** under the bar lists the requests that shaped the feed. The last three live lines go with the next request, so "no, shorter" or "more like that" work; undo greys a line out and Clear log empties it ([ADR 0009](docs/adr/0009-follow-ups-and-recipe-log.md)).
+- **The Ranker** orders your own catalog by the recipe, what you did here (Finished, watched, pinned, removed, skipped, notes you wrote), recency and channels you follow, never by views outside Most viewed, and every card says why it's there ([ADR 0010](docs/adr/0010-recommender-ranks-your-catalog-and-proposes.md)).
+- **The recipe mirror** proposes a recipe change when at least 3 signals in 14 days disagree with it (say, three Finished videos longer than the feed allows). Accept is one undo step with a log line; Dismiss hides it for 7 days; at most one per feed per visit.
+- **Outside your recipe** puts one labelled video from neighbouring topics in each session; turn it off per feed.
+
+Everything works in demo mode on the mock catalog with no sign-in or keys.
 
 ## Run it locally
 
@@ -57,6 +68,8 @@ Without these the app is demo-only, and the account menu says signing in isn't s
 
 The session is an httpOnly, SameSite=Lax cookie, and sign out and Delete my data also need the session's CSRF token. Google refresh tokens are encrypted at rest and never reach the browser. Delete my data deletes the account's rows and revokes the token.
 
+Signed in, a new account picks a username, then starts with the built-in feeds only (Everything, Subscriptions, Most viewed, News, From Claude, Blend, Shared with you), built from your subscriptions' recent uploads. None of the demo's made-up feeds, shares, blends or history come along: if this browser has a saved demo, **Bring your demo feeds** offers once to copy your demo feeds' recipes. Feeds, sessions, notes, recipe logs, behaviour, channel topics, inbox and blends live on the server (`GET/PUT /api/state`), so they follow you between devices. Reset demo is only in demo mode; signed in, Delete my data is the way to start over. Sign out returns to the browser's demo, untouched.
+
 ## Host it (free tiers)
 
 Going live is the owner's job (ADR 0014): only you can create the Google Cloud project, the Neon and Render accounts, and the secrets. Everything else runs locally with the YouTube fake and SQLite. The hosted app is the [`render.yaml`](render.yaml) Blueprint: the backend as a free Render web service (`yourfeed-api`) and the frontend as a free static site (`yourfeed`) that rewrites `/api/*` to the backend, so the browser only ever talks to one origin and the session cookie stays first-party. The database is Neon's free Postgres.
@@ -104,10 +117,10 @@ Locally, after signing in at http://localhost:5173, use `--env-file .env` instea
 cd backend && uv run pytest
 ```
 
-Backend coverage on the assistant and accounts modules (`app/assistant`, `app/accounts`), measured through the API tests. It fails below 80% (`fail_under` in `backend/pyproject.toml`):
+Backend coverage on the assistant, accounts and sign-in, server state, YouTube catalog and caches, sharing and Blend modules, measured through the API tests with the fake Google and fake YouTube client. It fails below 80% (`fail_under` in `backend/pyproject.toml`):
 
 ```bash
-cd backend && uv run pytest --cov=app.assistant --cov=app.accounts
+cd backend && uv run pytest --cov=app.assistant --cov=app.accounts --cov=app.youtube --cov=app.user_state --cov=app.sharing --cov=app.blends
 ```
 
 ```bash
@@ -120,7 +133,7 @@ Frontend coverage, measured through the whole-app tests and the `composeFeed` un
 cd frontend && npm run coverage
 ```
 
-End-to-end smoke test with Playwright. It starts the real backend (port 8010, with no AI key so the keyword rules answer) and the app (port 5183) itself, then runs two flows: open Most viewed from Explore, change the video length range, reload and check the change was kept; and send "add cooking" from the Claude bar on Learn, see Cooking in the feed's topics, then undo it. It needs `uv` on your path; the first time, install the browser:
+End-to-end smoke test with Playwright. It starts the real backend (port 8010, with no AI key so the keyword rules answer) and the app (port 5183) itself, then runs four demo-mode flows: a length range set on an Explore feed survives a reload; "add cooking" from the Claude bar on Learn adds Cooking and undo takes it back; a request and a follow-up add recipe log lines, undo greys the follow-up out and Clear log empties the log; and `/about` renders its live pieces and links to and from the app. It needs `uv` on your path; the first time, install the browser:
 
 ```bash
 cd frontend && npx playwright install chromium

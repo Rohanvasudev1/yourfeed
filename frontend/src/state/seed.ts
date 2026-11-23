@@ -122,3 +122,19 @@ export const DEMO_SEED: AppState = {
   demoFeedsOffered: false,
   channelTopics: {},
 };
+
+const isBuiltIn = (feed: Feed) => feed.kind !== "topics";
+
+/**
+ * Where a new signed-in account starts (ADR 0012): the built-in feeds and the demo's filters, with none of the demo's
+ * made-up data (its own feeds, channels, history, shares, blends or saved videos). Bring your demo feeds adds recipes.
+ */
+export const ACCOUNT_SEED: AppState = {
+  ...DEMO_SEED,
+  feeds: DEMO_FEEDS.filter(isBuiltIn).map((f) => ({ ...f, channels: [], behaviour: [] })),
+  folders: DEMO_SEED.folders.map((f) => ({ ...f, videoIds: [] })),
+  watched: [],
+  recentSearches: [],
+  blends: [],
+  inbox: { ...DEMO_SEED.inbox, shares: [] },
+};

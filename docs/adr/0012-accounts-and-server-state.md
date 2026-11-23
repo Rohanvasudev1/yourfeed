@@ -7,5 +7,5 @@ Date: 2026-11-23 · Status: accepted (extends [ADR 0005](0005-youtube-via-google
 - Server session: an httpOnly, SameSite=Lax cookie; writes need a CSRF token. Google refresh tokens are encrypted at rest with a key from the environment; nothing from Google reaches the browser.
 - Signed-in state (feeds with their recipe logs, sessions, saved folders, history, notes, channel topics, inbox, blends) is stored in the database behind the same `StateStorage` port the browser uses, validated on load like browser state. SQLModel + Alembic; SQLite locally, Postgres (Neon free tier) when hosted.
 - YouTube data is refreshed or deleted within 30 days. **Delete my data** removes the account and everything in it and revokes the Google token (well inside the 7-day rule).
-- First sign-in offers **Bring your demo feeds** once: it copies recipes (names, ranges, and the topics that exist in the real catalog), nothing else.
+- First sign-in offers **Bring your demo feeds** once: it copies recipes (names, ranges, and the topics that exist in the real catalog), nothing else. A new account otherwise starts from the built-in feeds only, never the demo's made-up feeds, shares, blends or history, and Reset demo isn't offered while signed in, so a footer link can't wipe an account.
 - Free tiers only: backend on Render, frontend as static hosting.
