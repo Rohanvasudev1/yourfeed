@@ -85,10 +85,10 @@ describe("a channel's topic, signed in", () => {
     expect(await feedTitles()).toEqual(["Ten minutes of stand-up"]);
   });
 
-  it("is reached by keyboard from the channel's other action", async () => {
+  it("is reached by keyboard from the channel's name", async () => {
     renderSignedIn();
     const popup = await openChannel("Late night monologue", "Late Desk");
-    within(popup).getByRole("button", { name: "Add to Subscriptions" }).focus();
+    within(await cardFor("Late night monologue")).getByRole("button", { name: "Channel: Late Desk" }).focus();
     await userEvent.tab();
     expect(within(popup).getByRole("combobox", { name: TOPIC_LABEL })).toHaveFocus();
   });

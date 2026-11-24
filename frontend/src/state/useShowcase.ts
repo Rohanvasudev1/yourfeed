@@ -1,5 +1,6 @@
 import { useMemo, useReducer } from "react";
 import { composeFeed } from "../domain/compose";
+import { NO_SUBSCRIPTIONS } from "../domain/following";
 import { CATALOG_REASON, reasonText } from "../domain/rank";
 import { SHOWCASE_FEED, showcaseBehaviour } from "../domain/showcase";
 import type { Video } from "../domain/types";
@@ -38,7 +39,7 @@ export function useShowcase({ catalog, assistant }: Input) {
   const state = history.present;
   const feed = currentFeedOf(state);
   const byId = useMemo(() => new Map(catalog.map((v) => [v.id, v])), [catalog]);
-  const input = useComposeInput(state, feed, catalog, byId);
+  const input = useComposeInput(state, feed, catalog, byId, NO_SUBSCRIPTIONS);
   const composition = useMemo(() => input && composeFeed(input), [input]);
   const upNext = composition?.upNext ?? [];
   const reasons = composition?.reasons ?? new Map();
@@ -57,7 +58,7 @@ export function useShowcase({ catalog, assistant }: Input) {
   const mirror = useMirror({ feed, byId, now: input?.now ?? null, dispatch });
   const session = useSession(feed, byId, dispatch);
   const library = useLibrary(state, feed, byId, dispatch);
-  const cardActions = useCardActions({ state, feed, catalog, realCatalog: false, dispatch });
+  const cardActions = useCardActions({ state, feed, catalog, realCatalog: false, subscribed: NO_SUBSCRIPTIONS, dispatch });
 
   return {
     state,

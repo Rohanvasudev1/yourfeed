@@ -1,6 +1,7 @@
 import type { Dispatch } from "react";
 import { channelTopicOf } from "../domain/channelTopics";
 import { activeItems, listKeyOf } from "../domain/feedList";
+import { followedChannels } from "../domain/following";
 import { isInSession } from "../domain/session";
 import { similarVideos } from "../domain/similar";
 import type { Feed, Video } from "../domain/types";
@@ -25,8 +26,10 @@ export type ChannelStanding = Readonly<{
   subscribers: number;
   /** Videos in the catalog from this channel. */
   count: number;
-  /** In the Subscriptions feed's channels. */
+  /** In the Subscriptions feed's channels, or subscribed to on YouTube. */
   followed: boolean;
+  /** Subscribed to on YouTube. Yourfeed only reads subscriptions, so it can't unfollow these. */
+  subscribed: boolean;
   /** On your YouTube, the topic you set for the channel (null: YouTube's category); the demo's topics are fixed. */
   topic: ChannelTopicChoice;
 }>;
@@ -57,10 +60,12 @@ type Options = Readonly<{
   catalog: readonly Video[];
   /** Signed in, on your YouTube: channels can take your topic. */
   realCatalog: boolean;
+  /** The channels you subscribe to on YouTube; none in demo mode. */
+  subscribed: readonly string[];
   dispatch: Dispatch<Action>;
 }>;
 
-export function useCardActions({ state, feed, catalog, realCatalog, dispatch }: Options): CardActions {
+export function useCardActions({ state, feed, catalog, realCatalog, subscribed, dispatch }: Options): CardActions {
   const subs = state.feeds.find((f) => f.kind === "subs");
   const countWhere = (match: (v: Video) => boolean) => catalog.filter(match).length;
   const onFeed = (type: "add_to_feed" | "remove_from_feed", item: string) => dispatch({ type, feed: feed.name, item });
@@ -81,7 +86,8 @@ export function useCardActions({ state, feed, catalog, realCatalog, dispatch }: 
     channel: (channel) => ({
       subscribers: catalog.find((v) => v.channel === channel)?.channelSubscribers ?? 0,
       count: countWhere((v) => v.channel === channel),
-      followed: subs?.channels.includes(channel) ?? false,
+      followed: followedChannels(state.feeds, subscribed).includes(channel),
+      subscribed: subscribed.includes(channel),
       topic: realCatalog ? { settable: true, topic: channelTopicOf(state.channelTopics, channel) ?? null } : { settable: false },
     }),
     setChannelTopic: (channel, topic) => dispatch({ type: "set_channel_topic", channel, topic }),

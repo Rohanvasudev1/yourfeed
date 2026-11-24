@@ -101,7 +101,7 @@ export type ComposeInput = Readonly<{
   behaviour: readonly Signal[];
   /** When this visit started; behaviour older than 30 days before it doesn't count. */
   now: number;
-  /** Channels the visitor follows (Subscriptions' channels). */
+  /** Channels the visitor follows: Subscriptions' channels plus, signed in, the ones they subscribe to on YouTube. */
   following: readonly string[];
 }>;
 
