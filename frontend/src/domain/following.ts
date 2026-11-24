@@ -1,5 +1,8 @@
 import type { Feed, Video } from "./types";
 
+/** No subscriptions: demo mode, the showcase, or before the catalog loads. */
+export const NO_SUBSCRIPTIONS: readonly string[] = [];
+
 /**
  * The channels you subscribe to on YouTube: those in your own catalog, which signed in is your subscriptions'
  * uploads (ADR 0011). Pass the catalog before topic searches are added, since those channels aren't yours.

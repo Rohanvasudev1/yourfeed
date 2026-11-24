@@ -6,8 +6,6 @@ import { followedChannels } from "../domain/following";
 import type { ComposeInput, Feed, Video } from "../domain/types";
 import type { AppState } from "./appState";
 
-const NONE: readonly string[] = [];
-
 /**
  * What composition reads for the open feed, once the catalog is ready; null until then. `subscribed` is the channels
  * you subscribe to on YouTube (none in demo mode), which you follow as well as Subscriptions' own.
@@ -17,7 +15,7 @@ export function useComposeInput(
   feed: Feed,
   catalog: readonly Video[] | null,
   byId: ReadonlyMap<string, Video>,
-  subscribed: readonly string[] = NONE,
+  subscribed: readonly string[],
 ) {
   // One clock reading per visit, so Up next doesn't reorder as time passes; only what the visitor does moves it.
   const [now] = useState(() => Date.now());

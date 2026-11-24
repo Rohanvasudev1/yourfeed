@@ -38,7 +38,7 @@ import { hasSessionStarted } from "./domain/session";
 import type { Feed, Video } from "./domain/types";
 import type { AssistantPort, SharingPort, SourceCatalogLoader, StateStorage, TopicSearchPort } from "./ports";
 import { withFoundVideos } from "./domain/topicSearch";
-import { subscribedChannels } from "./domain/following";
+import { NO_SUBSCRIPTIONS, subscribedChannels } from "./domain/following";
 import { currentFeedOf } from "./state/appState";
 import { providerNotice } from "./domain/assistantInfo";
 import { ACCOUNT_TEXT } from "./domain/account";
@@ -89,7 +89,6 @@ type Props = Readonly<{
 }>;
 
 const NO_VIDEOS: readonly Video[] = [];
-const NO_CHANNELS: readonly string[] = [];
 const NO_CHANNEL_TOPICS: ChannelTopics = {};
 const SHARE_PANEL_ID = "share-panel";
 
@@ -118,7 +117,7 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
   // Topics the feeds name that are thin in your own catalog bring in shared topic searches; they're found as that topic.
   const topicSearch = useTopicSearch(searchTopics, ownCatalog, state.feeds);
   // Signed in, the channels of your own catalog are your YouTube subscriptions, so you follow them (topic searches' aren't).
-  const subscribed = useMemo(() => (realCatalog && ownCatalog ? subscribedChannels(ownCatalog) : NO_CHANNELS), [realCatalog, ownCatalog]);
+  const subscribed = useMemo(() => (realCatalog && ownCatalog ? subscribedChannels(ownCatalog) : NO_SUBSCRIPTIONS), [realCatalog, ownCatalog]);
   const ready = useMemo(() => ownCatalog && withFoundVideos(ownCatalog, topicSearch.videos), [ownCatalog, topicSearch.videos]);
   const catalogById = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const unknownIds = useMemo(() => (ready && sharing ? unknownVideoIds(state, catalogById) : []), [ready, sharing, state, catalogById]);

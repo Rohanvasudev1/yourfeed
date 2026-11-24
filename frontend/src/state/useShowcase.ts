@@ -1,5 +1,6 @@
 import { useMemo, useReducer } from "react";
 import { composeFeed } from "../domain/compose";
+import { NO_SUBSCRIPTIONS } from "../domain/following";
 import { CATALOG_REASON, reasonText } from "../domain/rank";
 import { SHOWCASE_FEED, showcaseBehaviour } from "../domain/showcase";
 import type { Video } from "../domain/types";
@@ -19,8 +20,6 @@ import { useSession } from "./useSession";
 export const SHOWCASE_CARDS = 3;
 
 const reducer = withHistory(makeReducer(DEMO_SEED));
-/** The showcase runs on the demo catalog, which has no YouTube subscriptions. */
-const NO_SUBSCRIPTIONS: readonly string[] = [];
 
 /** The demo's state with its Learn feed open, carrying removals the recipe mirror will notice. */
 function showcaseState(catalog: readonly Video[]): AppState {
@@ -40,7 +39,7 @@ export function useShowcase({ catalog, assistant }: Input) {
   const state = history.present;
   const feed = currentFeedOf(state);
   const byId = useMemo(() => new Map(catalog.map((v) => [v.id, v])), [catalog]);
-  const input = useComposeInput(state, feed, catalog, byId);
+  const input = useComposeInput(state, feed, catalog, byId, NO_SUBSCRIPTIONS);
   const composition = useMemo(() => input && composeFeed(input), [input]);
   const upNext = composition?.upNext ?? [];
   const reasons = composition?.reasons ?? new Map();

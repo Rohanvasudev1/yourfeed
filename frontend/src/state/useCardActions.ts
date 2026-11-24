@@ -1,6 +1,7 @@
 import type { Dispatch } from "react";
 import { channelTopicOf } from "../domain/channelTopics";
 import { activeItems, listKeyOf } from "../domain/feedList";
+import { followedChannels } from "../domain/following";
 import { isInSession } from "../domain/session";
 import { similarVideos } from "../domain/similar";
 import type { Feed, Video } from "../domain/types";
@@ -85,7 +86,7 @@ export function useCardActions({ state, feed, catalog, realCatalog, subscribed, 
     channel: (channel) => ({
       subscribers: catalog.find((v) => v.channel === channel)?.channelSubscribers ?? 0,
       count: countWhere((v) => v.channel === channel),
-      followed: (subs?.channels.includes(channel) ?? false) || subscribed.includes(channel),
+      followed: followedChannels(state.feeds, subscribed).includes(channel),
       subscribed: subscribed.includes(channel),
       topic: realCatalog ? { settable: true, topic: channelTopicOf(state.channelTopics, channel) ?? null } : { settable: false },
     }),
