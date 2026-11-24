@@ -41,7 +41,7 @@ function matchesKind(video: Video, input: ComposeInput): boolean {
     case "home":
       return !input.watched.includes(video.id);
     case "subs":
-      return feed.channels.includes(video.channel);
+      return input.following.includes(video.channel);
     case "top":
       return video.ageHours <= input.topMaxAgeHours && limitedToTopic(feed, video.topic);
     case "news":

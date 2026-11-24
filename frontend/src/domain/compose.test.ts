@@ -123,7 +123,7 @@ describe("other feed kinds", () => {
     const older = video({ channel: "A", ageHours: 50 });
     const newer = video({ channel: "A", ageHours: 2 });
     const other = video({ channel: "B" });
-    const r = compose({ catalog: [older, newer, other], feed: makeFeed({ kind: "subs", channels: ["A"] }) });
+    const r = compose({ catalog: [older, newer, other], feed: makeFeed({ kind: "subs", channels: ["A"] }), following: ["A"] });
     expect(ids(r)).toEqual([newer.id, older.id]);
   });
 

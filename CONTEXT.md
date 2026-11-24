@@ -64,6 +64,7 @@ Yourfeed is an open-source design exploration of YouTube's custom-feeds idea, an
 - **Reason**: the short line on a card saying why it's there ("Because you Finished 3 Cooking videos"); the Ranker gives it, and "why is this first?" repeats the first card's.
 - **Recipe mirror**: a card proposing a recipe change when at least 3 behaviour signals in 14 days (each on a different video) disagree with the recipe: Finished outside the length range, a topic repeatedly removed, or pins from a muted topic. At most one per feed per visit. Accept applies it as one undo step with a recipe log line; dismiss hides it for 7 days.
 - **Outside your recipe**: one labelled video per session from topics next to the feed's; can be turned off per feed.
+- **Followed channel**: a channel Subscriptions shows and the Ranker treats as followed ("New from <channel>, which you follow"): one added to Subscriptions by hand, or, signed in, one in your own catalog (your YouTube subscriptions; topic-search videos don't count). Yourfeed only reads your subscriptions, so a channel you subscribe to on YouTube can't be unfollowed here; its popup says "Subscribed on YouTube".
 - **Channel topic**: a topic the user set for a channel; it wins over YouTube's category.
 - **Showcase page**: `/about`, the page that argues the design case with live pieces of the demo.
 

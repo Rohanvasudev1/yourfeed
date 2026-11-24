@@ -38,6 +38,7 @@ import { hasSessionStarted } from "./domain/session";
 import type { Feed, Video } from "./domain/types";
 import type { AssistantPort, SharingPort, SourceCatalogLoader, StateStorage, TopicSearchPort } from "./ports";
 import { withFoundVideos } from "./domain/topicSearch";
+import { subscribedChannels } from "./domain/following";
 import { currentFeedOf } from "./state/appState";
 import { providerNotice } from "./domain/assistantInfo";
 import { ACCOUNT_TEXT } from "./domain/account";
@@ -88,6 +89,7 @@ type Props = Readonly<{
 }>;
 
 const NO_VIDEOS: readonly Video[] = [];
+const NO_CHANNELS: readonly string[] = [];
 const NO_CHANNEL_TOPICS: ChannelTopics = {};
 const SHARE_PANEL_ID = "share-panel";
 
@@ -115,6 +117,8 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
   const ownCatalog = useMemo(() => loaded && withChannelTopics(loaded, channelTopics), [loaded, channelTopics]);
   // Topics the feeds name that are thin in your own catalog bring in shared topic searches; they're found as that topic.
   const topicSearch = useTopicSearch(searchTopics, ownCatalog, state.feeds);
+  // Signed in, the channels of your own catalog are your YouTube subscriptions, so you follow them (topic searches' aren't).
+  const subscribed = useMemo(() => (realCatalog && ownCatalog ? subscribedChannels(ownCatalog) : NO_CHANNELS), [realCatalog, ownCatalog]);
   const ready = useMemo(() => ownCatalog && withFoundVideos(ownCatalog, topicSearch.videos), [ownCatalog, topicSearch.videos]);
   const catalogById = useMemo(() => new Map((ready ?? []).map((v) => [v.id, v])), [ready]);
   const unknownIds = useMemo(() => (ready && sharing ? unknownVideoIds(state, catalogById) : []), [ready, sharing, state, catalogById]);
@@ -123,13 +127,13 @@ export default function App({ loadCatalog, storage, assistant, account, saveProb
     () => new Map([...withChannelTopics([...lookedUp.videos.values()], channelTopics).map((v) => [v.id, v] as const), ...catalogById]),
     [lookedUp.videos, channelTopics, catalogById],
   );
-  const input = useComposeInput(state, feed, ready, byId);
+  const input = useComposeInput(state, feed, ready, byId, subscribed);
   const composed = useMemo(() => input && composeFeed(input), [input]);
   const session = useSession(feed, byId, dispatch);
   const sessionVideos = session.current ? [...session.finished, session.current] : session.finished;
   const notes = useNotes({ feed, videos: sessionVideos, notes: state.notes, assistant, dispatch, showFlash: session.showFlash });
   const library = useLibrary(state, feed, byId, dispatch);
-  const cardActions = useCardActions({ state, feed, catalog: ready ?? NO_VIDEOS, realCatalog, dispatch });
+  const cardActions = useCardActions({ state, feed, catalog: ready ?? NO_VIDEOS, realCatalog, subscribed, dispatch });
   const pinned = feed.pinned.flatMap((id) => byId.get(id) ?? []);
   const { refresh, undo } = useRefresh(input, dispatch);
   const tabs = useTabs(state, feed, dispatch);

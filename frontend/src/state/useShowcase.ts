@@ -19,6 +19,8 @@ import { useSession } from "./useSession";
 export const SHOWCASE_CARDS = 3;
 
 const reducer = withHistory(makeReducer(DEMO_SEED));
+/** The showcase runs on the demo catalog, which has no YouTube subscriptions. */
+const NO_SUBSCRIPTIONS: readonly string[] = [];
 
 /** The demo's state with its Learn feed open, carrying removals the recipe mirror will notice. */
 function showcaseState(catalog: readonly Video[]): AppState {
@@ -57,7 +59,7 @@ export function useShowcase({ catalog, assistant }: Input) {
   const mirror = useMirror({ feed, byId, now: input?.now ?? null, dispatch });
   const session = useSession(feed, byId, dispatch);
   const library = useLibrary(state, feed, byId, dispatch);
-  const cardActions = useCardActions({ state, feed, catalog, realCatalog: false, dispatch });
+  const cardActions = useCardActions({ state, feed, catalog, realCatalog: false, subscribed: NO_SUBSCRIPTIONS, dispatch });
 
   return {
     state,

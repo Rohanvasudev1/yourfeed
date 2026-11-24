@@ -3,13 +3,15 @@ import { useId, type ReactNode } from "react";
 import { YOUTUBE_TOPICS } from "../../domain/channelTopics";
 import { hasItemList } from "../../domain/feedList";
 import { compactCount } from "../../domain/format";
-import type { CardActions, TopicStanding } from "../../state/useCardActions";
+import type { CardActions, ChannelStanding, TopicStanding } from "../../state/useCardActions";
 import type { PopupController } from "../popup/usePopupController";
 import "./card.css";
 
 type WordProps = Readonly<{ value: string; actions: CardActions; popups: PopupController<string>; popupKey: string }>;
 
 type Choice = Readonly<{ label: string; icon: Icon; run: () => void }>;
+
+const SUBSCRIBED = "Subscribed on YouTube";
 
 const videoCount = (n: number) => `${n} video${n === 1 ? "" : "s"}`;
 
@@ -85,24 +87,31 @@ export function TopicWord(props: WordProps): ReactNode {
   return <Word kind="Topic" status={topicStatus(standing)} choices={topicChoices(value, standing, actions)} {...props} />;
 }
 
-/** A card's channel: Add to / Remove from Subscriptions, and on your YouTube, this channel's topic. */
+/**
+ * A card's channel: Add to / Remove from Subscriptions, and on your YouTube, this channel's topic. A channel you subscribe
+ * to on YouTube is always followed and offers neither: Yourfeed only reads your subscriptions, so it can't unsubscribe.
+ */
 export function ChannelWord(props: WordProps & Readonly<{ hideSubscriberCounts: boolean }>) {
   const { value, actions, hideSubscriberCounts } = props;
   const standing = actions.channel(value);
-  const { subscribers, count, followed } = standing;
+  const { subscribers, count, followed, subscribed } = standing;
   const status = [
     ...(hideSubscriberCounts ? [] : [`${compactCount(subscribers)} subscribers`]),
     `${videoCount(count)} here`,
-    ...(followed ? ["You follow this channel"] : []),
+    ...(subscribed ? [SUBSCRIBED] : followed ? ["You follow this channel"] : []),
   ].join(" · ");
-  const choice: Choice = followed
-    ? { label: "Remove from Subscriptions", icon: IconUserMinus, run: () => actions.setFollowed(value, false) }
-    : { label: "Add to Subscriptions", icon: IconUserPlus, run: () => actions.setFollowed(value, true) };
   return (
-    <Word kind="Channel" status={status} choices={[choice]} {...props}>
+    <Word kind="Channel" status={status} choices={channelChoices(value, standing, actions)} {...props}>
       {standing.topic.settable && <ChannelTopicPicker channel={value} topic={standing.topic.topic} actions={actions} />}
     </Word>
   );
+}
+
+function channelChoices(channel: string, { followed, subscribed }: ChannelStanding, actions: CardActions): readonly Choice[] {
+  if (subscribed) return [];
+  return followed
+    ? [{ label: "Remove from Subscriptions", icon: IconUserMinus, run: () => actions.setFollowed(channel, false) }]
+    : [{ label: "Add to Subscriptions", icon: IconUserPlus, run: () => actions.setFollowed(channel, true) }];
 }
 
 const YOUTUBES_CATEGORY = "";
